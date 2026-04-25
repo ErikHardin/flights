@@ -506,20 +506,29 @@ async function handleOAuthCallback() {
   var state = urlParams.get("state");
   if (!code) return;
 
+  console.log("OAuth callback - code:", code, "state:", state);
+
   // Clean URL without reloading
   window.history.replaceState({}, document.title, window.location.pathname);
-
-  var savedState = localStorage.getItem("afss_oauth_state");
-  if (state !== savedState) { alert("OAuth state mismatch — please try again."); return; }
   localStorage.removeItem("afss_oauth_state");
 
   try {
     var res = await fetch(WORKER + "/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: code, redirect_uri: REDIRECT_URI, state: state })
+      body: JSON.stringify({
+        code:         code,
+        redirect_uri: REDIRECT_URI,
+        state:        state  // pass raw state back exactly as received
+      })
     });
-    var data = await res.json();
+
+    var rawText = await res.text();
+    console.log("Token response status:", res.status, "body:", rawText);
+
+    var data;
+    try { data = JSON.parse(rawText); } catch(e) { data = {}; }
+
     if (data.access_token) {
       accessToken  = data.access_token;
       refreshToken = data.refresh_token || "";
@@ -528,7 +537,7 @@ async function handleOAuthCallback() {
       updateAuthUI();
       setMode("upgrades");
     } else {
-      alert("Login failed: " + (data.error_description || data.error || "Unknown error"));
+      alert("Login failed: " + (data.error_description || data.error || rawText || "Unknown error"));
     }
   } catch(e) {
     alert("Token exchange failed: " + e.message);
