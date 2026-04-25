@@ -983,9 +983,19 @@ function buildResultCard(item,i){
         if(stops<estops||(stops===estops&&dur<edur))bestByCabin[cabin]=trip;
       }
     });
+    // Only show cabins that were searched for (or all if no filter)
+    var searchedCabins=[];
+    if(currentMode==="route"){
+      if(selectedCabins&&selectedCabins.size>0)selectedCabins.forEach(function(c){searchedCabins.push(c)});
+    } else if(currentMode==="region"){
+      if(selectedCabinsRegion&&selectedCabinsRegion.size>0)selectedCabinsRegion.forEach(function(c){searchedCabins.push(c)});
+    }
     var cabinOrder=["first","business","premium","economy"];
     var bestTrips=[];
-    cabinOrder.forEach(function(c){if(bestByCabin[c])bestTrips.push(bestByCabin[c])});
+    cabinOrder.forEach(function(c){
+      if(!bestByCabin[c])return;
+      if(searchedCabins.length===0||searchedCabins.indexOf(c)!==-1)bestTrips.push(bestByCabin[c]);
+    });
 
     detailHtml=bestTrips.map(function(trip){
       var stops=trip.Stops===0?"Nonstop":(trip.Stops===1?"1 stop":trip.Stops+" stops");
