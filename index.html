@@ -31,6 +31,7 @@
       if(link) link.href = canvas.toDataURL('image/png');
     });
   </script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>" />
   <link rel="apple-touch-icon" href="#" />
   <title>Advanced Flight Seat Search</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -829,12 +830,18 @@ async function runRouteSearch(){
   try{
     allResults=[];expandedCards.clear();
     for(var i=0;i<programs.length;i++){
+      // Use /availability so trip IDs are valid for flight details
       var params=new URLSearchParams({origin_airport:origin,destination_airport:dest,source:programs[i]});
       var cabinToSend=selectedCabins&&selectedCabins.size===1?Array.from(selectedCabins)[0]:(selectedCabin||"");
       if(cabinToSend)params.set("cabin",cabinToSend);
       if(startDate)params.set("start_date",startDate);if(endDate)params.set("end_date",endDate);
-      var res=await fetch(WORKER+"/search?"+params);updateQuota(res);
-      if(res.ok){var data=await res.json();if(data.data)allResults=allResults.concat(data.data)}
+      var res=await fetch(WORKER+"/availability?"+params);updateQuota(res);
+      if(res.ok){
+        var data=await res.json();
+        var rows=data.availability||data.data||[];
+        rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
+        allResults=allResults.concat(rows);
+      }
     }
     offerSave(origin,dest,programs,selectedCabin);
     buildProgramFilter(allResults);clearFilters();renderResults(allResults);
@@ -931,45 +938,52 @@ function renderResultCards(items){
   list.innerHTML=items.map(function(item,i){return buildResultCard(item,i)}).join("");
 }
 
-async function toggleCard(id, tripId, source){
+async function toggleCard(id, tripId){
   var details=document.getElementById("details-"+id);
   var icon=document.getElementById("icon-"+id);
   if(details.classList.contains("open")){
-    details.classList.remove("open");if(icon)icon.textContent="▼ Details";expandedCards.delete(id);return;
+    details.classList.remove("open");
+    if(icon)icon.textContent="▼ Details";
+    expandedCards.delete(id);
+    return;
   }
-  details.classList.add("open");if(icon)icon.textContent="▲ Hide";expandedCards.add(id);
+  details.classList.add("open");
+  if(icon)icon.textContent="▲ Hide";
+  expandedCards.add(id);
 
-  // Load trip details if we have a trip ID and haven't loaded yet
   if(tripId && !details.dataset.loaded){
-    var loadingEl=details.querySelector(".trip-loading");
-    if(loadingEl)loadingEl.style.display="block";
+    var tripContainer=details.querySelector(".trip-details");
+    if(tripContainer)tripContainer.innerHTML='<div style="font-size:12px;color:var(--grey-light);padding:4px 0;">Loading flight details…</div>';
     try{
       var res=await fetch(WORKER+"/trips/"+tripId);
       updateQuota(res);
       if(res.ok){
         var data=await res.json();
         var trips=data.data||[];
-        if(trips.length>0){
-          var tripHtml=trips.map(function(trip){
+        if(trips.length&&tripContainer){
+          tripContainer.innerHTML=trips.map(function(trip){
             var stops=trip.Stops===0?"Nonstop":(trip.Stops===1?"1 stop":trip.Stops+" stops");
             var dur=trip.TotalDuration?Math.floor(trip.TotalDuration/60)+"h "+(trip.TotalDuration%60)+"m":"";
-            var carriers=trip.Carriers||"";
+            var carriers=(trip.Carriers||[]).join(", ");
             var departs=trip.DepartsAt?new Date(trip.DepartsAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
             var arrives=trip.ArrivesAt?new Date(trip.ArrivesAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
-            var pts=trip.MileageCost?formatPoints(trip.MileageCost):"";
             var cabin=trip.Cabin||"";
-            return '<div class="detail-row"><span class="detail-label">'+stops+(dur?" · "+dur:"")+'</span><span class="detail-value">'+(carriers||"")+'</span></div>'+
+            var pts=trip.MileageCost?formatPoints(trip.MileageCost):"";
+            return '<div class="detail-row"><span class="detail-label">'+stops+(dur?" · "+dur:"")+'</span><span class="detail-value">'+carriers+'</span></div>'+
               (departs?'<div class="detail-row"><span class="detail-label">Departs</span><span class="detail-value">'+departs+'</span></div>':"")+
               (arrives?'<div class="detail-row"><span class="detail-label">Arrives</span><span class="detail-value">'+arrives+'</span></div>':"")+
-              (pts?'<div class="detail-row"><span class="detail-label">'+cabin+' Points</span><span class="detail-value">'+pts+'</span></div>':"");
-          }).join('<div style="border-top:2px solid var(--border);margin:6px 0"></div>');
-          var tripContainer=details.querySelector(".trip-details");
-          if(tripContainer){tripContainer.innerHTML=tripHtml;tripContainer.style.display="block"}
+              (pts&&cabin?'<div class="detail-row"><span class="detail-label">'+cabin+' cost</span><span class="detail-value">'+pts+'</span></div>':"");
+          }).join('<hr style="border:none;border-top:1px solid var(--border);margin:6px 0"/>');
+        } else if(tripContainer){
+          tripContainer.innerHTML='<div style="font-size:12px;color:var(--grey-light);">No segment data available.</div>';
         }
+      } else if(tripContainer){
+        tripContainer.innerHTML='<div style="font-size:12px;color:var(--grey-light);">Could not load details.</div>';
       }
       details.dataset.loaded="1";
-    }catch(e){}
-    if(loadingEl)loadingEl.style.display="none";
+    }catch(e){
+      if(tripContainer)tripContainer.innerHTML='';
+    }
   }
 }
 
@@ -1013,7 +1027,7 @@ function buildResultCard(item,i){
   bookLinks+='<a href="https://www.united.com/en/us/fsr/choose-flights?f='+origin+'&t='+dest+'&d='+rawDate+'&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True" target="_blank" class="book-link">Check on United (Expert Mode)</a>';
 
   return '<div class="result-card" style="animation-delay:'+(i*.02)+'s" id="'+id+'">'+
-    '<div class="result-card-header" onclick="toggleCard(\'' + id + '\',\'' + tripId + '\',\'' + source + '\')">' +
+    '<div class="result-card-header" onclick="toggleCard(\''+id+'\',\''+tripId+'\')">' +
       '<div class="result-route">'+
         '<div><div class="result-airports"><span>'+origin+'</span><span class="result-arrow">→</span><span>'+dest+'</span></div>'+(originCity||destCity?'<div style="font-size:11px;color:var(--grey-light);margin-top:1px;">'+( originCity||origin)+' → '+(destCity||dest)+'</div>':'')+'<div class="result-date">'+dateStr+'</div></div>'+
         '<div class="result-right"><div class="source-badge">'+source.toUpperCase()+'</div><div class="expand-icon" id="icon-'+id+'">'+(isExpanded?"▲ Hide":"▼ Details")+'</div></div>'+
@@ -1021,9 +1035,8 @@ function buildResultCard(item,i){
       (rows?'<div class="section-label">Award Space</div><div class="cabin-rows">'+rows+'</div>':'')+
     '</div>'+
     '<div class="flight-details'+(isExpanded?" open":"")+'" id="details-'+id+'">'+
-      '<div class="trip-loading" style="display:none;font-size:12px;color:var(--grey-light);padding:4px 0;">Loading flight details…</div>'+
-      '<div class="trip-details" style="display:none;margin-bottom:8px;"></div>'+
-      (detailHtml?detailHtml:'<div style="font-size:12px;color:var(--grey-light);margin-bottom:8px;">Seats and pricing shown above.</div>')+
+      '<div class="trip-details" style="margin-bottom:8px;"></div>'+
+      (detailHtml?detailHtml:'')+
       '<div class="book-links">'+bookLinks+'</div>'+
     '</div>'+
   '</div>';
