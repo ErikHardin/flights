@@ -472,6 +472,8 @@ var REDIRECT_URI = "https://ech-technicalsolutions.com/flights/";
 var selectedPrograms      = new Set(["united"]);
 var selectedProgramsReg   = new Set(["united"]);
 var selectedCabin         = "business";
+var selectedCabins        = new Set(["business"]);
+var selectedCabinsRegion  = new Set(["business"]);
 var selectedCabinRegion   = "business";
 var selectedOriginRegion  = "";
 var selectedDestRegion    = "";
@@ -544,6 +546,47 @@ var REGION_COUNTRIES = {
   "Oceania":["Australia","New Zealand","Fiji","Hawaii"],
 };
 
+var AIRPORT_CITIES = {
+  // US
+  "ORD":"Chicago","MDW":"Chicago","LAX":"Los Angeles","JFK":"New York","EWR":"New York","LGA":"New York",
+  "ATL":"Atlanta","DFW":"Dallas","DEN":"Denver","SFO":"San Francisco","SEA":"Seattle","MIA":"Miami",
+  "BOS":"Boston","IAD":"Washington DC","DCA":"Washington DC","IAH":"Houston","HOU":"Houston",
+  "MSP":"Minneapolis","DTW":"Detroit","PHL":"Philadelphia","CLT":"Charlotte","LAS":"Las Vegas",
+  "PHX":"Phoenix","MCO":"Orlando","CLE":"Cleveland","PDX":"Portland","SLC":"Salt Lake City",
+  "BNA":"Nashville","AUS":"Austin","SAN":"San Diego","STL":"St. Louis","MCI":"Kansas City",
+  "RDU":"Raleigh","TPA":"Tampa","HNL":"Honolulu","OGG":"Maui","KOA":"Kona","OAK":"Oakland",
+  "SJC":"San Jose","SMF":"Sacramento","BWI":"Baltimore","MKE":"Milwaukee","PIT":"Pittsburgh",
+  "CVG":"Cincinnati","IND":"Indianapolis","CMH":"Columbus","MEM":"Memphis","MSY":"New Orleans",
+  // Canada
+  "YYZ":"Toronto","YVR":"Vancouver","YUL":"Montreal","YYC":"Calgary","YEG":"Edmonton","YOW":"Ottawa",
+  // Mexico/Caribbean
+  "MEX":"Mexico City","CUN":"Cancun","GDL":"Guadalajara","MTY":"Monterrey",
+  "KIN":"Kingston","MBJ":"Montego Bay","SDQ":"Santo Domingo","PUJ":"Punta Cana",
+  "HAV":"Havana","SJO":"San Jose CR","PTY":"Panama City","SJU":"San Juan","NAS":"Nassau",
+  // South America
+  "GRU":"São Paulo","GIG":"Rio de Janeiro","BSB":"Brasilia","EZE":"Buenos Aires",
+  "BOG":"Bogota","SCL":"Santiago","LIM":"Lima","UIO":"Quito","MVD":"Montevideo","CCS":"Caracas",
+  // Europe
+  "LHR":"London","LGW":"London Gatwick","MAN":"Manchester","EDI":"Edinburgh","GLA":"Glasgow",
+  "CDG":"Paris","ORY":"Paris Orly","NCE":"Nice","FRA":"Frankfurt","MUC":"Munich","DUS":"Dusseldorf",
+  "BER":"Berlin","HAM":"Hamburg","FCO":"Rome","MXP":"Milan","VCE":"Venice","NAP":"Naples",
+  "MAD":"Madrid","BCN":"Barcelona","AGP":"Malaga","PMI":"Palma","AMS":"Amsterdam",
+  "ZRH":"Zurich","GVA":"Geneva","LIS":"Lisbon","OPO":"Porto","ATH":"Athens","DUB":"Dublin",
+  "CPH":"Copenhagen","OSL":"Oslo","ARN":"Stockholm","HEL":"Helsinki","VIE":"Vienna","BRU":"Brussels",
+  "PRG":"Prague","WAW":"Warsaw","IST":"Istanbul","SAW":"Istanbul Sabiha",
+  // Middle East/Africa
+  "DXB":"Dubai","AUH":"Abu Dhabi","DOH":"Doha","TLV":"Tel Aviv",
+  "JNB":"Johannesburg","CPT":"Cape Town","CAI":"Cairo","CMN":"Casablanca","NBO":"Nairobi","ADD":"Addis Ababa",
+  // Asia
+  "NRT":"Tokyo Narita","HND":"Tokyo Haneda","KIX":"Osaka","NGO":"Nagoya","FUK":"Fukuoka",
+  "PEK":"Beijing","PVG":"Shanghai","CAN":"Guangzhou","HKG":"Hong Kong","TPE":"Taipei",
+  "ICN":"Seoul","GMP":"Seoul Gimpo","BKK":"Bangkok","DMK":"Bangkok Don Mueang","HKT":"Phuket",
+  "DEL":"New Delhi","BOM":"Mumbai","BLR":"Bangalore","SIN":"Singapore",
+  "KUL":"Kuala Lumpur","MNL":"Manila","CGK":"Jakarta","DPS":"Bali","SGN":"Ho Chi Minh City","HAN":"Hanoi",
+  // Oceania
+  "SYD":"Sydney","MEL":"Melbourne","BNE":"Brisbane","PER":"Perth","AKL":"Auckland","NAN":"Fiji",
+};
+
 var CABIN_DEFS = [
   {key:"Y",label:"Economy",cls:"economy"},{key:"W",label:"Premium",cls:"premium"},
   {key:"J",label:"Business",cls:"business"},{key:"F",label:"First",cls:"first"},
@@ -582,8 +625,9 @@ function init(){
 
 async function fetchQuota(){
   try{
-    var res=await fetch(WORKER+"/search?source=united&origin_airport=ORD&destination_airport=LHR&take=1");
-    updateQuota(res);
+    var res=await fetch(WORKER+"/search?source=united&origin_airport=ORD&destination_airport=LHR");
+    var q=res.headers.get("x-ratelimit-remaining");
+    if(q){document.getElementById("quotaBadge").textContent=q+" calls left"}
   }catch(e){}
 }
 
@@ -657,8 +701,32 @@ function toggleRouteProgram(id,btn){if(selectedPrograms.has(id)){if(selectedProg
 function toggleRegionProgram(id,btn){if(selectedProgramsReg.has(id)){if(selectedProgramsReg.size===1)return;selectedProgramsReg.delete(id);btn.classList.remove("active")}else{selectedProgramsReg.add(id);btn.classList.add("active")}}
 
 // ── Cabin ──
-function setCabin(c){selectedCabin=c;var v=["","economy","premium","business","first"];document.querySelectorAll("#cabinToggle .toggle-btn").forEach(function(b,i){b.classList.toggle("active",v[i]===c)})}
-function setCabinRegion(c){selectedCabinRegion=c;var v=["","economy","premium","business","first"];document.querySelectorAll("#cabinToggleRegion .toggle-btn").forEach(function(b,i){b.classList.toggle("active",v[i]===c)})}
+function setCabin(c){
+  // Toggle individual cabin in set
+  if(!selectedCabins){selectedCabins=new Set(["business"])}
+  if(c===""){selectedCabins.clear()}
+  else if(selectedCabins.has(c)){selectedCabins.delete(c)}
+  else{selectedCabins.add(c)}
+  var v=["","economy","premium","business","first"];
+  document.querySelectorAll("#cabinToggle .toggle-btn").forEach(function(b,i){
+    if(v[i]==="")b.classList.toggle("active",selectedCabins.size===0);
+    else b.classList.toggle("active",selectedCabins.has(v[i]));
+  });
+  // Keep backward compat
+  selectedCabin=selectedCabins.size===1?Array.from(selectedCabins)[0]:"";
+}
+function setCabinRegion(c){
+  if(!selectedCabinsRegion){selectedCabinsRegion=new Set(["business"])}
+  if(c===""){selectedCabinsRegion.clear()}
+  else if(selectedCabinsRegion.has(c)){selectedCabinsRegion.delete(c)}
+  else{selectedCabinsRegion.add(c)}
+  var v=["","economy","premium","business","first"];
+  document.querySelectorAll("#cabinToggleRegion .toggle-btn").forEach(function(b,i){
+    if(v[i]==="")b.classList.toggle("active",selectedCabinsRegion.size===0);
+    else b.classList.toggle("active",selectedCabinsRegion.has(v[i]));
+  });
+  selectedCabinRegion=selectedCabinsRegion.size===1?Array.from(selectedCabinsRegion)[0]:"";
+}
 
 // ── Regions + countries ──
 function setOriginRegion(region,btn){
@@ -771,7 +839,8 @@ async function runRouteSearch(){
     allResults=[];expandedCards.clear();
     for(var i=0;i<programs.length;i++){
       var params=new URLSearchParams({origin_airport:origin,destination_airport:dest,source:programs[i]});
-      if(selectedCabin)params.set("cabin",selectedCabin);
+      var cabinToSend=selectedCabins&&selectedCabins.size===1?Array.from(selectedCabins)[0]:(selectedCabin||"");
+      if(cabinToSend)params.set("cabin",cabinToSend);
       if(startDate)params.set("start_date",startDate);if(endDate)params.set("end_date",endDate);
       var res=await fetch(WORKER+"/search?"+params);updateQuota(res);
       if(res.ok){var data=await res.json();if(data.data)allResults=allResults.concat(data.data)}
@@ -793,7 +862,8 @@ async function runRegionSearch(){
     allResults=[];expandedCards.clear();
     for(var i=0;i<programs.length;i++){
       var params=new URLSearchParams({source:programs[i],take:"200"});
-      if(selectedCabinRegion)params.set("cabin",selectedCabinRegion);
+      var regionCabinToSend=selectedCabinsRegion&&selectedCabinsRegion.size===1?Array.from(selectedCabinsRegion)[0]:(selectedCabinRegion||"");
+      if(regionCabinToSend)params.set("cabin",regionCabinToSend);
       if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
       if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
       if(startDate)params.set("start_date",startDate);if(endDate)params.set("end_date",endDate);
@@ -920,6 +990,8 @@ function buildResultCard(item,i){
   var rawDate=(item.Date||"").split("T")[0];
   var source=item.Source||"—";
   var tripId=item.ID||"";
+  var originCity=AIRPORT_CITIES[origin]||"";
+  var destCity=AIRPORT_CITIES[dest]||"";
   var isExpanded=expandedCards.has(id);
 
   var rows=CABIN_DEFS.filter(function(c){return item[c.key+"Available"]===true}).map(function(c){
@@ -938,18 +1010,9 @@ function buildResultCard(item,i){
       '<div class="cabin-row-right">'+stopBadge+(ptsStr?'<span class="cabin-points">'+ptsStr+'</span>':"")+'</div></div>';
   }).join("");
 
-  // Flight details panel
-  var detailRows=[];
-  if(item.YAirlinesRaw)detailRows.push({label:"All Carriers",value:item.YAirlinesRaw||item.JAirlinesRaw||item.WAirlinesRaw||"—"});
-  if(item.YRemainingSeatsRaw!==undefined){
-    CABIN_DEFS.forEach(function(c){
-      var raw=item[c.key+"RemainingSeatsRaw"];
-      if(raw>0)detailRows.push({label:c.label+" (unfiltered)",value:raw+" seats · "+formatPoints(item[c.key+"MileageCostRaw"]||0)});
-    });
-  }
-  var detailHtml=detailRows.map(function(r){
-    return '<div class="detail-row"><span class="detail-label">'+r.label+'</span><span class="detail-value">'+r.value+'</span></div>';
-  }).join("");
+  // Flight details panel - show raw/unfiltered data as summary
+  var allCarriers=item.YAirlinesRaw||item.JAirlinesRaw||item.WAirlinesRaw||"";
+  var detailHtml=allCarriers?'<div class="detail-row"><span class="detail-label">All Carriers</span><span class="detail-value">'+allCarriers+'</span></div>':"";
 
   // Book links
   var bookLinks="";
@@ -961,7 +1024,7 @@ function buildResultCard(item,i){
   return '<div class="result-card" style="animation-delay:'+(i*.02)+'s" id="'+id+'">'+
     '<div class="result-card-header" onclick="toggleCard(\'' + id + '\',\'' + tripId + '\',\'' + source + '\')">' +
       '<div class="result-route">'+
-        '<div><div class="result-airports"><span>'+origin+'</span><span class="result-arrow">→</span><span>'+dest+'</span></div><div class="result-date">'+dateStr+'</div></div>'+
+        '<div><div class="result-airports"><span>'+origin+'</span><span class="result-arrow">→</span><span>'+dest+'</span></div>'+(originCity||destCity?'<div style="font-size:11px;color:var(--grey-light);margin-top:1px;">'+( originCity||origin)+' → '+(destCity||dest)+'</div>':'')+'<div class="result-date">'+dateStr+'</div></div>'+
         '<div class="result-right"><div class="source-badge">'+source.toUpperCase()+'</div><div class="expand-icon" id="icon-'+id+'">'+(isExpanded?"▲ Hide":"▼ Details")+'</div></div>'+
       '</div>'+
       (rows?'<div class="section-label">Award Space</div><div class="cabin-rows">'+rows+'</div>':'')+
