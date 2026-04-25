@@ -11,108 +11,159 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #f0f4f8; --surface: #ffffff; --surface2: #e8eef5; --border: #d1dce8;
-      --blue-primary: #3b82c4; --blue-light: #6aaee8; --blue-pale: #dbeafe; --blue-dark: #1e5a9c;
-      --grey-text: #4a5568; --grey-light: #8899aa; --text: #1a2533;
-      --green: #059669; --green-pale: #d1fae5; --green-border: #6ee7b7;
-      --shadow: 0 2px 12px rgba(59,130,196,0.10); --radius: 14px; --radius-sm: 8px;
+      --bg: #f0f4f8;
+      --surface: #ffffff;
+      --surface2: #e8eef5;
+      --border: #d1dce8;
+      --blue-primary: #3b82c4;
+      --blue-light: #6aaee8;
+      --blue-pale: #dbeafe;
+      --blue-dark: #1e5a9c;
+      --grey-text: #4a5568;
+      --grey-light: #8899aa;
+      --text: #1a2533;
+      --green: #059669;
+      --green-pale: #d1fae5;
+      --green-border: #6ee7b7;
+      --shadow: 0 2px 12px rgba(59,130,196,0.10);
+      --radius: 14px;
+      --radius-sm: 8px;
+      --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overscroll-behavior: none; }
 
-    .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 20px 12px; padding-top: calc(16px + env(safe-area-inset-top,0px)); position: sticky; top: 0; z-index: 100; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overscroll-behavior: none;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px 12px;
+      padding-top: calc(14px + var(--safe-top));
+      position: sticky; top: 0; z-index: 100;
+    }
     .header-top { display: flex; align-items: center; justify-content: space-between; }
-    .app-title { font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blue-primary); }
+    .app-title { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--blue-primary); }
     .header-right { display: flex; align-items: center; gap: 8px; }
     .quota-badge { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--grey-light); background: var(--surface2); padding: 3px 8px; border-radius: 20px; }
-    .auth-status { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
-    .auth-status.connected { background: var(--green-pale); color: var(--green); }
-    .auth-status.disconnected { background: #fee2e2; color: #dc2626; cursor: pointer; }
+    .auth-pill { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; cursor: pointer; transition: all 0.15s; }
+    .auth-pill.connected { background: var(--green-pale); color: var(--green); }
+    .auth-pill.disconnected { background: #fee2e2; color: #dc2626; }
 
-    .main { padding: 16px 16px calc(40px + var(--safe-bottom)); max-width: 480px; margin: 0 auto; }
+    /* ── Layout ── */
+    .main { padding: 14px 14px calc(36px + var(--safe-bottom)); max-width: 480px; margin: 0 auto; }
 
-    .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 16px; margin-bottom: 14px; }
-    .card-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--grey-light); margin-bottom: 10px; }
+    /* ── Mode tabs ── */
+    .mode-tabs { display: flex; background: var(--surface2); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 14px; }
+    .mode-tab { flex: 1; padding: 8px 4px; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; color: var(--grey-text); border: none; background: none; border-radius: 6px; cursor: pointer; transition: all 0.15s; text-align: center; }
+    .mode-tab.active { background: var(--surface); color: var(--blue-primary); font-weight: 600; box-shadow: var(--shadow); }
 
-    .program-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    /* ── Cards ── */
+    .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 14px; margin-bottom: 12px; }
+    .card-label { font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--grey-light); margin-bottom: 10px; }
+
+    /* ── Program grid ── */
+    .program-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
     .prog-btn { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 8px 4px; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; color: var(--grey-text); cursor: pointer; transition: all 0.15s; text-align: center; line-height: 1.3; }
     .prog-btn.active { background: var(--blue-pale); border-color: var(--blue-primary); color: var(--blue-dark); font-weight: 600; }
     .prog-btn:active { transform: scale(0.96); }
 
-    .route-row { display: grid; grid-template-columns: 1fr 32px 1fr; align-items: center; gap: 8px; }
-    .route-arrow { text-align: center; color: var(--blue-light); font-size: 18px; }
+    /* ── Inputs ── */
+    .route-row { display: grid; grid-template-columns: 1fr 28px 1fr; align-items: center; gap: 8px; }
+    .route-arrow { text-align: center; color: var(--blue-light); font-size: 16px; }
     .input-wrap label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--grey-light); margin-bottom: 4px; }
-    .input-wrap input { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--text); text-transform: uppercase; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
-    .input-wrap input:focus { border-color: var(--blue-primary); background: var(--surface); }
-    .input-wrap input::placeholder { color: var(--grey-light); text-transform: none; }
+    .input-wrap input, .input-wrap select {
+      width: 100%; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      padding: 10px 12px; font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500;
+      color: var(--text); text-transform: uppercase; outline: none; transition: border-color 0.15s; -webkit-appearance: none;
+    }
+    .input-wrap input:focus, .input-wrap select:focus { border-color: var(--blue-primary); background: var(--surface); }
+    .input-wrap input::placeholder { color: var(--grey-light); text-transform: none; font-family: 'DM Sans', sans-serif; font-size: 13px; }
 
-    .region-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
-    .region-btn { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px 8px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; color: var(--grey-text); cursor: pointer; transition: all 0.15s; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    /* ── Region grid ── */
+    .region-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .region-btn { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px 8px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; color: var(--grey-text); cursor: pointer; transition: all 0.15s; text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px; }
     .region-btn.active { background: var(--blue-pale); border-color: var(--blue-primary); color: var(--blue-dark); font-weight: 600; }
+    .region-btn:active { transform: scale(0.97); }
 
-    .toggle-row { display: flex; gap: 7px; }
-    .toggle-btn { flex: 1; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; color: var(--grey-text); cursor: pointer; transition: all 0.15s; text-align: center; }
+    /* ── Cabin toggle ── */
+    .toggle-row { display: flex; gap: 6px; }
+    .toggle-btn { flex: 1; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 9px 4px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; color: var(--grey-text); cursor: pointer; transition: all 0.15s; text-align: center; }
     .toggle-btn.active { background: var(--blue-pale); border-color: var(--blue-primary); color: var(--blue-dark); font-weight: 600; }
-    .toggle-btn:active { transform: scale(0.96); }
+    .toggle-btn:active { transform: scale(0.97); }
 
+    /* ── Date row ── */
     .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-    .mode-tabs { display: flex; background: var(--surface2); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 14px; }
-    .mode-tab { flex: 1; padding: 9px 4px; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; color: var(--grey-text); border: none; background: none; border-radius: 6px; cursor: pointer; transition: all 0.15s; text-align: center; }
-    .mode-tab.active { background: var(--surface); color: var(--blue-primary); font-weight: 600; box-shadow: var(--shadow); }
-
-    .search-btn { width: 100%; background: linear-gradient(135deg, var(--blue-primary), var(--blue-dark)); color: white; border: none; border-radius: var(--radius); padding: 16px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; letter-spacing: 0.04em; box-shadow: 0 4px 16px rgba(59,130,196,0.35); transition: all 0.15s; margin-bottom: 14px; }
+    /* ── Search button ── */
+    .search-btn {
+      width: 100%; background: linear-gradient(135deg, var(--blue-primary), var(--blue-dark));
+      color: white; border: none; border-radius: var(--radius); padding: 15px;
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+      cursor: pointer; letter-spacing: 0.03em;
+      box-shadow: 0 4px 16px rgba(59,130,196,0.30); transition: all 0.15s; margin-bottom: 12px;
+    }
     .search-btn:active { transform: scale(0.98); opacity: 0.9; }
-    .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .search-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-    /* Filter bar */
-    .filter-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 12px; box-shadow: var(--shadow); }
-    .filter-bar-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .filter-input-wrap label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--grey-light); margin-bottom: 4px; }
+    /* ── Filter bar ── */
+    .filter-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; box-shadow: var(--shadow); }
+    .filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .filter-wrap label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--grey-light); margin-bottom: 4px; }
     .filter-input { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 9px 10px; font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; color: var(--text); outline: none; transition: border-color 0.15s; text-transform: uppercase; }
     .filter-input:focus { border-color: var(--blue-primary); background: var(--surface); }
-    .filter-input::placeholder { color: var(--grey-light); text-transform: none; font-size: 12px; }
-    .filter-clear { margin-top: 8px; font-size: 11px; color: var(--grey-light); cursor: pointer; text-align: right; text-decoration: underline; }
+    .filter-input::placeholder { color: var(--grey-light); text-transform: none; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400; }
+    .filter-clear { margin-top: 8px; font-size: 11px; color: var(--grey-light); cursor: pointer; text-align: right; }
+    .filter-clear:hover { color: var(--blue-primary); }
 
-    /* Results */
-    .results-header { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--grey-light); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-    .results-count { background: var(--blue-pale); color: var(--blue-dark); padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    /* ── Results header ── */
+    .results-header { font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--grey-light); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .results-count { background: var(--blue-pale); color: var(--blue-dark); padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
 
-    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); animation: fadeUp 0.2s ease both; }
-    @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    /* ── Result cards ── */
+    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); animation: fadeUp 0.18s ease both; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 
     .result-route { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
-    .result-airports { font-family: 'DM Mono', monospace; font-size: 19px; font-weight: 500; color: var(--text); letter-spacing: 0.04em; }
-    .result-arrow { color: var(--blue-light); margin: 0 5px; }
-    .result-date { font-size: 12px; color: var(--grey-light); font-weight: 500; margin-top: 2px; }
-    .result-source-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; background: var(--surface2); color: var(--grey-text); padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+    .result-airports { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: var(--text); letter-spacing: 0.03em; }
+    .result-arrow { color: var(--blue-light); margin: 0 4px; font-size: 16px; }
+    .result-date { font-size: 12px; color: var(--grey-light); margin-top: 3px; }
+    .source-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; background: var(--surface2); color: var(--grey-text); padding: 3px 9px; border-radius: 20px; white-space: nowrap; margin-top: 2px; }
 
-    .section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--grey-light); margin-bottom: 5px; margin-top: 8px; }
+    .section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--grey-light); margin-bottom: 5px; margin-top: 6px; }
     .cabin-rows { display: flex; flex-direction: column; gap: 4px; }
     .cabin-row { display: flex; align-items: center; justify-content: space-between; background: var(--surface2); border-radius: var(--radius-sm); padding: 7px 10px; }
     .cabin-row-left { display: flex; align-items: center; gap: 8px; }
     .cabin-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .cabin-dot.economy { background: #0369a1; } .cabin-dot.premium { background: #b45309; }
-    .cabin-dot.business { background: #1d4ed8; } .cabin-dot.first { background: #6d28d9; }
+    .cabin-dot.economy  { background: #0369a1; }
+    .cabin-dot.premium  { background: #b45309; }
+    .cabin-dot.business { background: #1d4ed8; }
+    .cabin-dot.first    { background: #6d28d9; }
+    .cabin-info { display: flex; flex-direction: column; }
     .cabin-name { font-size: 12px; font-weight: 600; color: var(--grey-text); }
-    .cabin-seats { font-size: 11px; color: var(--grey-light); margin-left: 2px; }
+    .cabin-sub { font-size: 10px; color: var(--grey-light); font-family: 'DM Mono', monospace; margin-top: 1px; }
     .cabin-row-right { display: flex; align-items: center; gap: 6px; }
     .cabin-points { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; color: var(--blue-dark); }
-    .cabin-airlines { font-size: 10px; color: var(--grey-light); font-family: 'DM Mono', monospace; }
-    .direct-badge { font-size: 10px; font-weight: 600; background: #dcfce7; color: #16a34a; padding: 2px 6px; border-radius: 10px; }
-    .taxes-note { font-size: 10px; color: var(--grey-light); margin-top: 1px; }
+    .direct-badge { font-size: 10px; font-weight: 600; background: #dcfce7; color: #16a34a; padding: 2px 7px; border-radius: 10px; }
+    .seats-badge { font-size: 10px; color: var(--grey-light); }
 
-    /* Upgrades tab */
-    .connect-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 24px 20px; text-align: center; margin-bottom: 14px; }
-    .connect-icon { font-size: 44px; margin-bottom: 12px; }
-    .connect-title { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+    /* ── Upgrades tab ── */
+    .connect-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 28px 20px; text-align: center; margin-bottom: 12px; }
+    .connect-icon { font-size: 48px; margin-bottom: 14px; }
+    .connect-title { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
     .connect-desc { font-size: 13px; color: var(--grey-text); line-height: 1.6; margin-bottom: 20px; }
-    .connect-btn { display: block; width: 100%; background: linear-gradient(135deg, var(--green), #047857); color: white; border: none; border-radius: var(--radius); padding: 15px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; letter-spacing: 0.03em; box-shadow: 0 4px 16px rgba(5,150,105,0.30); transition: all 0.15s; text-decoration: none; }
+    .connect-btn { display: block; width: 100%; background: linear-gradient(135deg, var(--green), #047857); color: white; border: none; border-radius: var(--radius); padding: 15px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; letter-spacing: 0.03em; box-shadow: 0 4px 16px rgba(5,150,105,0.25); transition: all 0.15s; text-decoration: none; }
     .connect-btn:active { transform: scale(0.98); }
 
-    .upgrade-connected { margin-bottom: 14px; }
-    .upgrade-fare-row { display: flex; gap: 7px; margin-bottom: 12px; }
+    .fare-row { display: flex; gap: 7px; margin-bottom: 10px; }
     .fare-btn { flex: 1; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px 6px; font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 600; color: var(--grey-text); cursor: pointer; transition: all 0.15s; text-align: center; }
     .fare-btn.pz.active { background: #d1fae5; border-color: #059669; color: #065f46; }
     .fare-btn.pn.active { background: #cffafe; border-color: #0891b2; color: #164e63; }
@@ -120,39 +171,43 @@
     .fare-btn:active { transform: scale(0.96); }
     .fare-desc { font-size: 11px; color: var(--grey-light); line-height: 1.7; margin-bottom: 14px; }
 
-    .upgrade-region-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-    .upgrade-region-wrap label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--grey-light); margin-bottom: 4px; }
-    .upgrade-region-select { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; color: var(--text); outline: none; -webkit-appearance: none; cursor: pointer; }
-    .upgrade-region-select:focus { border-color: var(--blue-primary); }
+    .region-select-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .region-select-wrap label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--grey-light); margin-bottom: 4px; }
+    .region-select { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; color: var(--text); outline: none; -webkit-appearance: none; cursor: pointer; transition: border-color 0.15s; }
+    .region-select:focus { border-color: var(--blue-primary); }
 
-    /* Upgrade result cards */
-    .upgrade-card { background: var(--surface); border: 1px solid var(--green-border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 12px rgba(5,150,105,0.08); animation: fadeUp 0.2s ease both; }
+    .upgrade-card { background: var(--surface); border: 1px solid var(--green-border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 10px rgba(5,150,105,0.08); animation: fadeUp 0.18s ease both; }
     .upgrade-route { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
-    .upgrade-airports { font-family: 'DM Mono', monospace; font-size: 19px; font-weight: 500; color: var(--text); }
-    .upgrade-date { font-size: 12px; color: var(--grey-light); margin-top: 2px; }
+    .upgrade-airports { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: var(--text); }
+    .upgrade-date { font-size: 12px; color: var(--grey-light); margin-top: 3px; }
     .upgrade-fare-badge { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700; background: var(--green-pale); color: var(--green); padding: 3px 10px; border-radius: 20px; }
     .upgrade-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-    .upgrade-seats-badge { font-size: 11px; font-weight: 600; background: var(--green-pale); color: var(--green); padding: 2px 8px; border-radius: 10px; }
+    .upgrade-seats { font-size: 11px; font-weight: 600; background: var(--green-pale); color: var(--green); padding: 2px 8px; border-radius: 10px; }
     .upgrade-seen { font-size: 11px; color: var(--grey-light); }
-    .upgrade-book-btn { display: block; width: 100%; margin-top: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--blue-primary); text-align: center; text-decoration: none; cursor: pointer; transition: all 0.15s; }
-    .upgrade-book-btn:active { background: var(--blue-pale); }
+    .upgrade-book { display: block; width: 100%; margin-top: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--blue-primary); text-align: center; text-decoration: none; transition: all 0.15s; }
+    .upgrade-book:active { background: var(--blue-pale); }
 
-    .disconnect-btn { margin-top: 16px; font-size: 11px; color: var(--grey-light); text-align: center; cursor: pointer; text-decoration: underline; }
+    .disconnect-link { margin-top: 18px; font-size: 11px; color: var(--grey-light); text-align: center; cursor: pointer; }
+    .disconnect-link:hover { color: #dc2626; }
 
-    /* Saved */
-    .saved-route-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
-    .saved-route-item:last-child { border-bottom: none; }
-    .saved-route-airports { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--text); }
-    .saved-route-detail { font-size: 11px; color: var(--grey-light); margin-top: 2px; }
-    .saved-route-del { color: var(--grey-light); font-size: 18px; padding: 4px 8px; cursor: pointer; }
+    /* ── Saved ── */
+    .saved-item { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+    .saved-item:last-child { border-bottom: none; }
+    .saved-airports { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--text); }
+    .saved-detail { font-size: 11px; color: var(--grey-light); margin-top: 2px; }
+    .saved-del { color: var(--grey-light); font-size: 16px; padding: 4px 8px; cursor: pointer; line-height: 1; }
+    .saved-del:hover { color: #dc2626; }
 
-    /* Loading / empty */
+    /* ── Loading / empty ── */
     .loading { text-align: center; padding: 40px 20px; color: var(--grey-light); }
-    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--blue-primary); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 12px; }
+    .spinner { width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--blue-primary); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 12px; }
     .spinner.green { border-top-color: var(--green); }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .empty-state { text-align: center; padding: 32px 20px; color: var(--grey-light); font-size: 14px; }
+    .empty-state { text-align: center; padding: 32px 20px; color: var(--grey-light); font-size: 14px; line-height: 1.6; }
     .empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+    /* ── Misc ── */
+    .note { font-size: 11px; color: var(--grey-light); text-align: center; line-height: 1.6; margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -162,7 +217,7 @@
     <div class="app-title">✈ Advanced Flight Seat Search</div>
     <div class="header-right">
       <div class="quota-badge" id="quotaBadge">— calls left</div>
-      <div class="auth-status disconnected" id="authStatus" onclick="handleAuthClick()">Not Connected</div>
+      <div class="auth-pill disconnected" id="authPill" onclick="handleAuthClick()">Not Connected</div>
     </div>
   </div>
 </div>
@@ -170,10 +225,10 @@
 <div class="main">
 
   <div class="mode-tabs">
-    <button class="mode-tab active" onclick="setMode('route')" id="tab-route">Route</button>
-    <button class="mode-tab" onclick="setMode('region')" id="tab-region">Region</button>
-    <button class="mode-tab" onclick="setMode('upgrades')" id="tab-upgrades">Upgrades</button>
-    <button class="mode-tab" onclick="setMode('saved')" id="tab-saved">Saved</button>
+    <button class="mode-tab active" onclick="setMode('route')"    id="tab-route">Route</button>
+    <button class="mode-tab"        onclick="setMode('region')"   id="tab-region">Region</button>
+    <button class="mode-tab"        onclick="setMode('upgrades')" id="tab-upgrades">Upgrades</button>
+    <button class="mode-tab"        onclick="setMode('saved')"    id="tab-saved">Saved</button>
   </div>
 
   <!-- ── ROUTE ── -->
@@ -185,19 +240,25 @@
     <div class="card">
       <div class="card-label">Route</div>
       <div class="route-row">
-        <div class="input-wrap"><label>From</label><input type="text" id="origin" placeholder="CLE" maxlength="3" /></div>
+        <div class="input-wrap">
+          <label>From</label>
+          <input type="text" id="origin" placeholder="e.g. CLE" maxlength="3" autocomplete="off" />
+        </div>
         <div class="route-arrow">→</div>
-        <div class="input-wrap"><label>To</label><input type="text" id="destination" placeholder="LHR" maxlength="3" /></div>
+        <div class="input-wrap">
+          <label>To</label>
+          <input type="text" id="destination" placeholder="e.g. LHR" maxlength="3" autocomplete="off" />
+        </div>
       </div>
     </div>
     <div class="card">
       <div class="card-label">Cabin</div>
       <div class="toggle-row" id="cabinToggle">
-        <button class="toggle-btn" onclick="setCabin('')">Any</button>
-        <button class="toggle-btn" onclick="setCabin('economy')">Eco</button>
-        <button class="toggle-btn" onclick="setCabin('premium')">Prem</button>
+        <button class="toggle-btn"        onclick="setCabin('')">Any</button>
+        <button class="toggle-btn"        onclick="setCabin('economy')">Eco</button>
+        <button class="toggle-btn"        onclick="setCabin('premium')">Prem</button>
         <button class="toggle-btn active" onclick="setCabin('business')">Biz</button>
-        <button class="toggle-btn" onclick="setCabin('first')">First</button>
+        <button class="toggle-btn"        onclick="setCabin('first')">First</button>
       </div>
     </div>
     <div class="card">
@@ -219,19 +280,19 @@
     <div class="card">
       <div class="card-label">Cabin</div>
       <div class="toggle-row" id="cabinToggleRegion">
-        <button class="toggle-btn" onclick="setCabinRegion('')">Any</button>
-        <button class="toggle-btn" onclick="setCabinRegion('economy')">Eco</button>
-        <button class="toggle-btn" onclick="setCabinRegion('premium')">Prem</button>
+        <button class="toggle-btn"        onclick="setCabinRegion('')">Any</button>
+        <button class="toggle-btn"        onclick="setCabinRegion('economy')">Eco</button>
+        <button class="toggle-btn"        onclick="setCabinRegion('premium')">Prem</button>
         <button class="toggle-btn active" onclick="setCabinRegion('business')">Biz</button>
-        <button class="toggle-btn" onclick="setCabinRegion('first')">First</button>
+        <button class="toggle-btn"        onclick="setCabinRegion('first')">First</button>
       </div>
     </div>
     <div class="card">
-      <div class="card-label">Origin Region <span style="font-weight:400;text-transform:none;">(optional)</span></div>
+      <div class="card-label">Origin Region <span style="font-weight:400;text-transform:none;font-size:10px;">(optional)</span></div>
       <div class="region-grid" id="originRegionGrid"></div>
     </div>
     <div class="card">
-      <div class="card-label">Destination Region <span style="font-weight:400;text-transform:none;">(optional)</span></div>
+      <div class="card-label">Destination Region <span style="font-weight:400;text-transform:none;font-size:10px;">(optional)</span></div>
       <div class="region-grid" id="destRegionGrid"></div>
     </div>
     <div class="card">
@@ -246,89 +307,78 @@
 
   <!-- ── UPGRADES ── -->
   <div id="mode-upgrades" style="display:none">
-
-    <!-- Not connected -->
     <div id="upgradeNotConnected">
       <div class="connect-card">
         <div class="connect-icon">🔐</div>
         <div class="connect-title">Connect seats.aero</div>
-        <div class="connect-desc">Sign in with your seats.aero Pro account to access real-time PlusPoints and upgrade availability (PZ, PN, RN).</div>
+        <div class="connect-desc">Sign in with your seats.aero Pro account to search PlusPoints and upgrade availability (PZ, PN, RN) directly in the app.</div>
         <button class="connect-btn" onclick="startOAuth()">Connect seats.aero Account</button>
       </div>
     </div>
-
-    <!-- Connected -->
     <div id="upgradeConnected" style="display:none">
-      <div class="upgrade-connected">
-        <div class="card">
-          <div class="card-label">Fare Class</div>
-          <div class="upgrade-fare-row">
-            <button class="fare-btn pz active" onclick="setUpgradeFare('PZ', this)">PZ</button>
-            <button class="fare-btn pn" onclick="setUpgradeFare('PN', this)">PN</button>
-            <button class="fare-btn rn" onclick="setUpgradeFare('RN', this)">RN</button>
-          </div>
-          <div class="fare-desc">
-            <b>PZ</b> — PlusPoints / Miles upgrade (Plat, 1K)<br/>
-            <b>PN</b> — Instant upgrade (Global Services)<br/>
-            <b>RN</b> — Premium Plus upgrade (all eligible)
-          </div>
+      <div class="card">
+        <div class="card-label">Fare Class</div>
+        <div class="fare-row">
+          <button class="fare-btn pz active" onclick="setUpgradeFare('PZ',this)">PZ</button>
+          <button class="fare-btn pn"        onclick="setUpgradeFare('PN',this)">PN</button>
+          <button class="fare-btn rn"        onclick="setUpgradeFare('RN',this)">RN</button>
         </div>
-
-        <div class="card">
-          <div class="card-label">Regions</div>
-          <div class="upgrade-region-row">
-            <div class="upgrade-region-wrap">
-              <label>Origin</label>
-              <select class="upgrade-region-select" id="upgradeOriginRegion" onchange="runUpgradeSearch()">
-                <option value="">Any</option>
-                <option value="North America">North America</option>
-                <option value="South America">South America</option>
-                <option value="Europe">Europe</option>
-                <option value="Africa">Africa</option>
-                <option value="Asia">Asia</option>
-                <option value="Oceania">Oceania</option>
-              </select>
-            </div>
-            <div class="upgrade-region-wrap">
-              <label>Destination</label>
-              <select class="upgrade-region-select" id="upgradeDestRegion" onchange="runUpgradeSearch()">
-                <option value="">Any</option>
-                <option value="North America">North America</option>
-                <option value="South America">South America</option>
-                <option value="Europe">Europe</option>
-                <option value="Africa">Africa</option>
-                <option value="Asia">Asia</option>
-                <option value="Oceania">Oceania</option>
-              </select>
-            </div>
-          </div>
+        <div class="fare-desc">
+          <b>PZ</b> — PlusPoints / Miles upgrade (Plat, 1K)<br/>
+          <b>PN</b> — Instant upgrade (Global Services)<br/>
+          <b>RN</b> — Premium Plus upgrade
         </div>
-
-        <!-- Upgrade filter bar -->
-        <div class="filter-bar">
-          <div class="filter-bar-row">
-            <div class="filter-input-wrap">
-              <label>Filter Airport</label>
-              <input type="text" class="filter-input" id="upgradeFilterAirport" placeholder="e.g. ORD, EWR" maxlength="3" oninput="applyUpgradeFilters()" />
-            </div>
-            <div class="filter-input-wrap">
-              <label>Filter Date</label>
-              <input type="text" class="filter-input" id="upgradeFilterDate" placeholder="e.g. Jun, 2026" oninput="applyUpgradeFilters()" style="text-transform:none;" />
-            </div>
-          </div>
-          <div class="filter-clear" onclick="clearUpgradeFilters()">Clear filters</div>
-        </div>
-
-        <div class="results-header">
-          <span>Upgrade Availability</span>
-          <span class="results-count" id="upgradeResultsCount">0</span>
-        </div>
-        <div id="upgradeResultsList">
-          <div class="empty-state"><div class="empty-icon">⬆️</div>Select regions above to load upgrade space.</div>
-        </div>
-
-        <div class="disconnect-btn" onclick="disconnectOAuth()">Disconnect seats.aero</div>
       </div>
+      <div class="card">
+        <div class="card-label">Regions</div>
+        <div class="region-select-row">
+          <div class="region-select-wrap">
+            <label>Origin</label>
+            <select class="region-select" id="upgradeOriginRegion" onchange="runUpgradeSearch()">
+              <option value="">Any</option>
+              <option value="North America">North America</option>
+              <option value="South America">South America</option>
+              <option value="Europe">Europe</option>
+              <option value="Africa">Africa</option>
+              <option value="Asia">Asia</option>
+              <option value="Oceania">Oceania</option>
+            </select>
+          </div>
+          <div class="region-select-wrap">
+            <label>Destination</label>
+            <select class="region-select" id="upgradeDestRegion" onchange="runUpgradeSearch()">
+              <option value="">Any</option>
+              <option value="North America">North America</option>
+              <option value="South America">South America</option>
+              <option value="Europe">Europe</option>
+              <option value="Africa">Africa</option>
+              <option value="Asia">Asia</option>
+              <option value="Oceania">Oceania</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="filter-row">
+          <div class="filter-wrap">
+            <label>Filter Airport</label>
+            <input type="text" class="filter-input" id="upgradeFilterAirport" placeholder="e.g. ORD, EWR" maxlength="3" oninput="applyUpgradeFilters()" />
+          </div>
+          <div class="filter-wrap">
+            <label>Filter Date</label>
+            <input type="text" class="filter-input" id="upgradeFilterDate" placeholder="e.g. Jun" oninput="applyUpgradeFilters()" style="text-transform:none;" />
+          </div>
+        </div>
+        <div class="filter-clear" onclick="clearUpgradeFilters()">Clear filters</div>
+      </div>
+      <div class="results-header">
+        <span>Upgrade Availability</span>
+        <span class="results-count" id="upgradeCount">0</span>
+      </div>
+      <div id="upgradeList">
+        <div class="empty-state"><div class="empty-icon">⬆️</div>Select regions above to load upgrade space.</div>
+      </div>
+      <div class="disconnect-link" onclick="disconnectOAuth()">Disconnect seats.aero</div>
     </div>
   </div>
 
@@ -340,15 +390,15 @@
     </div>
   </div>
 
-  <!-- ── RESULTS (route/region) ── -->
+  <!-- ── RESULTS ── -->
   <div id="resultsArea" style="display:none">
     <div class="filter-bar">
-      <div class="filter-bar-row">
-        <div class="filter-input-wrap">
+      <div class="filter-row">
+        <div class="filter-wrap">
           <label>Filter Airport</label>
           <input type="text" class="filter-input" id="filterAirport" placeholder="Any airport code" maxlength="3" oninput="applyFilters()" />
         </div>
-        <div class="filter-input-wrap">
+        <div class="filter-wrap">
           <label>Filter Airline</label>
           <input type="text" class="filter-input" id="filterAirline" placeholder="e.g. UA, LX, AZ" maxlength="3" oninput="applyFilters()" />
         </div>
@@ -365,11 +415,12 @@
 </div>
 
 <script>
-var WORKER      = "https://seats-proxy.erikchardin.workers.dev";
-var CLIENT_ID   = "seats:cid:3Cqzkq2dWuvPdYEhrNOsooSleJo";
+// ── Config ──
+var WORKER       = "https://seats-proxy.erikchardin.workers.dev";
+var CLIENT_ID    = "seats:cid:3Cqzkq2dWuvPdYEhrNOsooSleJo";
 var REDIRECT_URI = "https://ech-technicalsolutions.com/flights/";
 
-// State
+// ── State ──
 var selectedPrograms     = new Set(["united"]);
 var selectedProgramsReg  = new Set(["united"]);
 var selectedCabin        = "business";
@@ -378,13 +429,11 @@ var selectedOriginRegion = "";
 var selectedDestRegion   = "";
 var selectedUpgradeFare  = "PZ";
 var currentMode          = "route";
-var savedRoutes          = JSON.parse(localStorage.getItem("afss_saved") || "[]");
 var allResults           = [];
 var allUpgradeResults    = [];
-
-// OAuth tokens
-var accessToken  = localStorage.getItem("afss_access_token") || "";
-var refreshToken = localStorage.getItem("afss_refresh_token") || "";
+var savedRoutes          = JSON.parse(localStorage.getItem("afss_saved") || "[]");
+var accessToken          = localStorage.getItem("afss_access_token") || "";
+var refreshToken         = localStorage.getItem("afss_refresh_token") || "";
 
 var PROGRAMS = [
   {id:"united",label:"United"},{id:"aeroplan",label:"Aeroplan"},{id:"delta",label:"Delta"},
@@ -398,6 +447,12 @@ var REGIONS = [
   {id:"Europe",icon:"🌍"},{id:"Africa",icon:"🌍"},
   {id:"Asia",icon:"🌏"},{id:"Oceania",icon:"🌏"},
 ];
+var CABIN_DEFS = [
+  {key:"Y",label:"Economy",cls:"economy"},
+  {key:"W",label:"Premium",cls:"premium"},
+  {key:"J",label:"Business",cls:"business"},
+  {key:"F",label:"First",cls:"first"},
+];
 
 // ── Init ──
 function init() {
@@ -410,10 +465,9 @@ function init() {
   handleOAuthCallback();
 }
 
-function buildGrid(containerId, selSet, toggleFn) {
-  var el = document.getElementById(containerId);
-  el.innerHTML = PROGRAMS.map(function(p) {
-    return '<button class="prog-btn ' + (selSet.has(p.id) ? "active" : "") + '" onclick="' + toggleFn.name + "('" + p.id + "', this)\">" + p.label + '</button>';
+function buildGrid(id, selSet, toggleFn) {
+  document.getElementById(id).innerHTML = PROGRAMS.map(function(p) {
+    return '<button class="prog-btn ' + (selSet.has(p.id) ? "active" : "") + '" onclick="' + toggleFn.name + "('" + p.id + "',this)\">" + p.label + '</button>';
   }).join("");
 }
 
@@ -423,14 +477,15 @@ function buildRegionGrids() {
     document.getElementById(id).innerHTML = REGIONS.map(function(r) {
       var active = (isOrigin ? selectedOriginRegion : selectedDestRegion) === r.id;
       var fn = isOrigin ? "setOriginRegion" : "setDestRegion";
-      return '<button class="region-btn ' + (active?"active":"") + '" onclick="' + fn + "('" + r.id + "', this)\">" + r.icon + " " + r.id + '</button>';
+      return '<button class="region-btn ' + (active?"active":"") + '" onclick="' + fn + "('" + r.id + "',this)\">" + r.icon + " " + r.id + '</button>';
     }).join("");
   });
 }
 
 function setDefaultDates() {
-  var today = new Date(), later = new Date(); later.setDate(today.getDate() + 90);
-  var fmt = function(d){ return d.toISOString().split("T")[0]; };
+  var today = new Date(), later = new Date();
+  later.setDate(today.getDate() + 90);
+  var fmt = function(d) { return d.toISOString().split("T")[0]; };
   document.getElementById("startDate").value = fmt(today);
   document.getElementById("endDate").value   = fmt(later);
   document.getElementById("startDateRegion").value = fmt(today);
@@ -444,12 +499,14 @@ function setMode(mode) {
     document.getElementById("mode-" + m).style.display = m === mode ? "block" : "none";
     document.getElementById("tab-" + m).classList.toggle("active", m === mode);
   });
-  if (mode !== "route" && mode !== "region") document.getElementById("resultsArea").style.display = "none";
+  if (mode !== "route" && mode !== "region") {
+    document.getElementById("resultsArea").style.display = "none";
+  }
   if (mode === "saved") renderSaved();
   if (mode === "upgrades" && accessToken) runUpgradeSearch();
 }
 
-// ── Program toggles ──
+// ── Programs ──
 function toggleRouteProgram(id, btn) {
   if (selectedPrograms.has(id)) { if (selectedPrograms.size===1) return; selectedPrograms.delete(id); btn.classList.remove("active"); }
   else { selectedPrograms.add(id); btn.classList.add("active"); }
@@ -459,43 +516,44 @@ function toggleRegionProgram(id, btn) {
   else { selectedProgramsReg.add(id); btn.classList.add("active"); }
 }
 
+// ── Cabin ──
 function setCabin(cabin) {
   selectedCabin = cabin;
   var vals = ["","economy","premium","business","first"];
-  document.querySelectorAll("#cabinToggle .toggle-btn").forEach(function(b,i){ b.classList.toggle("active", vals[i]===cabin); });
+  document.querySelectorAll("#cabinToggle .toggle-btn").forEach(function(b,i) { b.classList.toggle("active", vals[i]===cabin); });
 }
 function setCabinRegion(cabin) {
   selectedCabinRegion = cabin;
   var vals = ["","economy","premium","business","first"];
-  document.querySelectorAll("#cabinToggleRegion .toggle-btn").forEach(function(b,i){ b.classList.toggle("active", vals[i]===cabin); });
+  document.querySelectorAll("#cabinToggleRegion .toggle-btn").forEach(function(b,i) { b.classList.toggle("active", vals[i]===cabin); });
 }
+
+// ── Regions ──
 function setOriginRegion(region, btn) {
-  selectedOriginRegion = selectedOriginRegion===region?"":region;
-  document.querySelectorAll("#originRegionGrid .region-btn").forEach(function(b){ b.classList.remove("active"); });
+  selectedOriginRegion = selectedOriginRegion===region ? "" : region;
+  document.querySelectorAll("#originRegionGrid .region-btn").forEach(function(b) { b.classList.remove("active"); });
   if (selectedOriginRegion) btn.classList.add("active");
 }
 function setDestRegion(region, btn) {
-  selectedDestRegion = selectedDestRegion===region?"":region;
-  document.querySelectorAll("#destRegionGrid .region-btn").forEach(function(b){ b.classList.remove("active"); });
+  selectedDestRegion = selectedDestRegion===region ? "" : region;
+  document.querySelectorAll("#destRegionGrid .region-btn").forEach(function(b) { b.classList.remove("active"); });
   if (selectedDestRegion) btn.classList.add("active");
 }
 function setUpgradeFare(fare, btn) {
   selectedUpgradeFare = fare;
-  document.querySelectorAll(".fare-btn").forEach(function(b){ b.classList.remove("active"); });
+  document.querySelectorAll(".fare-btn").forEach(function(b) { b.classList.remove("active"); });
   btn.classList.add("active");
   runUpgradeSearch();
 }
 
 // ── OAuth ──
 async function startOAuth() {
-  // Generate PKCE code_verifier and code_challenge
   var array = new Uint8Array(32);
   crypto.getRandomValues(array);
   var codeVerifier = btoa(String.fromCharCode.apply(null, array))
     .replace(/[+]/g, "-").replace(/[/]/g, "_").replace(/[=]/g, "");
   localStorage.setItem("afss_code_verifier", codeVerifier);
 
-  // SHA-256 hash the verifier to get the challenge
   var encoder = new TextEncoder();
   var data = encoder.encode(codeVerifier);
   var digest = await crypto.subtle.digest("SHA-256", data);
@@ -523,17 +581,13 @@ async function handleOAuthCallback() {
   var state = urlParams.get("state");
   if (!code) return;
 
-  console.log("OAuth callback - code:", code, "state:", state);
-
-  // Clean URL without reloading
   window.history.replaceState({}, document.title, window.location.pathname);
   localStorage.removeItem("afss_oauth_state");
 
+  var codeVerifier = localStorage.getItem("afss_code_verifier") || "";
+  localStorage.removeItem("afss_code_verifier");
+
   try {
-    var codeVerifier = localStorage.getItem("afss_code_verifier") || "";
-    console.log("code_verifier:", codeVerifier ? codeVerifier.substring(0,20)+"..." : "EMPTY");
-    console.log("sending state:", state);
-    localStorage.removeItem("afss_code_verifier");
     var res = await fetch(WORKER + "/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -544,10 +598,7 @@ async function handleOAuthCallback() {
         code_verifier: codeVerifier
       })
     });
-
     var rawText = await res.text();
-    console.log("Token response status:", res.status, "body:", rawText);
-
     var data;
     try { data = JSON.parse(rawText); } catch(e) { data = {}; }
 
@@ -559,7 +610,7 @@ async function handleOAuthCallback() {
       updateAuthUI();
       setMode("upgrades");
     } else {
-      alert("Login failed: " + (data.error_description || data.error || rawText || "Unknown error"));
+      alert("Login failed: " + (data.error_description || data.error || rawText || "Unknown"));
     }
   } catch(e) {
     alert("Token exchange failed: " + e.message);
@@ -594,18 +645,16 @@ function disconnectOAuth() {
   updateAuthUI();
 }
 
-function handleAuthClick() {
-  if (!accessToken) startOAuth();
-}
+function handleAuthClick() { if (!accessToken) startOAuth(); }
 
 function updateAuthUI() {
-  var el = document.getElementById("authStatus");
+  var pill = document.getElementById("authPill");
   if (accessToken) {
-    el.textContent = "✓ Connected"; el.className = "auth-status connected";
+    pill.textContent = "✓ Connected"; pill.className = "auth-pill connected";
     document.getElementById("upgradeNotConnected").style.display = "none";
     document.getElementById("upgradeConnected").style.display    = "block";
   } else {
-    el.textContent = "Not Connected"; el.className = "auth-status disconnected";
+    pill.textContent = "Not Connected"; pill.className = "auth-pill disconnected";
     document.getElementById("upgradeNotConnected").style.display = "block";
     document.getElementById("upgradeConnected").style.display    = "none";
   }
@@ -614,106 +663,85 @@ function updateAuthUI() {
 // ── Upgrade Search ──
 async function runUpgradeSearch() {
   if (!accessToken) return;
-  var originRegion = document.getElementById("upgradeOriginRegion").value;
-  var destRegion   = document.getElementById("upgradeDestRegion").value;
-
   var params = new URLSearchParams({ fare_class: selectedUpgradeFare });
-  if (originRegion) params.set("origin_region", originRegion);
-  if (destRegion)   params.set("destination_region", destRegion);
+  var origin = document.getElementById("upgradeOriginRegion").value;
+  var dest   = document.getElementById("upgradeDestRegion").value;
+  if (origin) params.set("origin_region", origin);
+  if (dest)   params.set("destination_region", dest);
 
-  document.getElementById("upgradeResultsList").innerHTML = '<div class="loading"><div class="spinner green"></div>Loading upgrade availability…</div>';
-  document.getElementById("upgradeResultsCount").textContent = "…";
+  document.getElementById("upgradeList").innerHTML = '<div class="loading"><div class="spinner green"></div>Loading upgrade space…</div>';
+  document.getElementById("upgradeCount").textContent = "…";
 
   try {
     var res = await fetch(WORKER + "/pnpz?" + params, {
       headers: { "Authorization": "Bearer " + accessToken }
     });
-
-    // Try token refresh on 401
     if (res.status === 401) {
-      var refreshed = await refreshAccessToken();
-      if (refreshed) {
-        res = await fetch(WORKER + "/pnpz?" + params, { headers: { "Authorization": "Bearer " + accessToken } });
-      } else {
-        disconnectOAuth(); return;
-      }
+      var ok = await refreshAccessToken();
+      if (ok) { runUpgradeSearch(); return; }
+      else { disconnectOAuth(); return; }
     }
-
     if (!res.ok) throw new Error("Status " + res.status);
     var data = await res.json();
     allUpgradeResults = Array.isArray(data) ? data : (data.data || data.results || []);
     clearUpgradeFilters();
     renderUpgradeResults(allUpgradeResults);
   } catch(e) {
-    document.getElementById("upgradeResultsList").innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div>Failed to load upgrade data.<br/>' + e.message + '</div>';
+    document.getElementById("upgradeList").innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div>Failed to load upgrade data.</div>';
+    document.getElementById("upgradeCount").textContent = "0";
   }
 }
 
 function applyUpgradeFilters() {
   var airport = document.getElementById("upgradeFilterAirport").value.trim().toUpperCase();
   var date    = document.getElementById("upgradeFilterDate").value.trim().toLowerCase();
-
   var filtered = allUpgradeResults.filter(function(item) {
-    var origin = (item.OriginAirport || item.origin || "").toUpperCase();
-    var dest   = (item.DestinationAirport || item.destination || "").toUpperCase();
+    var origin  = (item.OriginAirport || item.origin_airport || item.Origin || "").toUpperCase();
+    var dest    = (item.DestinationAirport || item.destination_airport || item.Destination || "").toUpperCase();
     var dateStr = (item.Date || item.date || item.DepartsAt || "").toLowerCase();
-
     if (airport && origin !== airport && dest !== airport) return false;
     if (date && dateStr.indexOf(date) === -1) return false;
     return true;
   });
-
-  document.getElementById("upgradeResultsCount").textContent = filtered.length + " of " + allUpgradeResults.length;
+  document.getElementById("upgradeCount").textContent = filtered.length + " of " + allUpgradeResults.length;
   renderUpgradeCards(filtered);
 }
 
 function clearUpgradeFilters() {
   document.getElementById("upgradeFilterAirport").value = "";
-  document.getElementById("upgradeFilterDate").value = "";
+  document.getElementById("upgradeFilterDate").value    = "";
 }
 
 function renderUpgradeResults(items) {
-  document.getElementById("upgradeResultsCount").textContent = items.length;
+  document.getElementById("upgradeCount").textContent = items.length;
   renderUpgradeCards(items);
 }
 
 function renderUpgradeCards(items) {
-  var list = document.getElementById("upgradeResultsList");
+  var list = document.getElementById("upgradeList");
   if (!items.length) {
     list.innerHTML = '<div class="empty-state"><div class="empty-icon">⬆️</div>No upgrade space found.<br/>Try different regions or fare class.</div>';
     return;
   }
-
-  // We'll render what we get and log one item to console so we can see exact fields
-  if (items.length > 0) console.log("Upgrade item sample:", JSON.stringify(items[0], null, 2));
-
   list.innerHTML = items.map(function(item, i) {
-    // Try multiple possible field names since we haven't seen the response yet
-    var origin  = item.OriginAirport  || item.origin_airport  || item.Origin      || item.origin      || "—";
+    var origin  = item.OriginAirport || item.origin_airport || item.Origin || item.origin || "—";
     var dest    = item.DestinationAirport || item.destination_airport || item.Destination || item.destination || "—";
     var date    = item.Date || item.date || item.DepartsAt || item.departure_date || "";
-    var dateStr = date ? formatDate(date) : "—";
-    var seats   = item.Seats || item.seats || item.RemainingSeats || item.remaining_seats || "";
-    var seen    = item.UpdatedAt || item.updated_at || item.SeenAt || item.seen_at || "";
-    var seenStr = seen ? "Seen " + formatDate(seen) : "";
+    var seats   = item.Seats || item.seats || item.RemainingSeats || "";
+    var seen    = item.UpdatedAt || item.updated_at || item.SeenAt || "";
     var flight  = item.FlightNumber || item.flight_number || item.FlightNumbers || "";
-
-    // Build United deep link
-    var unitedLink = "https://www.united.com/en/us/fsr/choose-flights?f=" + origin + "&t=" + dest + "&d=" + (date ? date.split("T")[0] : "") + "&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True";
-
+    var unitedURL = "https://www.united.com/en/us/fsr/choose-flights?f=" + origin + "&t=" + dest + "&d=" + (date ? date.split("T")[0] : "") + "&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True";
     return '<div class="upgrade-card" style="animation-delay:' + (i*0.02) + 's">' +
       '<div class="upgrade-route">' +
-        '<div>' +
-          '<div class="upgrade-airports"><span>' + origin + '</span><span class="result-arrow">→</span><span>' + dest + '</span></div>' +
-          '<div class="upgrade-date">' + dateStr + (flight ? ' · ' + flight : '') + '</div>' +
-        '</div>' +
+        '<div><div class="upgrade-airports"><span>' + origin + '</span><span class="result-arrow">→</span><span>' + dest + '</span></div>' +
+        '<div class="upgrade-date">' + (date ? formatDate(date) : "—") + (flight ? " · " + flight : "") + '</div></div>' +
         '<div class="upgrade-fare-badge">' + selectedUpgradeFare + '</div>' +
       '</div>' +
       '<div class="upgrade-meta">' +
-        (seats ? '<span class="upgrade-seats-badge">' + seats + ' seats open</span>' : '') +
-        (seenStr ? '<span class="upgrade-seen">' + seenStr + '</span>' : '') +
+        (seats ? '<span class="upgrade-seats">' + seats + ' open</span>' : '') +
+        (seen  ? '<span class="upgrade-seen">Seen ' + formatDate(seen) + '</span>' : '') +
       '</div>' +
-      '<a href="' + unitedLink + '" target="_blank" class="upgrade-book-btn">View on United →</a>' +
+      '<a href="' + unitedURL + '" target="_blank" class="upgrade-book">View on United →</a>' +
     '</div>';
   }).join("");
 }
@@ -730,10 +758,10 @@ async function runRouteSearch() {
   try {
     allResults = [];
     for (var i = 0; i < programs.length; i++) {
-      var params = new URLSearchParams({origin_airport:origin, destination_airport:dest, source:programs[i]});
+      var params = new URLSearchParams({ origin_airport: origin, destination_airport: dest, source: programs[i] });
       if (selectedCabin) params.set("cabin", selectedCabin);
-      if (startDate) params.set("start_date", startDate);
-      if (endDate)   params.set("end_date", endDate);
+      if (startDate)     params.set("start_date", startDate);
+      if (endDate)       params.set("end_date", endDate);
       var res = await fetch(WORKER + "/search?" + params);
       updateQuota(res);
       if (res.ok) { var data = await res.json(); if (data.data) allResults = allResults.concat(data.data); }
@@ -754,18 +782,18 @@ async function runRegionSearch() {
   try {
     allResults = [];
     for (var i = 0; i < programs.length; i++) {
-      var params = new URLSearchParams({source:programs[i], take:"200"});
+      var params = new URLSearchParams({ source: programs[i], take: "200" });
       if (selectedCabinRegion)  params.set("cabin", selectedCabinRegion);
       if (selectedOriginRegion) params.set("origin_region", selectedOriginRegion);
       if (selectedDestRegion)   params.set("destination_region", selectedDestRegion);
       if (startDate) params.set("start_date", startDate);
-      if (endDate)   params.set("end_date", endDate);
+      if (endDate)   params.set("end_date",   endDate);
       var res = await fetch(WORKER + "/availability?" + params);
       updateQuota(res);
       if (res.ok) {
         var data = await res.json();
         var rows = data.availability || data.data || [];
-        rows.forEach(function(r){ if (!r.Source) r.Source = programs[i]; });
+        rows.forEach(function(r) { if (!r.Source) r.Source = programs[i]; });
         allResults = allResults.concat(rows);
       }
     }
@@ -780,79 +808,139 @@ function applyFilters() {
   var airport = document.getElementById("filterAirport").value.trim().toUpperCase();
   var airline = document.getElementById("filterAirline").value.trim().toUpperCase();
   var filtered = allResults.filter(function(item) {
-    var origin = ((item.Route&&item.Route.OriginAirport)||item.OriginAirport||"").toUpperCase();
-    var dest   = ((item.Route&&item.Route.DestinationAirport)||item.DestinationAirport||"").toUpperCase();
-    if (airport && origin!==airport && dest!==airport) return false;
+    var origin = ((item.Route && item.Route.OriginAirport) || item.OriginAirport || "").toUpperCase();
+    var dest   = ((item.Route && item.Route.DestinationAirport) || item.DestinationAirport || "").toUpperCase();
+    if (airport && origin !== airport && dest !== airport) return false;
     if (airline) {
       var airlines = [item.YAirlines,item.WAirlines,item.JAirlines,item.FAirlines,
-        item.YAirlinesRaw,item.WAirlinesRaw,item.JAirlinesRaw,item.FAirlinesRaw].join(",").toUpperCase();
-      if (airlines.indexOf(airline)===-1) return false;
+                      item.YAirlinesRaw,item.WAirlinesRaw,item.JAirlinesRaw,item.FAirlinesRaw].join(",").toUpperCase();
+      if (airlines.indexOf(airline) === -1) return false;
     }
     return true;
   });
   document.getElementById("resultsCount").textContent = filtered.length + " of " + allResults.length;
   renderResultCards(filtered);
 }
+
 function clearFilters() {
   document.getElementById("filterAirport").value = "";
   document.getElementById("filterAirline").value = "";
 }
 
-// ── Render award results ──
+// ── Render results ──
 function renderResults(items) {
-  items.sort(function(a,b){ var da=a.Date||a.DepartsAt||"",db=b.Date||b.DepartsAt||""; return da<db?-1:da>db?1:0; });
+  items.sort(function(a,b) { var da=a.Date||a.DepartsAt||"",db=b.Date||b.DepartsAt||""; return da<db?-1:da>db?1:0; });
   document.getElementById("resultsCount").textContent = items.length;
   renderResultCards(items);
   document.getElementById("resultsArea").style.display = "block";
   document.getElementById("resultsArea").scrollIntoView({ behavior:"smooth", block:"start" });
 }
+
 function renderResultCards(items) {
   var list = document.getElementById("resultsList");
-  if (!items.length) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>No results match your filters.</div>'; return; }
-  list.innerHTML = items.map(function(item,i){ return buildResultCard(item,i); }).join("");
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>No results match your filters.</div>';
+    return;
+  }
+  list.innerHTML = items.map(function(item, i) { return buildResultCard(item, i); }).join("");
 }
+
 function buildResultCard(item, i) {
-  var origin  = (item.Route&&item.Route.OriginAirport)||item.OriginAirport||"—";
-  var dest    = (item.Route&&item.Route.DestinationAirport)||item.DestinationAirport||"—";
-  var dateStr = (item.Date||item.DepartsAt) ? formatDate(item.Date||item.DepartsAt) : "—";
-  var source  = item.Source||"—";
-  var cabins  = [{key:"Y",label:"Economy",cls:"economy"},{key:"W",label:"Premium",cls:"premium"},{key:"J",label:"Business",cls:"business"},{key:"F",label:"First",cls:"first"}];
-  var rows = cabins.filter(function(c){ return item[c.key+"Available"]===true; }).map(function(c) {
-    var pts    = item[c.key+"MileageCost"]||"";
-    var seats  = item[c.key+"RemainingSeats"]||"";
-    var direct = item[c.key+"Direct"]===true;
-    var taxes  = item[c.key+"TotalTaxes"]||0;
-    var airlines = item[c.key+"Airlines"]||"";
-    var ptsStr = pts && parseInt(pts)>0 ? formatPoints(pts) : "";
+  var origin  = (item.Route && item.Route.OriginAirport) || item.OriginAirport || "—";
+  var dest    = (item.Route && item.Route.DestinationAirport) || item.DestinationAirport || "—";
+  var dateStr = (item.Date || item.DepartsAt) ? formatDate(item.Date || item.DepartsAt) : "—";
+  var source  = item.Source || "—";
+
+  var rows = CABIN_DEFS.filter(function(c) { return item[c.key + "Available"] === true; }).map(function(c) {
+    var pts    = item[c.key + "MileageCost"] || "";
+    var seats  = item[c.key + "RemainingSeats"] || "";
+    var direct = item[c.key + "Direct"] === true;
+    var taxes  = item[c.key + "TotalTaxes"] || 0;
+    var airlines = item[c.key + "Airlines"] || "";
+    var ptsStr = (pts && parseInt(pts) > 0) ? formatPoints(pts) : "";
+    var sub = [airlines, taxes > 0 ? "$" + taxes + " taxes" : ""].filter(Boolean).join(" · ");
     return '<div class="cabin-row">' +
-      '<div class="cabin-row-left"><div class="cabin-dot ' + c.cls + '"></div>' +
-        '<div><div style="display:flex;align-items:center;gap:6px;">' +
-          '<span class="cabin-name">' + c.label + '</span>' +
-          (seats?'<span class="cabin-seats">('+seats+' left)</span>':'') +
+      '<div class="cabin-row-left">' +
+        '<div class="cabin-dot ' + c.cls + '"></div>' +
+        '<div class="cabin-info">' +
+          '<div style="display:flex;align-items:center;gap:6px;">' +
+            '<span class="cabin-name">' + c.label + '</span>' +
+            (seats ? '<span class="seats-badge">(' + seats + ' left)</span>' : '') +
+          '</div>' +
+          (sub ? '<div class="cabin-sub">' + sub + '</div>' : '') +
         '</div>' +
-        (airlines?'<div class="cabin-airlines">'+airlines+'</div>':'') +
-        (taxes>0?'<div class="taxes-note">$'+taxes+' taxes</div>':'') +
-        '</div></div>' +
+      '</div>' +
       '<div class="cabin-row-right">' +
-        (direct?'<span class="direct-badge">Nonstop</span>':'') +
-        (ptsStr?'<span class="cabin-points">'+ptsStr+'</span>':'') +
-      '</div></div>';
+        (direct ? '<span class="direct-badge">Nonstop</span>' : '') +
+        (ptsStr ? '<span class="cabin-points">' + ptsStr + '</span>' : '') +
+      '</div>' +
+    '</div>';
   }).join("");
-  return '<div class="result-card" style="animation-delay:' + (i*0.02) + 's">' +
-    '<div class="result-route"><div>' +
-      '<div class="result-airports"><span>'+origin+'</span><span class="result-arrow">→</span><span>'+dest+'</span></div>' +
-      '<div class="result-date">'+dateStr+'</div></div>' +
-      '<div class="result-source-badge">'+source.toUpperCase()+'</div></div>' +
-    (rows?'<div class="section-label">Award</div><div class="cabin-rows">'+rows+'</div>':'') +
+
+  return '<div class="result-card" style="animation-delay:' + (i * 0.02) + 's">' +
+    '<div class="result-route">' +
+      '<div>' +
+        '<div class="result-airports"><span>' + origin + '</span><span class="result-arrow">→</span><span>' + dest + '</span></div>' +
+        '<div class="result-date">' + dateStr + '</div>' +
+      '</div>' +
+      '<div class="source-badge">' + source.toUpperCase() + '</div>' +
+    '</div>' +
+    (rows ? '<div class="section-label">Award Space</div><div class="cabin-rows">' + rows + '</div>' : '') +
   '</div>';
+}
+
+// ── Saved routes ──
+function offerSave(origin, dest, programs, cabin) {
+  var key = origin + "-" + dest;
+  if (savedRoutes.some(function(r) { return r.key === key; })) return;
+  if (confirm("Save route " + origin + " → " + dest + "?")) {
+    savedRoutes.push({ key:key, origin:origin, dest:dest, programs:programs, cabin:cabin });
+    localStorage.setItem("afss_saved", JSON.stringify(savedRoutes));
+  }
+}
+
+function renderSaved() {
+  var el = document.getElementById("savedList");
+  if (!savedRoutes.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔖</div>No saved routes yet.<br/>Run a search and tap Save.</div>';
+    return;
+  }
+  el.innerHTML = savedRoutes.map(function(r, i) {
+    return '<div class="saved-item" onclick="loadSaved(' + i + ')">' +
+      '<div><div class="saved-airports">' + r.origin + ' → ' + r.dest + '</div>' +
+      '<div class="saved-detail">' + r.programs.join(", ") + ' · ' + (r.cabin || "Any cabin") + '</div></div>' +
+      '<div class="saved-del" onclick="deleteSaved(event,' + i + ')">✕</div>' +
+    '</div>';
+  }).join("");
+}
+
+function loadSaved(i) {
+  var r = savedRoutes[i];
+  setMode("route");
+  document.getElementById("origin").value      = r.origin;
+  document.getElementById("destination").value = r.dest;
+  selectedPrograms = new Set(r.programs);
+  selectedCabin    = r.cabin || "business";
+  buildGrid("programGrid", selectedPrograms, toggleRouteProgram);
+  setCabin(selectedCabin);
+  runRouteSearch();
+}
+
+function deleteSaved(e, i) {
+  e.stopPropagation();
+  savedRoutes.splice(i, 1);
+  localStorage.setItem("afss_saved", JSON.stringify(savedRoutes));
+  renderSaved();
 }
 
 // ── Helpers ──
 function formatDate(str) {
-  try { return new Date(str).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}); } catch(e){ return str; }
+  try { return new Date(str).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" }); }
+  catch(e) { return str; }
 }
 function formatPoints(val) {
-  var n = parseInt(val,10); return isNaN(n) ? val : n.toLocaleString()+" pts";
+  var n = parseInt(val, 10);
+  return isNaN(n) ? val : n.toLocaleString() + " pts";
 }
 function updateQuota(res) {
   var q = res.headers.get("x-ratelimit-remaining");
@@ -861,53 +949,23 @@ function updateQuota(res) {
 function setLoading(on, btnId, offLabel) {
   var btn = document.getElementById(btnId);
   if (on) {
-    btn.disabled=true; btn.textContent="Searching…";
-    document.getElementById("resultsArea").style.display="block";
-    document.getElementById("resultsList").innerHTML='<div class="loading"><div class="spinner"></div>Fetching availability…</div>';
-    document.getElementById("resultsCount").textContent="…";
-  } else { btn.disabled=false; btn.textContent=offLabel; }
-}
-function showError(msg) {
-  document.getElementById("resultsList").innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div>'+msg+'</div>';
-  document.getElementById("resultsArea").style.display="block";
-}
-
-// ── Saved ──
-function offerSave(origin, dest, programs, cabin) {
-  var key = origin+"-"+dest;
-  if (savedRoutes.some(function(r){return r.key===key;})) return;
-  if (confirm("Save route "+origin+" → "+dest+"?")) {
-    savedRoutes.push({key,origin,dest,programs,cabin});
-    localStorage.setItem("afss_saved", JSON.stringify(savedRoutes));
+    btn.disabled = true; btn.textContent = "Searching…";
+    document.getElementById("resultsArea").style.display = "block";
+    document.getElementById("resultsList").innerHTML = '<div class="loading"><div class="spinner"></div>Fetching availability…</div>';
+    document.getElementById("resultsCount").textContent = "…";
+  } else {
+    btn.disabled = false; btn.textContent = offLabel;
   }
 }
-function renderSaved() {
-  var el = document.getElementById("savedList");
-  if (!savedRoutes.length) { el.innerHTML='<div class="empty-state"><div class="empty-icon">🔖</div>No saved routes yet.</div>'; return; }
-  el.innerHTML = savedRoutes.map(function(r,i){
-    return '<div class="saved-route-item" onclick="loadSaved('+i+')">' +
-      '<div><div class="saved-route-airports">'+r.origin+' → '+r.dest+'</div>' +
-      '<div class="saved-route-detail">'+r.programs.join(", ")+' · '+(r.cabin||"Any")+'</div></div>' +
-      '<div class="saved-route-del" onclick="deleteSaved(event,'+i+')">✕</div></div>';
-  }).join("");
-}
-function loadSaved(i) {
-  var r = savedRoutes[i]; setMode("route");
-  document.getElementById("origin").value = r.origin;
-  document.getElementById("destination").value = r.dest;
-  selectedPrograms = new Set(r.programs); selectedCabin = r.cabin||"business";
-  buildGrid("programGrid", selectedPrograms, toggleRouteProgram);
-  setCabin(selectedCabin); runRouteSearch();
-}
-function deleteSaved(e, i) {
-  e.stopPropagation(); savedRoutes.splice(i,1);
-  localStorage.setItem("afss_saved", JSON.stringify(savedRoutes)); renderSaved();
+function showError(msg) {
+  document.getElementById("resultsList").innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div>' + msg + '</div>';
+  document.getElementById("resultsArea").style.display = "block";
 }
 
-// Auto-uppercase inputs
-["origin","destination","filterAirport","filterAirline","upgradeFilterAirport"].forEach(function(id){
+// ── Auto-uppercase ──
+["origin","destination","filterAirport","filterAirline","upgradeFilterAirport"].forEach(function(id) {
   var el = document.getElementById(id);
-  if (el) el.addEventListener("input", function(){ this.value = this.value.toUpperCase(); });
+  if (el) el.addEventListener("input", function() { this.value = this.value.toUpperCase(); });
 });
 
 init();
