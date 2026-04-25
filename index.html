@@ -952,10 +952,15 @@ function buildResultCard(item,i){
   // Group trips by cabin, show best (lowest points) per cabin, max 1 per cabin
   var trips=item.AvailabilityTrips||[];
   if(trips.length>0){
-    // Group by cabin, pick best: fewest stops → shortest duration → lowest price
+    // Only show trips for cabins that are available on the card, pick best per cabin
+    var availableCabins={};
+    CABIN_DEFS.forEach(function(c){if(item[c.key+"Available"])availableCabins[c.label.toLowerCase()]=true});
+    var cabinMap={"economy":"economy","premium economy":"premium","premium":"premium","business":"business","first":"first"};
     var bestByCabin={};
     trips.forEach(function(trip){
-      var cabin=(trip.Cabin||"other").toLowerCase();
+      var rawCabin=(trip.Cabin||"").toLowerCase();
+      var cabin=cabinMap[rawCabin]||rawCabin;
+      if(!availableCabins[cabin])return;
       var existing=bestByCabin[cabin];
       if(!existing){bestByCabin[cabin]=trip;return}
       var stops=trip.Stops||99, estops=existing.Stops||99;
