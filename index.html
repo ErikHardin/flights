@@ -208,9 +208,72 @@
 
     /* ── Misc ── */
     .note { font-size: 11px; color: var(--grey-light); text-align: center; line-height: 1.6; margin-top: 4px; }
+  /* ── Lock screen ── */
+  .lock-screen {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 999; padding: 32px;
+    padding-top: calc(32px + env(safe-area-inset-top, 0px));
+  }
+  .lock-icon { font-size: 52px; margin-bottom: 20px; }
+  .lock-title { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .lock-subtitle { font-size: 13px; color: var(--grey-light); margin-bottom: 32px; }
+  .pin-display {
+    display: flex; gap: 14px; margin-bottom: 32px;
+  }
+  .pin-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--border); background: transparent;
+    transition: all 0.15s;
+  }
+  .pin-dot.filled { background: var(--blue-primary); border-color: var(--blue-primary); }
+  .pin-dot.error { background: #dc2626; border-color: #dc2626; }
+  .pin-pad {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px; width: 240px;
+  }
+  .pin-btn {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 50%; width: 72px; height: 72px;
+    font-family: 'DM Sans', sans-serif; font-size: 22px; font-weight: 500;
+    color: var(--text); cursor: pointer; transition: all 0.1s;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow);
+  }
+  .pin-btn:active { transform: scale(0.93); background: var(--surface2); }
+  .pin-btn.delete { font-size: 18px; color: var(--grey-light); }
+  .pin-btn.empty { background: transparent; border-color: transparent; box-shadow: none; cursor: default; }
+  .lock-error { font-size: 13px; color: #dc2626; margin-top: 16px; min-height: 20px; }
   </style>
 </head>
 <body>
+
+<div class="lock-screen" id="lockScreen">
+  <div class="lock-icon">✈️</div>
+  <div class="lock-title">Advanced Flight Seat Search</div>
+  <div class="lock-subtitle">Enter your 4-digit passcode</div>
+  <div class="pin-display">
+    <div class="pin-dot" id="dot0"></div>
+    <div class="pin-dot" id="dot1"></div>
+    <div class="pin-dot" id="dot2"></div>
+    <div class="pin-dot" id="dot3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinPress('1')">1</button>
+    <button class="pin-btn" onclick="pinPress('2')">2</button>
+    <button class="pin-btn" onclick="pinPress('3')">3</button>
+    <button class="pin-btn" onclick="pinPress('4')">4</button>
+    <button class="pin-btn" onclick="pinPress('5')">5</button>
+    <button class="pin-btn" onclick="pinPress('6')">6</button>
+    <button class="pin-btn" onclick="pinPress('7')">7</button>
+    <button class="pin-btn" onclick="pinPress('8')">8</button>
+    <button class="pin-btn" onclick="pinPress('9')">9</button>
+    <button class="pin-btn empty"></button>
+    <button class="pin-btn" onclick="pinPress('0')">0</button>
+    <button class="pin-btn delete" onclick="pinDelete()">⌫</button>
+  </div>
+  <div class="lock-error" id="lockError"></div>
+</div>
 
 <div class="header">
   <div class="header-top">
@@ -313,6 +376,7 @@
         <div class="connect-title">Connect seats.aero</div>
         <div class="connect-desc">Sign in with your seats.aero Pro account to search PlusPoints and upgrade availability (PZ, PN, RN) directly in the app.</div>
         <button class="connect-btn" onclick="startOAuth()">Connect seats.aero Account</button>
+        <div class="note" style="margin-top:12px;">⚠️ Make sure you're already logged into seats.aero in another tab before connecting.</div>
       </div>
     </div>
     <div id="upgradeConnected" style="display:none">
@@ -415,6 +479,67 @@
 </div>
 
 <script>
+// ── Lock screen ──
+var pinEntry = "";
+var pinLocked = true;
+
+function checkUnlocked() {
+  var unlocked = sessionStorage.getItem("afss_unlocked");
+  if (unlocked === "1") {
+    document.getElementById("lockScreen").style.display = "none";
+    pinLocked = false;
+  }
+}
+
+function pinPress(digit) {
+  if (pinEntry.length >= 4) return;
+  pinEntry += digit;
+  updatePinDots();
+  if (pinEntry.length === 4) verifyPin();
+}
+
+function pinDelete() {
+  pinEntry = pinEntry.slice(0, -1);
+  updatePinDots();
+  document.getElementById("lockError").textContent = "";
+}
+
+function updatePinDots(error) {
+  for (var i = 0; i < 4; i++) {
+    var dot = document.getElementById("dot" + i);
+    dot.className = "pin-dot";
+    if (error) dot.classList.add("error");
+    else if (i < pinEntry.length) dot.classList.add("filled");
+  }
+}
+
+async function verifyPin() {
+  try {
+    var res = await fetch(WORKER + "/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ passcode: pinEntry })
+    });
+    if (res.ok) {
+      sessionStorage.setItem("afss_unlocked", "1");
+      document.getElementById("lockScreen").style.display = "none";
+      pinLocked = false;
+    } else {
+      updatePinDots(true);
+      document.getElementById("lockError").textContent = "Incorrect passcode";
+      setTimeout(function() {
+        pinEntry = "";
+        updatePinDots(false);
+        document.getElementById("lockError").textContent = "";
+      }, 800);
+    }
+  } catch(e) {
+    document.getElementById("lockError").textContent = "Connection error";
+    pinEntry = "";
+    updatePinDots(false);
+  }
+}
+
 // ── Config ──
 var WORKER       = "https://seats-proxy.erikchardin.workers.dev";
 var CLIENT_ID    = "seats:cid:3Cqzkq2dWuvPdYEhrNOsooSleJo";
@@ -456,6 +581,7 @@ var CABIN_DEFS = [
 
 // ── Init ──
 function init() {
+  checkUnlocked();
   buildGrid("programGrid", selectedPrograms, toggleRouteProgram);
   buildGrid("programGridRegion", selectedProgramsReg, toggleRegionProgram);
   buildRegionGrids();
