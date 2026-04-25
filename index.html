@@ -548,22 +548,30 @@ function setUpgradeFare(fare, btn) {
 
 // ── OAuth ──
 async function startOAuth() {
-  // seats.aero OAuth authorization request
-  // PKCE removed because the seats.aero token endpoint is rejecting the token exchange
-  // when code_verifier/code_challenge are used.
-  localStorage.removeItem("afss_code_verifier");
+  var array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  var codeVerifier = btoa(String.fromCharCode.apply(null, array))
+    .replace(/[+]/g, "-").replace(/[/]/g, "_").replace(/[=]/g, "");
+  localStorage.setItem("afss_code_verifier", codeVerifier);
+
+  var encoder = new TextEncoder();
+  var data = encoder.encode(codeVerifier);
+  var digest = await crypto.subtle.digest("SHA-256", data);
+  var codeChallenge = btoa(String.fromCharCode.apply(null, new Uint8Array(digest)))
+    .replace(/[+]/g, "-").replace(/[/]/g, "_").replace(/[=]/g, "");
 
   var state = Math.random().toString(36).substring(2);
   localStorage.setItem("afss_oauth_state", state);
 
   var params = new URLSearchParams({
-    client_id:     CLIENT_ID,
-    redirect_uri:  REDIRECT_URI,
-    response_type: "code",
-    scope:         "openid",
-    state:         state
+    client_id:             CLIENT_ID,
+    redirect_uri:          REDIRECT_URI,
+    response_type:         "code",
+    scope:                 "openid",
+    state:                 state,
+    code_challenge:        codeChallenge,
+    code_challenge_method: "S256"
   });
-
   window.location.href = "https://seats.aero/oauth2/consent?" + params.toString();
 }
 
@@ -576,6 +584,7 @@ async function handleOAuthCallback() {
   window.history.replaceState({}, document.title, window.location.pathname);
   localStorage.removeItem("afss_oauth_state");
 
+  var codeVerifier = localStorage.getItem("afss_code_verifier") || "";
   localStorage.removeItem("afss_code_verifier");
 
   try {
@@ -583,9 +592,10 @@ async function handleOAuthCallback() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        code:         code,
-        redirect_uri: REDIRECT_URI,
-        state:        state
+        code:          code,
+        redirect_uri:  REDIRECT_URI,
+        state:         state,
+        code_verifier: codeVerifier
       })
     });
     var rawText = await res.text();
