@@ -981,7 +981,11 @@ async function toggleCard(id, tripId){
         if(trips.length&&tripContainer){
           tripContainer.innerHTML=trips.map(function(trip){
             var stops=trip.Stops===0?"Nonstop":(trip.Stops===1?"1 stop":trip.Stops+" stops");
-            var dur=trip.TotalDuration?Math.floor(trip.TotalDuration/60)+"h "+(trip.TotalDuration%60)+"m":"";
+            var dur="";
+      if(trip.TotalDuration){
+        var h=Math.floor(trip.TotalDuration/60),m=trip.TotalDuration%60;
+        dur=h+"h"+(m>0?" "+m+"m":"");
+      }
             var carriers=(trip.Carriers||[]).join(", ");
             var departs=trip.DepartsAt?new Date(trip.DepartsAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
             var arrives=trip.ArrivesAt?new Date(trip.ArrivesAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
@@ -1058,9 +1062,16 @@ function buildResultCard(item,i){
 
     detailHtml=bestTrips.map(function(trip){
       var stops=trip.Stops===0?"Nonstop":(trip.Stops===1?"1 stop":trip.Stops+" stops");
-      var dur=trip.TotalDuration?Math.floor(trip.TotalDuration/60)+"h "+(trip.TotalDuration%60)+"m":"";
-      var dep=trip.DepartsAt?new Date(trip.DepartsAt).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
-      var arr=trip.ArrivesAt?new Date(trip.ArrivesAt).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
+      var dur="";
+      if(trip.TotalDuration){
+        var h=Math.floor(trip.TotalDuration/60),m=trip.TotalDuration%60;
+        dur=h+"h"+(m>0?" "+m+"m":"");
+      }
+      var depDate=trip.DepartsAt?new Date(trip.DepartsAt):null;
+      var arrDate=trip.ArrivesAt?new Date(trip.ArrivesAt):null;
+      var dep=depDate?depDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
+      var arr=arrDate?arrDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
+      var nextDay=(depDate&&arrDate&&arrDate.toDateString()!==depDate.toDateString())?" (+1)":"";
       var carriers=trip.Carriers||trip.Airlines||"";
       var flightNums=trip.FlightNumbers||"";
       var cabin=trip.Cabin||"";
@@ -1069,7 +1080,7 @@ function buildResultCard(item,i){
       var cabinLabel=cabin.charAt(0).toUpperCase()+cabin.slice(1);
       return '<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);last-child:border:none">'+
         '<div style="font-size:11px;font-weight:700;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">'+cabinLabel+(pts?" · "+pts+taxes:"")+'</div>'+
-        (dep&&arr?'<div class="detail-row"><span class="detail-label">Time</span><span class="detail-value">'+dep+' → '+arr+(dur?" ("+dur+")":"")+'</span></div>':"")+
+        (dep&&arr?'<div class="detail-row"><span class="detail-label">Time</span><span class="detail-value">'+dep+' → '+arr+nextDay+(dur?" ("+dur+")":"")+'</span></div>':"")+
         '<div class="detail-row"><span class="detail-label">Stops</span><span class="detail-value">'+stops+'</span></div>'+
         (flightNums?'<div class="detail-row"><span class="detail-label">Flights</span><span class="detail-value">'+flightNums+'</span></div>':"")+
         (carriers?'<div class="detail-row"><span class="detail-label">Carriers</span><span class="detail-value">'+carriers+'</span></div>':"")+
@@ -1156,17 +1167,28 @@ function showCSVUpgradeResults() {
 }
 
 function buildCSVPanel() {
+  var regionOpts='<option value="">Any Region</option>'+
+    ['North America','South America','Europe','Africa','Asia','Oceania'].map(function(r){
+      return '<option value="'+r+'">'+r+'</option>';
+    }).join('');
   return '<div class="controls-bar" style="margin-bottom:10px;">'+
     '<div class="controls-row">'+
-      '<div class="control-wrap"><label>Origin</label><input type="text" class="filter-input" id="csvFilterOrigin" placeholder="e.g. ORD" maxlength="3" oninput="renderCSVResults()" /></div>'+
-      '<div class="control-wrap"><label>Destination</label><input type="text" class="filter-input" id="csvFilterDest" placeholder="e.g. LHR" maxlength="3" oninput="renderCSVResults()" /></div>'+
+      '<div class="control-wrap"><label>Origin Airport</label><input type="text" class="filter-input" id="csvFilterOrigin" placeholder="e.g. ORD" maxlength="3" oninput="renderCSVResults()" /></div>'+
+      '<div class="control-wrap"><label>Dest Airport</label><input type="text" class="filter-input" id="csvFilterDest" placeholder="e.g. LHR" maxlength="3" oninput="renderCSVResults()" /></div>'+
+    '</div>'+
+    '<div class="controls-row">'+
+      '<div class="control-wrap"><label>Origin Region</label><select class="control-select" id="csvFilterOriginRegion" onchange="renderCSVResults()">'+regionOpts+'</select></div>'+
+      '<div class="control-wrap"><label>Dest Region</label><select class="control-select" id="csvFilterDestRegion" onchange="renderCSVResults()">'+regionOpts+'</select></div>'+
+    '</div>'+
+    '<div class="controls-row">'+
+      '<div class="control-wrap"><label>Date From</label><input type="date" id="csvFilterDateFrom" onchange="renderCSVResults()" /></div>'+
+      '<div class="control-wrap"><label>Date To</label><input type="date" id="csvFilterDateTo" onchange="renderCSVResults()" /></div>'+
     '</div>'+
     '<div class="controls-row">'+
       '<div class="control-wrap"><label>Flight #</label><input type="text" class="filter-input" id="csvFilterFlight" placeholder="e.g. UA123" oninput="renderCSVResults()" style="text-transform:none" /></div>'+
-      '<div class="control-wrap"><label>Date From</label><input type="date" id="csvFilterDate" onchange="renderCSVResults()" /></div>'+
+      '<div class="control-wrap"><label>Aircraft</label><input type="text" class="filter-input" id="csvFilterAircraft" placeholder="e.g. 777" oninput="renderCSVResults()" style="text-transform:none" /></div>'+
     '</div>'+
     '<div class="controls-row">'+
-      '<div class="control-wrap"><label>Aircraft</label><input type="text" class="filter-input" id="csvFilterAircraft" placeholder="e.g. 777" oninput="renderCSVResults()" style="text-transform:none" /></div>'+
       '<div class="control-wrap"><label>Min Inventory</label>'+
         '<select class="control-select" id="csvFilterInv" onchange="renderCSVResults()">'+
           '<option value="0">Any (PZ1+)</option>'+
@@ -1177,8 +1199,16 @@ function buildCSVPanel() {
           '<option value="9">PZ9 only</option>'+
         '</select>'+
       '</div>'+
+      '<div class="control-wrap"><label>Sort By</label>'+
+        '<select class="control-select" id="csvSortBy" onchange="renderCSVResults()">'+
+          '<option value="date">Date</option>'+
+          '<option value="inv_desc">Inventory (high→low)</option>'+
+          '<option value="origin">Origin</option>'+
+          '<option value="dest">Destination</option>'+
+        '</select>'+
+      '</div>'+
     '</div>'+
-    '<div class="filter-clear" onclick="clearCSVFilters()">Clear filters</div>'+
+    '<div class="filter-clear" onclick="clearCSVFilters()">Clear all filters</div>'+
   '</div>'+
   '<div class="results-header"><span>Upgrade Availability</span>'+
     '<div style="display:flex;align-items:center;gap:8px;">'+
@@ -1193,26 +1223,42 @@ function buildCSVPanel() {
 }
 
 function renderCSVResults() {
-  var origin   = (document.getElementById("csvFilterOrigin")||{}).value||"";
-  var dest     = (document.getElementById("csvFilterDest")||{}).value||"";
-  var flight   = (document.getElementById("csvFilterFlight")||{}).value||"";
-  var dateFrom = (document.getElementById("csvFilterDate")||{}).value||"";
-  var aircraft = (document.getElementById("csvFilterAircraft")||{}).value||"";
-  var minInv   = parseInt((document.getElementById("csvFilterInv")||{}).value||"0");
+  var origin       = (document.getElementById("csvFilterOrigin")||{}).value||"";
+  var dest         = (document.getElementById("csvFilterDest")||{}).value||"";
+  var originRegion = (document.getElementById("csvFilterOriginRegion")||{}).value||"";
+  var destRegion   = (document.getElementById("csvFilterDestRegion")||{}).value||"";
+  var flight       = (document.getElementById("csvFilterFlight")||{}).value||"";
+  var dateFrom     = (document.getElementById("csvFilterDateFrom")||{}).value||"";
+  var dateTo       = (document.getElementById("csvFilterDateTo")||{}).value||"";
+  var aircraft     = (document.getElementById("csvFilterAircraft")||{}).value||"";
+  var minInv       = parseInt((document.getElementById("csvFilterInv")||{}).value||"0");
+  var sortBy       = (document.getElementById("csvSortBy")||{}).value||"date";
+
+  // Build airport sets for region filtering
+  var originAirportSet = originRegion ? getCountryAirports(new Set(REGION_COUNTRIES[originRegion]||[])) : null;
+  var destAirportSet   = destRegion   ? getCountryAirports(new Set(REGION_COUNTRIES[destRegion]||[]))   : null;
 
   var filtered = csvUpgradeData.filter(function(row) {
-    if (origin  && row.origin_airport.toUpperCase()      !== origin.toUpperCase())  return false;
-    if (dest    && row.destination_airport.toUpperCase() !== dest.toUpperCase())    return false;
-    if (flight  && row.flight_number.toLowerCase().indexOf(flight.toLowerCase()) === -1) return false;
+    if (origin && row.origin_airport.toUpperCase() !== origin.toUpperCase()) return false;
+    if (dest   && row.destination_airport.toUpperCase() !== dest.toUpperCase()) return false;
+    if (originAirportSet && !originAirportSet.has(row.origin_airport.toUpperCase())) return false;
+    if (destAirportSet   && !destAirportSet.has(row.destination_airport.toUpperCase())) return false;
+    if (flight   && row.flight_number.toLowerCase().indexOf(flight.toLowerCase()) === -1) return false;
     if (dateFrom && row.departure_date < dateFrom) return false;
+    if (dateTo   && row.departure_date > dateTo)   return false;
     if (aircraft && row.aircraft.toLowerCase().indexOf(aircraft.toLowerCase()) === -1) return false;
     var inv = parseInt((row.inventory||"").replace(/[^0-9]/g,""))||0;
     if (inv < minInv) return false;
     return true;
   });
 
-  // Sort by date
-  filtered.sort(function(a,b){ return a.departure_date < b.departure_date ? -1 : 1; });
+  // Sort
+  filtered.sort(function(a,b){
+    if(sortBy==="inv_desc"){ return (parseInt(b.inventory.replace(/[^0-9]/g,""))||0)-(parseInt(a.inventory.replace(/[^0-9]/g,""))||0); }
+    if(sortBy==="origin"){ return a.origin_airport.localeCompare(b.origin_airport); }
+    if(sortBy==="dest"){ return a.destination_airport.localeCompare(b.destination_airport); }
+    return a.departure_date < b.departure_date ? -1 : 1;
+  });
 
   var countEl = document.getElementById("csvResultCount");
   if (countEl) countEl.textContent = filtered.length + (filtered.length < csvUpgradeData.length ? " of "+csvUpgradeData.length : "");
@@ -1252,26 +1298,35 @@ function renderCSVResults() {
 }
 
 function clearCSVFilters() {
-  ["csvFilterOrigin","csvFilterDest","csvFilterFlight","csvFilterAircraft"].forEach(function(id){
+  ["csvFilterOrigin","csvFilterDest","csvFilterFlight","csvFilterAircraft","csvFilterDateFrom","csvFilterDateTo"].forEach(function(id){
     var el=document.getElementById(id);if(el)el.value="";
   });
-  var inv=document.getElementById("csvFilterInv");if(inv)inv.value="0";
-  var date=document.getElementById("csvFilterDate");if(date)date.value="";
+  ["csvFilterInv","csvFilterOriginRegion","csvFilterDestRegion","csvSortBy"].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value=id==="csvFilterInv"?"0":id==="csvSortBy"?"date":"";
+  });
   renderCSVResults();
 }
 
 function exportFilteredCSV() {
-  var origin   = (document.getElementById("csvFilterOrigin")||{}).value||"";
-  var dest     = (document.getElementById("csvFilterDest")||{}).value||"";
-  var flight   = (document.getElementById("csvFilterFlight")||{}).value||"";
-  var dateFrom = (document.getElementById("csvFilterDate")||{}).value||"";
-  var aircraft = (document.getElementById("csvFilterAircraft")||{}).value||"";
-  var minInv   = parseInt((document.getElementById("csvFilterInv")||{}).value||"0");
+  var origin       = (document.getElementById("csvFilterOrigin")||{}).value||"";
+  var dest         = (document.getElementById("csvFilterDest")||{}).value||"";
+  var originRegion = (document.getElementById("csvFilterOriginRegion")||{}).value||"";
+  var destRegion   = (document.getElementById("csvFilterDestRegion")||{}).value||"";
+  var flight       = (document.getElementById("csvFilterFlight")||{}).value||"";
+  var dateFrom     = (document.getElementById("csvFilterDateFrom")||{}).value||"";
+  var dateTo       = (document.getElementById("csvFilterDateTo")||{}).value||"";
+  var aircraft     = (document.getElementById("csvFilterAircraft")||{}).value||"";
+  var minInv       = parseInt((document.getElementById("csvFilterInv")||{}).value||"0");
+  var originAirportSet = originRegion ? getCountryAirports(new Set(REGION_COUNTRIES[originRegion]||[])) : null;
+  var destAirportSet   = destRegion   ? getCountryAirports(new Set(REGION_COUNTRIES[destRegion]||[]))   : null;
   var filtered = csvUpgradeData.filter(function(row) {
-    if (origin  && row.origin_airport.toUpperCase()      !== origin.toUpperCase())  return false;
-    if (dest    && row.destination_airport.toUpperCase() !== dest.toUpperCase())    return false;
-    if (flight  && row.flight_number.toLowerCase().indexOf(flight.toLowerCase()) === -1) return false;
+    if (origin && row.origin_airport.toUpperCase() !== origin.toUpperCase()) return false;
+    if (dest   && row.destination_airport.toUpperCase() !== dest.toUpperCase()) return false;
+    if (originAirportSet && !originAirportSet.has(row.origin_airport.toUpperCase())) return false;
+    if (destAirportSet   && !destAirportSet.has(row.destination_airport.toUpperCase())) return false;
+    if (flight   && row.flight_number.toLowerCase().indexOf(flight.toLowerCase()) === -1) return false;
     if (dateFrom && row.departure_date < dateFrom) return false;
+    if (dateTo   && row.departure_date > dateTo)   return false;
     if (aircraft && row.aircraft.toLowerCase().indexOf(aircraft.toLowerCase()) === -1) return false;
     var inv = parseInt((row.inventory||"").replace(/[^0-9]/g,""))||0;
     if (inv < minInv) return false;
