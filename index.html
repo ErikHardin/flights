@@ -258,7 +258,6 @@
   <div class="header-top">
     <div class="app-title">✈ Flight Seat Search</div>
     <div class="header-right">
-      <div class="quota-badge" id="quotaBadge">— calls left</div>
     </div>
   </div>
 </div>
@@ -267,7 +266,7 @@
   <div class="mode-tabs">
     <button class="mode-tab active" onclick="setMode('route')"    id="tab-route">Route</button>
     <button class="mode-tab"        onclick="setMode('region')"   id="tab-region">Region</button>
-    <button class="mode-tab"        onclick="setMode('upgrades')" id="tab-upgrades">Upgrades</button>
+    <button class="mode-tab"        onclick="setMode('upgrades')" id="tab-upgrades">United Upgrades</button>
     <button class="mode-tab"        onclick="setMode('saved')"    id="tab-saved">Saved</button>
   </div>
 
@@ -762,7 +761,6 @@ async function runUpgradeSearch(){
   document.getElementById("upgradeCount").textContent="…";
   try{
     var res=await fetch(WORKER+"/pnpz?"+params,{headers:{"Authorization":"Bearer "+accessToken}});
-    updateQuota(res);
     if(res.status===401){var ok=await refreshAccessToken();if(ok){runUpgradeSearch();return}else{disconnectOAuth();return}}
     if(!res.ok)throw new Error("Status "+res.status);
     var data=await res.json();
@@ -802,8 +800,7 @@ async function runRouteSearch(){
       if(cabinArr.length===1)params.set("cabin",cabinArr[0]);
       else if(cabinArr.length>1)params.set("cabins",cabinArr.join(","));
       if(startDate)params.set("start_date",startDate);if(endDate)params.set("end_date",endDate);
-      var res=await fetch(WORKER+"/availability?"+params);updateQuota(res);
-      if(res.ok){
+      var res=await fetch(WORKER+"/availability?"+params);if(res.ok){
         var data=await res.json();
         var rows=data.availability||data.data||[];
         rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
@@ -833,8 +830,7 @@ async function runRegionSearch(){
       if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
       if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
       if(startDate)params.set("start_date",startDate);if(endDate)params.set("end_date",endDate);
-      var res=await fetch(WORKER+"/availability?"+params);updateQuota(res);
-      if(res.ok){
+      var res=await fetch(WORKER+"/availability?"+params);if(res.ok){
         var data=await res.json();var rows=data.availability||data.data||[];
         rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
         // Filter by country airport codes
@@ -909,6 +905,7 @@ function renderResultCards(items){
 function toggleCard(id){
   var details=document.getElementById("details-"+id);
   var icon=document.getElementById("icon-"+id);
+  if(!details)return;
   if(details.classList.contains("open")){
     details.classList.remove("open");
     if(icon)icon.textContent="▼ Details";
@@ -1012,7 +1009,7 @@ function buildResultCard(item,i){
   bookLinks+='<a href="https://www.united.com/en/us/fsr/choose-flights?f='+origin+'&t='+dest+'&d='+rawDate+'&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True" target="_blank" class="book-link">Check on United (Expert Mode)</a>';
 
   return '<div class="result-card" style="animation-delay:'+(i*.02)+'s" id="'+id+'">'+
-    '<div class="result-card-header" onclick="toggleCard(\'\'+id+\'\')">' +
+    '<div class="result-card-header" onclick="toggleCard(\'' + id + '\')">'+
       '<div class="result-route">'+
         '<div><div class="result-airports"><span>'+origin+'</span><span class="result-arrow">→</span><span>'+dest+'</span></div>'+(originCity||destCity?'<div style="font-size:11px;color:var(--grey-light);margin-top:1px;">'+( originCity||origin)+' → '+(destCity||dest)+'</div>':'')+'<div class="result-date">'+dateStr+'</div></div>'+
         '<div class="result-right"><div class="source-badge">'+source.toUpperCase()+'</div><div class="expand-icon" id="icon-'+id+'">'+(isExpanded?"▲ Hide":"▼ Details")+'</div></div>'+
@@ -1301,14 +1298,7 @@ function exportResultsCSV(){
 // ── Helpers ──
 function formatDate(str){try{return new Date(str).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}catch(e){return str}}
 function formatPoints(val){var n=parseInt(val,10);return isNaN(n)?val:n.toLocaleString()+" pts"}
-function updateQuota(res){
-  try{
-    var q=res.headers.get("x-ratelimit-remaining");
-    if(q!==null&&q!==""){
-      document.getElementById("quotaBadge").textContent=parseInt(q).toLocaleString()+" calls left";
-    }
-  }catch(e){}
-}
+function updateQuota(res){}
 function setLoading(on,btnId,offLabel){var btn=document.getElementById(btnId);if(on){btn.disabled=true;btn.textContent="Searching…";document.getElementById("resultsArea").style.display="block";document.getElementById("resultsList").innerHTML='<div class="loading"><div class="spinner"></div>Fetching availability…</div>';document.getElementById("resultsCount").textContent="…"}else{btn.disabled=false;btn.textContent=offLabel}}
 function showError(msg){document.getElementById("resultsList").innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div>'+msg+'</div>';document.getElementById("resultsArea").style.display="block"}
 
