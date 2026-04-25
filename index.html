@@ -494,6 +494,9 @@ function startOAuth() {
     response_type: "code",
     scope:         "openid"
   });
+  var state = Math.random().toString(36).substring(2);
+  localStorage.setItem("afss_oauth_state", state);
+  params.set("state", state);
   window.location.href = "https://seats.aero/oauth2/consent?" + params.toString();
 }
 
@@ -516,7 +519,7 @@ async function handleOAuthCallback() {
       body: JSON.stringify({
         code:         code,
         redirect_uri: REDIRECT_URI,
-        // state omitted - not required
+        state:        state
       })
     });
 
