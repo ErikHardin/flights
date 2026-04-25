@@ -488,14 +488,11 @@ function setUpgradeFare(fare, btn) {
 
 // ── OAuth ──
 function startOAuth() {
-  var state = Math.random().toString(36).substring(2);
-  localStorage.setItem("afss_oauth_state", state);
   var params = new URLSearchParams({
     client_id:     CLIENT_ID,
     redirect_uri:  REDIRECT_URI,
     response_type: "code",
-    scope:         "openid",
-    state:         state
+    scope:         "openid"
   });
   window.location.href = "https://seats.aero/oauth2/consent?" + params.toString();
 }
@@ -519,7 +516,7 @@ async function handleOAuthCallback() {
       body: JSON.stringify({
         code:         code,
         redirect_uri: REDIRECT_URI,
-        state:        state  // pass raw state back exactly as received
+        // state omitted - not required
       })
     });
 
