@@ -1020,25 +1020,40 @@ function buildResultCard(item,i){
   // Flight details panel - use AvailabilityTrips if present
   var allCarriers=item.YAirlinesRaw||item.JAirlinesRaw||item.WAirlinesRaw||"";
   var detailHtml="";
+  // Group trips by cabin, show best (lowest points) per cabin, max 1 per cabin
   var trips=item.AvailabilityTrips||[];
   if(trips.length>0){
-    detailHtml=trips.map(function(trip){
+    // Group by cabin, keep lowest mileage cost per cabin
+    var bestByCabin={};
+    trips.forEach(function(trip){
+      var cabin=(trip.Cabin||"other").toLowerCase();
+      var pts=parseInt(trip.MileageCost)||0;
+      if(!bestByCabin[cabin]||pts<parseInt(bestByCabin[cabin].MileageCost||0)){
+        bestByCabin[cabin]=trip;
+      }
+    });
+    var cabinOrder=["first","business","premium","economy","other"];
+    var bestTrips=[];
+    cabinOrder.forEach(function(c){if(bestByCabin[c])bestTrips.push(bestByCabin[c])});
+
+    detailHtml=bestTrips.map(function(trip){
       var stops=trip.Stops===0?"Nonstop":(trip.Stops===1?"1 stop":trip.Stops+" stops");
       var dur=trip.TotalDuration?Math.floor(trip.TotalDuration/60)+"h "+(trip.TotalDuration%60)+"m":"";
-      var dep=trip.DepartsAt?new Date(trip.DepartsAt).toLocaleString("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
-      var arr=trip.ArrivesAt?new Date(trip.ArrivesAt).toLocaleString("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
+      var dep=trip.DepartsAt?new Date(trip.DepartsAt).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
+      var arr=trip.ArrivesAt?new Date(trip.ArrivesAt).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
       var carriers=trip.Carriers||trip.Airlines||"";
       var flightNums=trip.FlightNumbers||"";
       var cabin=trip.Cabin||"";
       var pts=trip.MileageCost?formatPoints(trip.MileageCost)+" pts":"";
       var taxes=trip.TotalTaxes?(", $"+(trip.TotalTaxes/100).toFixed(0)+" taxes"):"";
-      return '<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border)">'+
-        (dep?'<div class="detail-row"><span class="detail-label">Departs</span><span class="detail-value">'+dep+'</span></div>':"")+
-        (arr?'<div class="detail-row"><span class="detail-label">Arrives</span><span class="detail-value">'+arr+'</span></div>':"")+
-        '<div class="detail-row"><span class="detail-label">Routing</span><span class="detail-value">'+stops+(dur?" · "+dur:"")+'</span></div>'+
+      var cabinLabel=cabin.charAt(0).toUpperCase()+cabin.slice(1);
+      return '<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);last-child:border:none">'+
+        '<div style="font-size:11px;font-weight:700;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">'+cabinLabel+(pts?" · "+pts+taxes:"")+'</div>'+
+        (dep&&arr?'<div class="detail-row"><span class="detail-label">Time</span><span class="detail-value">'+dep+' → '+arr+(dur?" ("+dur+")":"")+'</span></div>':"")+
+        '<div class="detail-row"><span class="detail-label">Stops</span><span class="detail-value">'+stops+'</span></div>'+
         (flightNums?'<div class="detail-row"><span class="detail-label">Flights</span><span class="detail-value">'+flightNums+'</span></div>':"")+
         (carriers?'<div class="detail-row"><span class="detail-label">Carriers</span><span class="detail-value">'+carriers+'</span></div>':"")+
-        (cabin&&pts?'<div class="detail-row"><span class="detail-label">'+cabin.charAt(0).toUpperCase()+cabin.slice(1)+'</span><span class="detail-value">'+pts+taxes+'</span></div>':"")+'</div>';
+      '</div>';
     }).join("");
   } else if(allCarriers){
     detailHtml='<div class="detail-row"><span class="detail-label">Carriers</span><span class="detail-value">'+allCarriers+'</span></div>';
