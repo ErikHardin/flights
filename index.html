@@ -363,6 +363,16 @@
         <div class="note">⚠️ Make sure you're already logged into seats.aero before connecting.</div>
       </div>
       <div class="card">
+        <div class="card-label">Or — Upload Upgrade CSV</div>
+        <div style="font-size:13px;color:var(--grey-text);margin-bottom:12px;line-height:1.6;">Export your upgrade list from seats.aero (Tools → Export CSV) and upload it here for instant offline searching.</div>
+        <label style="display:block;width:100%;background:var(--surface2);border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;cursor:pointer;transition:all .15s;" id="csvDropZone">
+          <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="loadUpgradeCSV(this)" />
+          <div style="font-size:24px;margin-bottom:6px;">📂</div>
+          <div style="font-size:13px;font-weight:600;color:var(--blue-primary);">Tap to upload PNPZ CSV</div>
+          <div style="font-size:11px;color:var(--grey-light);margin-top:4px;" id="csvFileName">No file selected</div>
+        </label>
+      </div>
+      <div class="card">
         <div class="card-label">Quick Access — PlusPoints Finder</div>
         <div class="fare-row">
           <button class="fare-btn pz active" onclick="setQuickFare('PZ',this)">PZ</button>
@@ -424,6 +434,12 @@
       <div class="results-header"><span>Upgrade Availability</span><div style="display:flex;align-items:center;gap:8px;"><button onclick="exportUpgradeCSV()" style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button><span class="results-count" id="upgradeCount">0</span></div></div>
       <div id="upgradeList"><div class="empty-state"><div class="empty-icon">⬆️</div>Select regions above.</div></div>
       <div class="disconnect-link" onclick="disconnectOAuth()">Disconnect seats.aero</div>
+      <div style="margin-top:12px;">
+        <label style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--grey-light);cursor:pointer;padding:8px;">
+          <input type="file" id="csvFileInput2" accept=".csv" style="display:none" onchange="loadUpgradeCSV(this)" />
+          <span>📂 Upload CSV instead</span>
+        </label>
+      </div>
     </div>
   </div>
 
@@ -1093,6 +1109,183 @@ function offerSave(origin,dest,programs,cabin){var key=origin+"-"+dest;if(savedR
 function renderSaved(){var el=document.getElementById("savedList");if(!savedRoutes.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔖</div>No saved routes yet.</div>';return}el.innerHTML=savedRoutes.map(function(r,i){return'<div class="saved-item" onclick="loadSaved('+i+')"><div><div class="saved-airports">'+r.origin+' → '+r.dest+'</div><div class="saved-detail">'+r.programs.join(", ")+" · "+(r.cabin||"Any")+'</div></div><div class="saved-del" onclick="deleteSaved(event,'+i+')">✕</div></div>'}).join("")}
 function loadSaved(i){var r=savedRoutes[i];setMode("route");document.getElementById("origin").value=r.origin;document.getElementById("destination").value=r.dest;selectedPrograms=new Set(r.programs);selectedCabin=r.cabin||"business";buildGrid("programGrid",selectedPrograms,toggleRouteProgram);setCabin(selectedCabin);runRouteSearch()}
 function deleteSaved(e,i){e.stopPropagation();savedRoutes.splice(i,1);localStorage.setItem("afss_saved",JSON.stringify(savedRoutes));renderSaved()}
+
+// ── CSV Upload & Display ──
+var csvUpgradeData = [];
+
+function loadUpgradeCSV(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var nameEl = document.getElementById("csvFileName");
+  if (nameEl) nameEl.textContent = file.name;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var lines = e.target.result.split(/\r?\n/).filter(Boolean);
+    var headers = lines[0].split(",").map(function(h){ return h.trim(); });
+    csvUpgradeData = [];
+    for (var i = 1; i < lines.length; i++) {
+      var cols = lines[i].split(",");
+      if (cols.length < 7) continue;
+      csvUpgradeData.push({
+        departure_date:     cols[0].trim(),
+        last_seen:          cols[1].trim(),
+        flight_number:      cols[2].trim(),
+        aircraft:           cols[3].trim(),
+        origin_airport:     cols[4].trim(),
+        destination_airport:cols[5].trim(),
+        inventory:          cols[6].trim()
+      });
+    }
+    // Show CSV results panel
+    showCSVUpgradeResults();
+  };
+  reader.readAsText(file);
+}
+
+function showCSVUpgradeResults() {
+  // Hide connect card, show CSV results
+  document.getElementById("upgradeNotConnected").style.display = "none";
+  var panel = document.getElementById("csvUpgradePanel");
+  if (!panel) {
+    panel = document.createElement("div");
+    panel.id = "csvUpgradePanel";
+    document.getElementById("mode-upgrades").appendChild(panel);
+  }
+  panel.innerHTML = buildCSVPanel();
+}
+
+function buildCSVPanel() {
+  return '<div class="controls-bar" style="margin-bottom:10px;">'+
+    '<div class="controls-row">'+
+      '<div class="control-wrap"><label>Origin</label><input type="text" class="filter-input" id="csvFilterOrigin" placeholder="e.g. ORD" maxlength="3" oninput="renderCSVResults()" /></div>'+
+      '<div class="control-wrap"><label>Destination</label><input type="text" class="filter-input" id="csvFilterDest" placeholder="e.g. LHR" maxlength="3" oninput="renderCSVResults()" /></div>'+
+    '</div>'+
+    '<div class="controls-row">'+
+      '<div class="control-wrap"><label>Flight #</label><input type="text" class="filter-input" id="csvFilterFlight" placeholder="e.g. UA123" oninput="renderCSVResults()" style="text-transform:none" /></div>'+
+      '<div class="control-wrap"><label>Date From</label><input type="date" id="csvFilterDate" onchange="renderCSVResults()" /></div>'+
+    '</div>'+
+    '<div class="controls-row">'+
+      '<div class="control-wrap"><label>Aircraft</label><input type="text" class="filter-input" id="csvFilterAircraft" placeholder="e.g. 777" oninput="renderCSVResults()" style="text-transform:none" /></div>'+
+      '<div class="control-wrap"><label>Min Inventory</label>'+
+        '<select class="control-select" id="csvFilterInv" onchange="renderCSVResults()">'+
+          '<option value="0">Any (PZ1+)</option>'+
+          '<option value="2">PZ2+</option>'+
+          '<option value="3">PZ3+</option>'+
+          '<option value="4">PZ4+</option>'+
+          '<option value="6">PZ6+</option>'+
+          '<option value="9">PZ9 only</option>'+
+        '</select>'+
+      '</div>'+
+    '</div>'+
+    '<div class="filter-clear" onclick="clearCSVFilters()">Clear filters</div>'+
+  '</div>'+
+  '<div class="results-header"><span>Upgrade Availability</span>'+
+    '<div style="display:flex;align-items:center;gap:8px;">'+
+      '<button onclick="exportFilteredCSV()" style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button>'+
+      '<span class="results-count" id="csvResultCount">0</span>'+
+    '</div>'+
+  '</div>'+
+  '<div id="csvResultsList"></div>'+
+  '<div style="margin-top:12px;text-align:center;"><label style="font-size:12px;color:var(--grey-light);cursor:pointer;">'+
+    '<input type="file" accept=".csv" style="display:none" onchange="loadUpgradeCSV(this)" /> 🔄 Load different CSV</label>'+
+  '</div>';
+}
+
+function renderCSVResults() {
+  var origin   = (document.getElementById("csvFilterOrigin")||{}).value||"";
+  var dest     = (document.getElementById("csvFilterDest")||{}).value||"";
+  var flight   = (document.getElementById("csvFilterFlight")||{}).value||"";
+  var dateFrom = (document.getElementById("csvFilterDate")||{}).value||"";
+  var aircraft = (document.getElementById("csvFilterAircraft")||{}).value||"";
+  var minInv   = parseInt((document.getElementById("csvFilterInv")||{}).value||"0");
+
+  var filtered = csvUpgradeData.filter(function(row) {
+    if (origin  && row.origin_airport.toUpperCase()      !== origin.toUpperCase())  return false;
+    if (dest    && row.destination_airport.toUpperCase() !== dest.toUpperCase())    return false;
+    if (flight  && row.flight_number.toLowerCase().indexOf(flight.toLowerCase()) === -1) return false;
+    if (dateFrom && row.departure_date < dateFrom) return false;
+    if (aircraft && row.aircraft.toLowerCase().indexOf(aircraft.toLowerCase()) === -1) return false;
+    var inv = parseInt((row.inventory||"").replace(/[^0-9]/g,""))||0;
+    if (inv < minInv) return false;
+    return true;
+  });
+
+  // Sort by date
+  filtered.sort(function(a,b){ return a.departure_date < b.departure_date ? -1 : 1; });
+
+  var countEl = document.getElementById("csvResultCount");
+  if (countEl) countEl.textContent = filtered.length + (filtered.length < csvUpgradeData.length ? " of "+csvUpgradeData.length : "");
+
+  var list = document.getElementById("csvResultsList");
+  if (!list) return;
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">⬆️</div>No upgrades match your filters.</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.slice(0, 200).map(function(row, i) {
+    var inv = parseInt((row.inventory||"").replace(/[^0-9]/g,""))||0;
+    var invColor = inv >= 6 ? "var(--green)" : inv >= 3 ? "#b45309" : "var(--grey-text)";
+    var originCity = AIRPORT_CITIES[row.origin_airport]||"";
+    var destCity   = AIRPORT_CITIES[row.destination_airport]||"";
+    var bookUrl    = "https://www.united.com/en/us/fsr/choose-flights?f="+row.origin_airport+"&t="+row.destination_airport+"&d="+row.departure_date+"&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True";
+    return '<div class="upgrade-card" style="animation-delay:'+(i*.01)+'s">'+
+      '<div class="upgrade-route">'+
+        '<div>'+
+          '<div class="upgrade-airports">'+
+            '<span>'+row.origin_airport+'</span><span class="result-arrow">→</span><span>'+row.destination_airport+'</span>'+
+          '</div>'+
+          (originCity||destCity ? '<div style="font-size:11px;color:var(--grey-light);margin-top:1px;">'+(originCity||row.origin_airport)+' → '+(destCity||row.destination_airport)+'</div>' : '')+
+          '<div class="upgrade-date">'+formatDate(row.departure_date)+' · '+row.flight_number+'</div>'+
+          '<div style="font-size:11px;color:var(--grey-light);margin-top:2px;">'+row.aircraft+'</div>'+
+        '</div>'+
+        '<div style="text-align:right;">'+
+          '<div style="font-family:DM Mono,monospace;font-size:18px;font-weight:700;color:'+invColor+'">'+row.inventory+'</div>'+
+          '<div style="font-size:10px;color:var(--grey-light);">seen '+row.last_seen+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<a href="'+bookUrl+'" target="_blank" class="upgrade-book">Book on United →</a>'+
+    '</div>';
+  }).join("")+(filtered.length>200?'<div class="empty-state" style="font-size:12px;">Showing first 200 of '+filtered.length+' — use filters to narrow down.</div>':"");
+}
+
+function clearCSVFilters() {
+  ["csvFilterOrigin","csvFilterDest","csvFilterFlight","csvFilterAircraft"].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value="";
+  });
+  var inv=document.getElementById("csvFilterInv");if(inv)inv.value="0";
+  var date=document.getElementById("csvFilterDate");if(date)date.value="";
+  renderCSVResults();
+}
+
+function exportFilteredCSV() {
+  var origin   = (document.getElementById("csvFilterOrigin")||{}).value||"";
+  var dest     = (document.getElementById("csvFilterDest")||{}).value||"";
+  var flight   = (document.getElementById("csvFilterFlight")||{}).value||"";
+  var dateFrom = (document.getElementById("csvFilterDate")||{}).value||"";
+  var aircraft = (document.getElementById("csvFilterAircraft")||{}).value||"";
+  var minInv   = parseInt((document.getElementById("csvFilterInv")||{}).value||"0");
+  var filtered = csvUpgradeData.filter(function(row) {
+    if (origin  && row.origin_airport.toUpperCase()      !== origin.toUpperCase())  return false;
+    if (dest    && row.destination_airport.toUpperCase() !== dest.toUpperCase())    return false;
+    if (flight  && row.flight_number.toLowerCase().indexOf(flight.toLowerCase()) === -1) return false;
+    if (dateFrom && row.departure_date < dateFrom) return false;
+    if (aircraft && row.aircraft.toLowerCase().indexOf(aircraft.toLowerCase()) === -1) return false;
+    var inv = parseInt((row.inventory||"").replace(/[^0-9]/g,""))||0;
+    if (inv < minInv) return false;
+    return true;
+  });
+  var rows=[["departure_date","last_seen","flight_number","aircraft","origin_airport","destination_airport","inventory"]];
+  filtered.forEach(function(r){rows.push([r.departure_date,r.last_seen,r.flight_number,r.aircraft,r.origin_airport,r.destination_airport,r.inventory])});
+  var csv=rows.map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"'}).join(",")}).join(String.fromCharCode(13,10));
+  var blob=new Blob([csv],{type:"text/csv"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  a.href=url;a.download="upgrades-filtered-"+new Date().toISOString().split("T")[0]+".csv";
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
 
 // ── CSV Export ──
 function exportUpgradeCSV(){
