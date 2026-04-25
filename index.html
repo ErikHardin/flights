@@ -531,6 +531,8 @@ async function handleOAuthCallback() {
 
   try {
     var codeVerifier = localStorage.getItem("afss_code_verifier") || "";
+    console.log("code_verifier:", codeVerifier ? codeVerifier.substring(0,20)+"..." : "EMPTY");
+    console.log("sending state:", state);
     localStorage.removeItem("afss_code_verifier");
     var res = await fetch(WORKER + "/token", {
       method: "POST",
