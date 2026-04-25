@@ -563,8 +563,13 @@ function startOAuth() {
 async function handleOAuthCallback() {
   var urlParams = new URLSearchParams(window.location.search);
   var code  = urlParams.get("code");
-  var state = urlParams.get("state");
+  // Read state from raw URL to preserve any suffix seats.aero appends
+  var stateMatch = window.location.search.match(/[?&]state=([^&]*)/);
+  var state = stateMatch ? decodeURIComponent(stateMatch[1]) : urlParams.get("state");
   if (!code) return;
+
+  // Capture full state BEFORE replaceState strips the URL
+  var fullState = urlParams.get("state") || "";
 
   window.history.replaceState({}, document.title, window.location.pathname);
   localStorage.removeItem("afss_oauth_state");
@@ -577,7 +582,7 @@ async function handleOAuthCallback() {
       body: JSON.stringify({
         code:         code,
         redirect_uri: REDIRECT_URI,
-        state:        state
+        state:        fullState
       })
     });
     var rawText = await res.text();
