@@ -560,13 +560,14 @@ function startOAuth() {
   window.location.href = "https://seats.aero/oauth2/consent?" + params.toString();
 }
 
+var oauthCallbackRunning = false;
 async function handleOAuthCallback() {
+  if (oauthCallbackRunning) return;
+  oauthCallbackRunning = true;
   var urlParams = new URLSearchParams(window.location.search);
   var code  = urlParams.get("code");
-  // Read state from raw URL to preserve any suffix seats.aero appends
-  var stateMatch = window.location.search.match(/[?&]state=([^&]*)/);
-  var state = stateMatch ? decodeURIComponent(stateMatch[1]) : urlParams.get("state");
-  if (!code) return;
+  var state = urlParams.get("state") || "";
+  if (!code) { oauthCallbackRunning = false; return; }
 
   // Capture full state BEFORE replaceState strips the URL
   var fullState = urlParams.get("state") || "";
@@ -601,6 +602,8 @@ async function handleOAuthCallback() {
     }
   } catch(e) {
     alert("Token exchange failed: " + e.message);
+  } finally {
+    oauthCallbackRunning = false;
   }
 }
 
