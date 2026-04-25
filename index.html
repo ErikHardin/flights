@@ -259,7 +259,6 @@
     <div class="app-title">✈ Flight Seat Search</div>
     <div class="header-right">
       <div class="quota-badge" id="quotaBadge">— calls left</div>
-      <div class="auth-pill disconnected" id="authPill" onclick="handleAuthClick()">Not Connected</div>
     </div>
   </div>
 </div>
@@ -353,95 +352,16 @@
   </div>
 
   <!-- UPGRADES -->
+  <!-- UPGRADES -->
   <div id="mode-upgrades" style="display:none">
-    <div id="upgradeNotConnected">
-      <div class="connect-card">
-        <div class="connect-icon">🔐</div>
-        <div class="connect-title">Connect seats.aero</div>
-        <div class="connect-desc">Sign in with your seats.aero Pro account to access PlusPoints and upgrade availability directly in the app.</div>
-        <button class="connect-btn" onclick="startOAuth()">Connect seats.aero Account</button>
-        <div class="note">⚠️ Make sure you're already logged into seats.aero before connecting.</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Or — Upload Upgrade CSV</div>
-        <div style="font-size:13px;color:var(--grey-text);margin-bottom:12px;line-height:1.6;">Export your upgrade list from seats.aero (Tools → Export CSV) and upload it here for instant offline searching.</div>
-        <label style="display:block;width:100%;background:var(--surface2);border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;cursor:pointer;transition:all .15s;" id="csvDropZone">
-          <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="loadUpgradeCSV(this)" />
-          <div style="font-size:24px;margin-bottom:6px;">📂</div>
-          <div style="font-size:13px;font-weight:600;color:var(--blue-primary);">Tap to upload PNPZ CSV</div>
-          <div style="font-size:11px;color:var(--grey-light);margin-top:4px;" id="csvFileName">No file selected</div>
-        </label>
-      </div>
-      <div class="card">
-        <div class="card-label">Quick Access — PlusPoints Finder</div>
-        <div class="fare-row">
-          <button class="fare-btn pz active" onclick="setQuickFare('PZ',this)">PZ</button>
-          <button class="fare-btn pn"        onclick="setQuickFare('PN',this)">PN</button>
-          <button class="fare-btn rn"        onclick="setQuickFare('RN',this)">RN</button>
-        </div>
-        <div class="region-select-row">
-          <div class="region-select-wrap"><label>Origin</label>
-            <select class="region-select" id="quickOriginRegion" onchange="updateUpgradeDeepLink()">
-              <option value="">Any</option><option>North America</option><option>South America</option>
-              <option>Europe</option><option>Africa</option><option>Asia</option><option>Oceania</option>
-            </select>
-          </div>
-          <div class="region-select-wrap"><label>Destination</label>
-            <select class="region-select" id="quickDestRegion" onchange="updateUpgradeDeepLink()">
-              <option value="">Any</option><option>North America</option><option>South America</option>
-              <option>Europe</option><option>Africa</option><option>Asia</option><option>Oceania</option>
-            </select>
-          </div>
-        </div>
-        <a id="upgradeDeepLink" href="https://seats.aero/pnpz" target="_blank" class="deeplink-btn">⬆ Open PlusPoints Finder on seats.aero →</a>
-        <div class="note">Opens seats.aero with your filters pre-applied</div>
-      </div>
+    <div id="csvUpgradeLoading" style="text-align:center;padding:40px 20px;">
+      <div class="spinner green" style="margin:0 auto 12px;width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite"></div>
+      <div style="font-size:13px;color:var(--grey-light);">Loading upgrade data…</div>
     </div>
-    <div id="upgradeConnected" style="display:none">
-      <div class="card">
-        <div class="card-label">Fare Class</div>
-        <div class="fare-row">
-          <button class="fare-btn pz active" onclick="setUpgradeFare('PZ',this)">PZ</button>
-          <button class="fare-btn pn"        onclick="setUpgradeFare('PN',this)">PN</button>
-          <button class="fare-btn rn"        onclick="setUpgradeFare('RN',this)">RN</button>
-        </div>
-        <div class="fare-desc"><b>PZ</b> — PlusPoints/Miles (Plat, 1K)<br/><b>PN</b> — Instant upgrade (Global Services)<br/><b>RN</b> — Premium Plus upgrade</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Regions</div>
-        <div class="region-select-row">
-          <div class="region-select-wrap"><label>Origin</label>
-            <select class="region-select" id="upgradeOriginRegion" onchange="runUpgradeSearch()">
-              <option value="">Any</option><option>North America</option><option>South America</option>
-              <option>Europe</option><option>Africa</option><option>Asia</option><option>Oceania</option>
-            </select>
-          </div>
-          <div class="region-select-wrap"><label>Destination</label>
-            <select class="region-select" id="upgradeDestRegion" onchange="runUpgradeSearch()">
-              <option value="">Any</option><option>North America</option><option>South America</option>
-              <option>Europe</option><option>Africa</option><option>Asia</option><option>Oceania</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <div class="controls-bar">
-        <div class="controls-row">
-          <div class="control-wrap"><label>Filter Airport</label><input type="text" class="filter-input" id="upgradeFilterAirport" placeholder="e.g. ORD" maxlength="3" oninput="applyUpgradeFilters()" /></div>
-          <div class="control-wrap"><label>Filter Date</label><input type="text" class="filter-input" id="upgradeFilterDate" placeholder="e.g. Jun" oninput="applyUpgradeFilters()" style="text-transform:none" /></div>
-        </div>
-        <div class="filter-clear" onclick="clearUpgradeFilters()">Clear filters</div>
-      </div>
-      <div class="results-header"><span>Upgrade Availability</span><div style="display:flex;align-items:center;gap:8px;"><button onclick="exportUpgradeCSV()" style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button><span class="results-count" id="upgradeCount">0</span></div></div>
-      <div id="upgradeList"><div class="empty-state"><div class="empty-icon">⬆️</div>Select regions above.</div></div>
-      <div class="disconnect-link" onclick="disconnectOAuth()">Disconnect seats.aero</div>
-      <div style="margin-top:12px;">
-        <label style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--grey-light);cursor:pointer;padding:8px;">
-          <input type="file" id="csvFileInput2" accept=".csv" style="display:none" onchange="loadUpgradeCSV(this)" />
-          <span>📂 Upload CSV instead</span>
-        </label>
-      </div>
-    </div>
+    <div id="csvUpgradeError" style="display:none" class="empty-state"><div class="empty-icon">⚠️</div>Could not load upgrade data.</div>
+    <div id="csvUpgradePanel" style="display:none"></div>
   </div>
+
 
   <!-- SAVED -->
   <div id="mode-saved" style="display:none">
@@ -629,12 +549,43 @@ async function verifyPin(){
 }
 
 // ── Init ──
+var CSV_URL = "https://ech-technicalsolutions.com/flights/PNPZ_Data_PZ.csv";
+
+async function fetchUpgradeCSV() {
+  try {
+    var res = await fetch(CSV_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    var text = await res.text();
+    var lines = text.split("\n").filter(Boolean);
+    csvUpgradeData = [];
+    for (var i = 1; i < lines.length; i++) {
+      var cols = lines[i].split(",");
+      if (cols.length < 7) continue;
+      csvUpgradeData.push({
+        departure_date:      cols[0].trim(),
+        last_seen:           cols[1].trim(),
+        flight_number:       cols[2].trim(),
+        aircraft:            cols[3].trim(),
+        origin_airport:      cols[4].trim(),
+        destination_airport: cols[5].trim(),
+        inventory:           cols[6].trim()
+      });
+    }
+    showCSVUpgradeResults();
+  } catch(e) {
+    document.getElementById("csvUpgradeLoading").style.display = "none";
+    document.getElementById("csvUpgradeError").style.display = "block";
+    console.error("CSV fetch failed:", e);
+  }
+}
+
 function init(){
   checkUnlocked();
   buildGrid("programGrid",selectedPrograms,toggleRouteProgram);
   buildGrid("programGridRegion",selectedProgramsReg,toggleRegionProgram);
   buildRegionGrids();setDefaultDates();renderSaved();updateAuthUI();updateUpgradeDeepLink();
   handleOAuthCallback();
+  fetchUpgradeCSV();
 }
 
 
@@ -701,7 +652,6 @@ function setMode(mode){
   });
   if(mode!=="route"&&mode!=="region")document.getElementById("resultsArea").style.display="none";
   if(mode==="saved")renderSaved();
-  if(mode==="upgrades"&&accessToken)runUpgradeSearch();
 }
 
 // ── Programs ──
@@ -800,7 +750,7 @@ async function handleOAuthCallback(){
 async function refreshAccessToken(){if(!refreshToken)return false;try{var res=await fetch(WORKER+"/refresh",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({refresh_token:refreshToken})});var data=await res.json();if(data.access_token){accessToken=data.access_token;refreshToken=data.refresh_token||refreshToken;localStorage.setItem("afss_access_token",accessToken);localStorage.setItem("afss_refresh_token",refreshToken);return true}}catch(e){}return false}
 function disconnectOAuth(){if(!confirm("Disconnect seats.aero account?"))return;accessToken="";refreshToken="";localStorage.removeItem("afss_access_token");localStorage.removeItem("afss_refresh_token");updateAuthUI()}
 function handleAuthClick(){if(!accessToken)startOAuth()}
-function updateAuthUI(){var p=document.getElementById("authPill");if(accessToken){p.textContent="✓ Connected";p.className="auth-pill connected";document.getElementById("upgradeNotConnected").style.display="none";document.getElementById("upgradeConnected").style.display="block"}else{p.textContent="Not Connected";p.className="auth-pill disconnected";document.getElementById("upgradeNotConnected").style.display="block";document.getElementById("upgradeConnected").style.display="none"}}
+function updateAuthUI(){}
 
 // ── Upgrade search ──
 async function runUpgradeSearch(){
@@ -956,58 +906,20 @@ function renderResultCards(items){
   list.innerHTML=items.map(function(item,i){return buildResultCard(item,i)}).join("");
 }
 
-async function toggleCard(id, tripId){
+function toggleCard(id){
   var details=document.getElementById("details-"+id);
   var icon=document.getElementById("icon-"+id);
   if(details.classList.contains("open")){
     details.classList.remove("open");
     if(icon)icon.textContent="▼ Details";
     expandedCards.delete(id);
-    return;
-  }
-  details.classList.add("open");
-  if(icon)icon.textContent="▲ Hide";
-  expandedCards.add(id);
-
-  if(tripId && !details.dataset.loaded){
-    var tripContainer=details.querySelector(".trip-details");
-    if(tripContainer)tripContainer.innerHTML='<div style="font-size:12px;color:var(--grey-light);padding:4px 0;">Loading flight details…</div>';
-    try{
-      var res=await fetch(WORKER+"/trips/"+tripId);
-      updateQuota(res);
-      if(res.ok){
-        var data=await res.json();
-        var trips=data.data||[];
-        if(trips.length&&tripContainer){
-          tripContainer.innerHTML=trips.map(function(trip){
-            var stops=trip.Stops===0?"Nonstop":(trip.Stops===1?"1 stop":trip.Stops+" stops");
-            var dur="";
-      if(trip.TotalDuration){
-        var h=Math.floor(trip.TotalDuration/60),m=trip.TotalDuration%60;
-        dur=h+"h"+(m>0?" "+m+"m":"");
-      }
-            var carriers=(trip.Carriers||[]).join(", ");
-            var departs=trip.DepartsAt?new Date(trip.DepartsAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
-            var arrives=trip.ArrivesAt?new Date(trip.ArrivesAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
-            var cabin=trip.Cabin||"";
-            var pts=trip.MileageCost?formatPoints(trip.MileageCost):"";
-            return '<div class="detail-row"><span class="detail-label">'+stops+(dur?" · "+dur:"")+'</span><span class="detail-value">'+carriers+'</span></div>'+
-              (departs?'<div class="detail-row"><span class="detail-label">Departs</span><span class="detail-value">'+departs+'</span></div>':"")+
-              (arrives?'<div class="detail-row"><span class="detail-label">Arrives</span><span class="detail-value">'+arrives+'</span></div>':"")+
-              (pts&&cabin?'<div class="detail-row"><span class="detail-label">'+cabin+' cost</span><span class="detail-value">'+pts+'</span></div>':"");
-          }).join('<hr style="border:none;border-top:1px solid var(--border);margin:6px 0"/>');
-        } else if(tripContainer){
-          tripContainer.innerHTML='<div style="font-size:12px;color:var(--grey-light);">No segment data available.</div>';
-        }
-      } else if(tripContainer){
-        tripContainer.innerHTML='<div style="font-size:12px;color:var(--grey-light);">Could not load details.</div>';
-      }
-      details.dataset.loaded="1";
-    }catch(e){
-      if(tripContainer)tripContainer.innerHTML='';
-    }
+  } else {
+    details.classList.add("open");
+    if(icon)icon.textContent="▲ Hide";
+    expandedCards.add(id);
   }
 }
+
 
 function buildResultCard(item,i){
   var id="card-"+i;
@@ -1075,11 +987,11 @@ function buildResultCard(item,i){
       var carriers=trip.Carriers||trip.Airlines||"";
       var flightNums=trip.FlightNumbers||"";
       var cabin=trip.Cabin||"";
-      var pts=trip.MileageCost?formatPoints(trip.MileageCost)+" pts":"";
+      var pts=trip.MileageCost?formatPoints(trip.MileageCost):"";
       var taxes=trip.TotalTaxes?(", $"+(trip.TotalTaxes/100).toFixed(0)+" taxes"):"";
       var cabinLabel=cabin.charAt(0).toUpperCase()+cabin.slice(1);
-      return '<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);last-child:border:none">'+
-        '<div style="font-size:11px;font-weight:700;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">'+cabinLabel+(pts?" · "+pts+taxes:"")+'</div>'+
+      return '<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border)">'+
+        '<div style="font-size:11px;font-weight:700;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">'+cabinLabel+(pts?" · "+pts+" pts"+taxes:"")+'</div>'+
         (dep&&arr?'<div class="detail-row"><span class="detail-label">Time</span><span class="detail-value">'+dep+' → '+arr+nextDay+(dur?" ("+dur+")":"")+'</span></div>':"")+
         '<div class="detail-row"><span class="detail-label">Stops</span><span class="detail-value">'+stops+'</span></div>'+
         (flightNums?'<div class="detail-row"><span class="detail-label">Flights</span><span class="detail-value">'+flightNums+'</span></div>':"")+
@@ -1100,7 +1012,7 @@ function buildResultCard(item,i){
   bookLinks+='<a href="https://www.united.com/en/us/fsr/choose-flights?f='+origin+'&t='+dest+'&d='+rawDate+'&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True" target="_blank" class="book-link">Check on United (Expert Mode)</a>';
 
   return '<div class="result-card" style="animation-delay:'+(i*.02)+'s" id="'+id+'">'+
-    '<div class="result-card-header" onclick="toggleCard(\''+id+'\',\''+tripId+'\')">' +
+    '<div class="result-card-header" onclick="toggleCard(\'\'+id+\'\')">' +
       '<div class="result-route">'+
         '<div><div class="result-airports"><span>'+origin+'</span><span class="result-arrow">→</span><span>'+dest+'</span></div>'+(originCity||destCity?'<div style="font-size:11px;color:var(--grey-light);margin-top:1px;">'+( originCity||origin)+' → '+(destCity||dest)+'</div>':'')+'<div class="result-date">'+dateStr+'</div></div>'+
         '<div class="result-right"><div class="source-badge">'+source.toUpperCase()+'</div><div class="expand-icon" id="icon-'+id+'">'+(isExpanded?"▲ Hide":"▼ Details")+'</div></div>'+
@@ -1109,7 +1021,7 @@ function buildResultCard(item,i){
     '</div>'+
     '<div class="flight-details'+(isExpanded?" open":"")+'" id="details-'+id+'">'+
       '<div class="trip-details" style="margin-bottom:8px;"></div>'+
-      (detailHtml?detailHtml:'')+
+      (detailHtml||"")+
       '<div class="book-links">'+bookLinks+'</div>'+
     '</div>'+
   '</div>';
@@ -1155,15 +1067,11 @@ function loadUpgradeCSV(input) {
 }
 
 function showCSVUpgradeResults() {
-  // Hide connect card, show CSV results
-  document.getElementById("upgradeNotConnected").style.display = "none";
+  document.getElementById("csvUpgradeLoading").style.display = "none";
   var panel = document.getElementById("csvUpgradePanel");
-  if (!panel) {
-    panel = document.createElement("div");
-    panel.id = "csvUpgradePanel";
-    document.getElementById("mode-upgrades").appendChild(panel);
-  }
+  panel.style.display = "block";
   panel.innerHTML = buildCSVPanel();
+  renderCSVResults();
 }
 
 function buildCSVPanel() {
@@ -1217,9 +1125,7 @@ function buildCSVPanel() {
     '</div>'+
   '</div>'+
   '<div id="csvResultsList"></div>'+
-  '<div style="margin-top:12px;text-align:center;"><label style="font-size:12px;color:var(--grey-light);cursor:pointer;">'+
-    '<input type="file" accept=".csv" style="display:none" onchange="loadUpgradeCSV(this)" /> 🔄 Load different CSV</label>'+
-  '</div>';
+  '<div style="margin-top:12px;text-align:center;font-size:11px;color:var(--grey-light);">Data refreshes each time you open the app</div>';
 }
 
 function renderCSVResults() {
