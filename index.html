@@ -6,7 +6,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="AFSS" />
-  <link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;AFSS&quot;,&quot;short_name&quot;:&quot;AFSS&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%23f0f4f8&quot;,&quot;theme_color&quot;:&quot;%233b82c4&quot;}" />
   <script>
     // Generate app icon dynamically
     window.addEventListener('load', function() {
@@ -67,7 +66,7 @@
     /* Header */
     .header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px 12px;padding-top:calc(14px + var(--safe-top));position:sticky;top:0;z-index:100}
     .header-top{display:flex;align-items:center;justify-content:space-between}
-    .app-title{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blue-primary)}
+    .app-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
     .header-right{display:flex;align-items:center;gap:8px}
     .quota-badge{font-family:'DM Mono',monospace;font-size:11px;color:var(--grey-light);background:var(--surface2);padding:3px 8px;border-radius:20px}
     .auth-pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;cursor:pointer}
@@ -256,7 +255,7 @@
 
 <div class="header">
   <div class="header-top">
-    <div class="app-title">✈ Advanced Flight Seat Search</div>
+    <div class="app-title">✈ Flight Seat Search</div>
     <div class="header-right">
       <div class="quota-badge" id="quotaBadge">— calls left</div>
       <div class="auth-pill disconnected" id="authPill" onclick="handleAuthClick()">Not Connected</div>
@@ -619,17 +618,9 @@ function init(){
   buildGrid("programGridRegion",selectedProgramsReg,toggleRegionProgram);
   buildRegionGrids();setDefaultDates();renderSaved();updateAuthUI();updateUpgradeDeepLink();
   handleOAuthCallback();
-  // Fetch quota on load
-  fetchQuota();
 }
 
-async function fetchQuota(){
-  try{
-    var res=await fetch(WORKER+"/search?source=united&origin_airport=ORD&destination_airport=LHR");
-    var q=res.headers.get("x-ratelimit-remaining");
-    if(q){document.getElementById("quotaBadge").textContent=q+" calls left"}
-  }catch(e){}
-}
+
 
 function buildGrid(id,selSet,toggleFn){
   document.getElementById(id).innerHTML=PROGRAMS.map(function(p){
@@ -1047,13 +1038,20 @@ function deleteSaved(e,i){e.stopPropagation();savedRoutes.splice(i,1);localStora
 // ── Helpers ──
 function formatDate(str){try{return new Date(str).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}catch(e){return str}}
 function formatPoints(val){var n=parseInt(val,10);return isNaN(n)?val:n.toLocaleString()+" pts"}
-function updateQuota(res){var q=res.headers.get("x-ratelimit-remaining");if(q&&q!==""){document.getElementById("quotaBadge").textContent=q+" calls left"}}
+function updateQuota(res){
+  try{
+    var q=res.headers.get("x-ratelimit-remaining");
+    if(q!==null&&q!==""){
+      document.getElementById("quotaBadge").textContent=parseInt(q).toLocaleString()+" calls left";
+    }
+  }catch(e){}
+}
 function setLoading(on,btnId,offLabel){var btn=document.getElementById(btnId);if(on){btn.disabled=true;btn.textContent="Searching…";document.getElementById("resultsArea").style.display="block";document.getElementById("resultsList").innerHTML='<div class="loading"><div class="spinner"></div>Fetching availability…</div>';document.getElementById("resultsCount").textContent="…"}else{btn.disabled=false;btn.textContent=offLabel}}
 function showError(msg){document.getElementById("resultsList").innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div>'+msg+'</div>';document.getElementById("resultsArea").style.display="block"}
 
 ["origin","destination","filterAirport","filterAirline","upgradeFilterAirport"].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener("input",function(){this.value=this.value.toUpperCase()})});
 
-init();
+try { init(); } catch(e) { console.error('Init error:', e.message, e.stack); alert('Init error: ' + e.message); }
 </script>
 </body>
 </html>
