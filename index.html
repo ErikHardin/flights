@@ -22,449 +22,181 @@
       --grey-text: #4a5568;
       --grey-light: #8899aa;
       --text: #1a2533;
-      --success: #22c55e;
-      --warning: #f59e0b;
-      --danger: #ef4444;
+      --green: #059669;
       --shadow: 0 2px 12px rgba(59,130,196,0.10);
-      --shadow-md: 0 4px 24px rgba(59,130,196,0.15);
       --radius: 14px;
       --radius-sm: 8px;
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
     body {
       font-family: 'DM Sans', sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      min-height: -webkit-fill-available;
       overscroll-behavior: none;
     }
 
-    /* ── Header ── */
+    /* Header */
     .header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       padding: 16px 20px 12px;
       padding-top: calc(16px + env(safe-area-inset-top, 0px));
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      position: sticky; top: 0; z-index: 100;
     }
-    .header-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .app-title {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--blue-primary);
-    }
-    .quota-badge {
-      font-family: 'DM Mono', monospace;
-      font-size: 11px;
-      color: var(--grey-light);
-      background: var(--surface2);
-      padding: 3px 8px;
-      border-radius: 20px;
-    }
+    .header-top { display: flex; align-items: center; justify-content: space-between; }
+    .app-title { font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blue-primary); }
+    .quota-badge { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--grey-light); background: var(--surface2); padding: 3px 8px; border-radius: 20px; }
 
-    /* ── Main scroll area ── */
-    .main {
-      padding: 16px 16px calc(32px + var(--safe-bottom));
-      max-width: 480px;
-      margin: 0 auto;
-    }
+    /* Main */
+    .main { padding: 16px 16px calc(40px + var(--safe-bottom)); max-width: 480px; margin: 0 auto; }
 
-    /* ── Card ── */
-    .card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      padding: 16px;
-      margin-bottom: 14px;
-    }
-    .card-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--grey-light);
-      margin-bottom: 10px;
-    }
+    /* Card */
+    .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 16px; margin-bottom: 14px; }
+    .card-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--grey-light); margin-bottom: 10px; }
 
-    /* ── Program selector ── */
-    .program-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 7px;
-    }
+    /* Program grid */
+    .program-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
     .prog-btn {
-      background: var(--surface2);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 8px 4px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--grey-text);
-      cursor: pointer;
-      transition: all 0.15s;
-      text-align: center;
-      line-height: 1.3;
+      background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      padding: 8px 4px; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500;
+      color: var(--grey-text); cursor: pointer; transition: all 0.15s; text-align: center; line-height: 1.3;
     }
-    .prog-btn.active {
-      background: var(--blue-pale);
-      border-color: var(--blue-primary);
-      color: var(--blue-dark);
-      font-weight: 600;
-    }
+    .prog-btn.active { background: var(--blue-pale); border-color: var(--blue-primary); color: var(--blue-dark); font-weight: 600; }
     .prog-btn:active { transform: scale(0.96); }
 
-    /* ── Route inputs ── */
-    .route-row {
-      display: grid;
-      grid-template-columns: 1fr 32px 1fr;
-      align-items: center;
-      gap: 8px;
-    }
-    .route-arrow {
-      text-align: center;
-      color: var(--blue-light);
-      font-size: 18px;
-      line-height: 1;
-    }
-    .input-wrap { position: relative; }
-    .input-wrap label {
-      display: block;
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--grey-light);
-      margin-bottom: 4px;
-    }
+    /* Route inputs */
+    .route-row { display: grid; grid-template-columns: 1fr 32px 1fr; align-items: center; gap: 8px; }
+    .route-arrow { text-align: center; color: var(--blue-light); font-size: 18px; }
+    .input-wrap label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--grey-light); margin-bottom: 4px; }
     .input-wrap input, .input-wrap select {
-      width: 100%;
-      background: var(--surface2);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 10px 12px;
-      font-family: 'DM Mono', monospace;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text);
-      text-transform: uppercase;
-      outline: none;
-      transition: border-color 0.15s;
-      -webkit-appearance: none;
+      width: 100%; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      padding: 10px 12px; font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500;
+      color: var(--text); text-transform: uppercase; outline: none; transition: border-color 0.15s; -webkit-appearance: none;
     }
-    .input-wrap input:focus, .input-wrap select:focus {
-      border-color: var(--blue-primary);
-      background: var(--surface);
-    }
+    .input-wrap input:focus, .input-wrap select:focus { border-color: var(--blue-primary); background: var(--surface); }
     .input-wrap input::placeholder { color: var(--grey-light); text-transform: none; }
 
-    /* ── Region picker ── */
-    .region-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 7px;
-    }
+    /* Region grid */
+    .region-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
     .region-btn {
-      background: var(--surface2);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 10px 8px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--grey-text);
-      cursor: pointer;
-      transition: all 0.15s;
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
+      background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      padding: 10px 8px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+      color: var(--grey-text); cursor: pointer; transition: all 0.15s; text-align: center;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
     }
-    .region-btn.active {
-      background: var(--blue-pale);
-      border-color: var(--blue-primary);
-      color: var(--blue-dark);
-      font-weight: 600;
-    }
+    .region-btn.active { background: var(--blue-pale); border-color: var(--blue-primary); color: var(--blue-dark); font-weight: 600; }
     .region-btn:active { transform: scale(0.96); }
 
-    /* ── Toggle row ── */
-    .toggle-row {
-      display: flex;
-      gap: 7px;
-    }
+    /* Toggle row */
+    .toggle-row { display: flex; gap: 7px; }
     .toggle-btn {
-      flex: 1;
-      background: var(--surface2);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 10px 6px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--grey-text);
-      cursor: pointer;
-      transition: all 0.15s;
-      text-align: center;
+      flex: 1; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      padding: 10px 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+      color: var(--grey-text); cursor: pointer; transition: all 0.15s; text-align: center;
     }
-    .toggle-btn.active {
-      background: var(--blue-pale);
-      border-color: var(--blue-primary);
-      color: var(--blue-dark);
-      font-weight: 600;
-    }
+    .toggle-btn.active { background: var(--blue-pale); border-color: var(--blue-primary); color: var(--blue-dark); font-weight: 600; }
     .toggle-btn:active { transform: scale(0.96); }
 
-    /* ── Date row ── */
-    .date-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
+    /* Date row */
+    .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-    /* ── Search mode tabs ── */
-    .mode-tabs {
-      display: flex;
-      background: var(--surface2);
-      border-radius: var(--radius-sm);
-      padding: 3px;
-      margin-bottom: 14px;
-    }
+    /* Mode tabs */
+    .mode-tabs { display: flex; background: var(--surface2); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 14px; }
     .mode-tab {
-      flex: 1;
-      padding: 9px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--grey-text);
-      border: none;
-      background: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.15s;
-      text-align: center;
+      flex: 1; padding: 9px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+      color: var(--grey-text); border: none; background: none; border-radius: 6px; cursor: pointer; transition: all 0.15s; text-align: center;
     }
-    .mode-tab.active {
-      background: var(--surface);
-      color: var(--blue-primary);
-      font-weight: 600;
-      box-shadow: var(--shadow);
-    }
+    .mode-tab.active { background: var(--surface); color: var(--blue-primary); font-weight: 600; box-shadow: var(--shadow); }
 
-    /* ── Search button ── */
+    /* Search button */
     .search-btn {
-      width: 100%;
-      background: linear-gradient(135deg, var(--blue-primary), var(--blue-dark));
-      color: white;
-      border: none;
-      border-radius: var(--radius);
-      padding: 16px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      letter-spacing: 0.04em;
-      box-shadow: 0 4px 16px rgba(59,130,196,0.35);
-      transition: all 0.15s;
-      margin-bottom: 14px;
+      width: 100%; background: linear-gradient(135deg, var(--blue-primary), var(--blue-dark));
+      color: white; border: none; border-radius: var(--radius); padding: 16px;
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer;
+      letter-spacing: 0.04em; box-shadow: 0 4px 16px rgba(59,130,196,0.35); transition: all 0.15s; margin-bottom: 14px;
     }
     .search-btn:active { transform: scale(0.98); opacity: 0.9; }
     .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* ── Results ── */
+    /* Results header */
     .results-header {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--grey-light);
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--grey-light); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
     }
-    .results-count {
-      background: var(--blue-pale);
-      color: var(--blue-dark);
-      padding: 2px 8px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-    }
+    .results-count { background: var(--blue-pale); color: var(--blue-dark); padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
 
+    /* Result card */
     .result-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px;
-      margin-bottom: 10px;
-      box-shadow: var(--shadow);
-      animation: fadeUp 0.2s ease both;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); animation: fadeUp 0.2s ease both;
     }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    .result-route { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+    .result-airports { font-family: 'DM Mono', monospace; font-size: 19px; font-weight: 500; color: var(--text); letter-spacing: 0.04em; }
+    .result-arrow { color: var(--blue-light); margin: 0 5px; }
+    .result-date { font-size: 12px; color: var(--grey-light); font-weight: 500; margin-top: 2px; }
+    .result-source-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      background: var(--surface2); color: var(--grey-text); padding: 3px 8px; border-radius: 20px; white-space: nowrap;
     }
 
-    .result-route {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
+    /* Cabin rows - award */
+    .section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+      color: var(--grey-light); margin-bottom: 5px; margin-top: 8px;
     }
-    .result-airports {
-      font-family: 'DM Mono', monospace;
-      font-size: 18px;
-      font-weight: 500;
-      color: var(--text);
-      letter-spacing: 0.04em;
+    .cabin-rows { display: flex; flex-direction: column; gap: 4px; }
+    .cabin-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface2); border-radius: var(--radius-sm); padding: 7px 10px;
     }
-    .result-arrow { color: var(--blue-light); margin: 0 6px; }
-    .result-date {
-      font-size: 12px;
-      color: var(--grey-light);
-      font-weight: 500;
-    }
+    .cabin-row-left { display: flex; align-items: center; gap: 8px; }
+    .cabin-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .cabin-dot.economy  { background: #0369a1; }
+    .cabin-dot.premium  { background: #b45309; }
+    .cabin-dot.business { background: #1d4ed8; }
+    .cabin-dot.first    { background: #6d28d9; }
+    .cabin-dot.pz { background: #059669; }
+    .cabin-dot.pn { background: #0891b2; }
+    .cabin-dot.rn { background: #7c3aed; }
+    .cabin-name { font-size: 12px; font-weight: 600; color: var(--grey-text); }
+    .cabin-seats { font-size: 11px; color: var(--grey-light); margin-left: 2px; }
+    .cabin-row-right { display: flex; align-items: center; gap: 6px; }
+    .cabin-points { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; color: var(--blue-dark); }
+    .direct-badge { font-size: 10px; font-weight: 600; background: #dcfce7; color: #16a34a; padding: 2px 6px; border-radius: 10px; }
 
-    .cabin-pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 10px;
+    /* Upgrade section */
+    .upgrade-section { margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 8px; }
+    .upgrade-label { font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--green); margin-bottom: 5px; }
+    .upgrade-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 7px 10px; margin-bottom: 4px;
     }
-    .cabin-pill {
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
+    .upgrade-badge {
+      font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700;
+      color: var(--green); min-width: 28px;
     }
-    .cabin-pill.economy  { background: #e0f2fe; color: #0369a1; }
-    .cabin-pill.premium  { background: #fef3c7; color: #b45309; }
-    .cabin-pill.business { background: #dbeafe; color: #1d4ed8; }
-    .cabin-pill.first    { background: #ede9fe; color: #6d28d9; }
+    .upgrade-desc { font-size: 11px; color: #374151; flex: 1; margin-left: 8px; }
+    .upgrade-seats { font-size: 11px; font-weight: 600; color: var(--green); }
 
-    .result-meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-top: 1px solid var(--border);
-      padding-top: 10px;
-    }
-    .result-source {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--grey-light);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-    .result-points {
-      font-family: 'DM Mono', monospace;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--blue-dark);
-    }
-    .result-stops {
-      font-size: 11px;
-      color: var(--grey-light);
-    }
-    .nonstop-badge {
-      font-size: 10px;
-      font-weight: 600;
-      background: #dcfce7;
-      color: #16a34a;
-      padding: 2px 7px;
-      border-radius: 20px;
-    }
-
-    /* ── Loading ── */
-    .loading {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--grey-light);
-    }
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid var(--border);
-      border-top-color: var(--blue-primary);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin: 0 auto 12px;
-    }
+    /* Loading */
+    .loading { text-align: center; padding: 40px 20px; color: var(--grey-light); }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--blue-primary); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Empty / Error ── */
-    .empty-state {
-      text-align: center;
-      padding: 32px 20px;
-      color: var(--grey-light);
-      font-size: 14px;
-    }
+    /* Empty / error */
+    .empty-state { text-align: center; padding: 32px 20px; color: var(--grey-light); font-size: 14px; }
     .empty-icon { font-size: 36px; margin-bottom: 10px; }
 
-    /* ── Saved routes ── */
-    .saved-route-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-    }
+    /* Saved routes */
+    .saved-route-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
     .saved-route-item:last-child { border-bottom: none; }
-    .saved-route-airports {
-      font-family: 'DM Mono', monospace;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text);
-    }
-    .saved-route-detail {
-      font-size: 11px;
-      color: var(--grey-light);
-      margin-top: 2px;
-    }
-    .saved-route-del {
-      color: var(--grey-light);
-      font-size: 18px;
-      padding: 4px 8px;
-      cursor: pointer;
-    }
-
-    /* ── Divider ── */
-    .section-divider {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 4px 0 12px;
-    }
-    .section-divider span {
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--grey-light);
-      white-space: nowrap;
-    }
-    .section-divider hr {
-      flex: 1;
-      border: none;
-      border-top: 1px solid var(--border);
-    }
+    .saved-route-airports { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--text); }
+    .saved-route-detail { font-size: 11px; color: var(--grey-light); margin-top: 2px; }
+    .saved-route-del { color: var(--grey-light); font-size: 18px; padding: 4px 8px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -478,23 +210,20 @@
 
 <div class="main">
 
-  <!-- Search mode tabs -->
+  <!-- Mode tabs -->
   <div class="mode-tabs">
-    <button class="mode-tab active" onclick="setMode('route')" id="tab-route">Route Search</button>
-    <button class="mode-tab" onclick="setMode('region')" id="tab-region">Region Explore</button>
+    <button class="mode-tab active" onclick="setMode('route')" id="tab-route">Route</button>
+    <button class="mode-tab" onclick="setMode('region')" id="tab-region">Region</button>
     <button class="mode-tab" onclick="setMode('saved')" id="tab-saved">Saved</button>
   </div>
 
-  <!-- ── ROUTE SEARCH MODE ── -->
+  <!-- ── ROUTE SEARCH ── -->
   <div id="mode-route">
-
-    <!-- Programs -->
     <div class="card">
-      <div class="card-label">Mileage Programs</div>
+      <div class="card-label">Mileage Programs (select multiple)</div>
       <div class="program-grid" id="programGrid"></div>
     </div>
 
-    <!-- Origin / Destination -->
     <div class="card">
       <div class="card-label">Route</div>
       <div class="route-row">
@@ -510,7 +239,6 @@
       </div>
     </div>
 
-    <!-- Cabin -->
     <div class="card">
       <div class="card-label">Cabin</div>
       <div class="toggle-row" id="cabinToggle">
@@ -522,34 +250,24 @@
       </div>
     </div>
 
-    <!-- Dates -->
     <div class="card">
       <div class="card-label">Date Range</div>
       <div class="date-row">
-        <div class="input-wrap">
-          <label>Start</label>
-          <input type="date" id="startDate" />
-        </div>
-        <div class="input-wrap">
-          <label>End</label>
-          <input type="date" id="endDate" />
-        </div>
+        <div class="input-wrap"><label>Start</label><input type="date" id="startDate" /></div>
+        <div class="input-wrap"><label>End</label><input type="date" id="endDate" /></div>
       </div>
     </div>
 
     <button class="search-btn" onclick="runRouteSearch()" id="searchBtn">Search Availability</button>
   </div>
 
-  <!-- ── REGION EXPLORE MODE ── -->
+  <!-- ── REGION EXPLORE ── -->
   <div id="mode-region" style="display:none">
-
-    <!-- Programs (single select for bulk) -->
     <div class="card">
-      <div class="card-label">Mileage Program (pick one)</div>
-      <div class="program-grid" id="programGridSingle"></div>
+      <div class="card-label">Mileage Programs (select multiple)</div>
+      <div class="program-grid" id="programGridRegion"></div>
     </div>
 
-    <!-- Cabin -->
     <div class="card">
       <div class="card-label">Cabin</div>
       <div class="toggle-row" id="cabinToggleRegion">
@@ -561,44 +279,32 @@
       </div>
     </div>
 
-    <!-- Origin / Dest region -->
     <div class="card">
-      <div class="card-label">Origin Region</div>
+      <div class="card-label">Origin Region <span style="font-weight:400;text-transform:none;font-size:10px;">(optional)</span></div>
       <div class="region-grid" id="originRegionGrid"></div>
     </div>
+
     <div class="card">
-      <div class="card-label">Destination Region</div>
+      <div class="card-label">Destination Region <span style="font-weight:400;text-transform:none;font-size:10px;">(optional)</span></div>
       <div class="region-grid" id="destRegionGrid"></div>
     </div>
 
-    <!-- Dates -->
     <div class="card">
       <div class="card-label">Date Range</div>
       <div class="date-row">
-        <div class="input-wrap">
-          <label>Start</label>
-          <input type="date" id="startDateRegion" />
-        </div>
-        <div class="input-wrap">
-          <label>End</label>
-          <input type="date" id="endDateRegion" />
-        </div>
+        <div class="input-wrap"><label>Start</label><input type="date" id="startDateRegion" /></div>
+        <div class="input-wrap"><label>End</label><input type="date" id="endDateRegion" /></div>
       </div>
     </div>
 
     <button class="search-btn" onclick="runRegionSearch()" id="searchBtnRegion">Explore Region</button>
   </div>
 
-  <!-- ── SAVED ROUTES MODE ── -->
+  <!-- ── SAVED ── -->
   <div id="mode-saved" style="display:none">
     <div class="card">
       <div class="card-label">Saved Routes</div>
-      <div id="savedList">
-        <div class="empty-state">
-          <div class="empty-icon">🔖</div>
-          No saved routes yet.<br/>Search a route and tap Save.
-        </div>
-      </div>
+      <div id="savedList"></div>
     </div>
   </div>
 
@@ -614,40 +320,38 @@
 </div>
 
 <script>
-// ── Config ──
-const WORKER = "https://seats-proxy.erikchardin.workers.dev";
+var WORKER = "https://seats-proxy.erikchardin.workers.dev";
 
-// ── State ──
-let selectedPrograms = new Set(["united"]);
-let selectedProgramSingle = "united";
-let selectedCabin = "business";
-let selectedCabinRegion = "business";
-let selectedOriginRegion = "";
-let selectedDestRegion = "";
-let currentMode = "route";
-let savedRoutes = JSON.parse(localStorage.getItem("afss_saved") || "[]");
+// State
+var selectedPrograms    = new Set(["united"]);
+var selectedProgramsReg = new Set(["united"]);
+var selectedCabin       = "business";
+var selectedCabinRegion = "business";
+var selectedOriginRegion = "";
+var selectedDestRegion   = "";
+var currentMode = "route";
+var savedRoutes = JSON.parse(localStorage.getItem("afss_saved") || "[]");
 
-// ── Programs list ──
-const PROGRAMS = [
-  { id: "united",        label: "United" },
-  { id: "aeroplan",      label: "Aeroplan" },
-  { id: "delta",         label: "Delta" },
-  { id: "american",      label: "American" },
-  { id: "alaska",        label: "Alaska" },
-  { id: "flyingblue",    label: "Flying Blue" },
-  { id: "singapore",     label: "Singapore" },
-  { id: "turkish",       label: "Turkish" },
-  { id: "virginatlantic",label: "Virgin Atl" },
-  { id: "lufthansa",     label: "Lufthansa" },
-  { id: "qantas",        label: "Qantas" },
-  { id: "emirates",      label: "Emirates" },
-  { id: "qatar",         label: "Qatar" },
-  { id: "jetblue",       label: "JetBlue" },
-  { id: "finnair",       label: "Finnair" },
-  { id: "sas",           label: "SAS" },
+var PROGRAMS = [
+  { id: "united",         label: "United" },
+  { id: "aeroplan",       label: "Aeroplan" },
+  { id: "delta",          label: "Delta" },
+  { id: "american",       label: "American" },
+  { id: "alaska",         label: "Alaska" },
+  { id: "flyingblue",     label: "Flying Blue" },
+  { id: "singapore",      label: "Singapore" },
+  { id: "turkish",        label: "Turkish" },
+  { id: "virginatlantic", label: "Virgin Atl" },
+  { id: "lufthansa",      label: "Lufthansa" },
+  { id: "qantas",         label: "Qantas" },
+  { id: "emirates",       label: "Emirates" },
+  { id: "qatar",          label: "Qatar" },
+  { id: "jetblue",        label: "JetBlue" },
+  { id: "finnair",        label: "Finnair" },
+  { id: "sas",            label: "SAS" },
 ];
 
-const REGIONS = [
+var REGIONS = [
   { id: "North America", icon: "🌎" },
   { id: "South America", icon: "🌎" },
   { id: "Europe",        icon: "🌍" },
@@ -658,55 +362,48 @@ const REGIONS = [
 
 // ── Init ──
 function init() {
-  buildProgramGrid();
-  buildProgramGridSingle();
+  buildGrid("programGrid", selectedPrograms, toggleRouteProgram);
+  buildGrid("programGridRegion", selectedProgramsReg, toggleRegionProgram);
   buildRegionGrids();
   setDefaultDates();
   renderSaved();
 }
 
-function buildProgramGrid() {
-  const el = document.getElementById("programGrid");
-  el.innerHTML = PROGRAMS.map(p => `
-    <button class="prog-btn ${selectedPrograms.has(p.id) ? "active" : ""}"
-      onclick="toggleProgram('${p.id}', this)">${p.label}</button>
-  `).join("");
-}
-
-function buildProgramGridSingle() {
-  const el = document.getElementById("programGridSingle");
-  el.innerHTML = PROGRAMS.map(p => `
-    <button class="prog-btn ${selectedProgramSingle === p.id ? "active" : ""}"
-      onclick="selectSingleProgram('${p.id}', this)">${p.label}</button>
-  `).join("");
+function buildGrid(containerId, selSet, toggleFn) {
+  var el = document.getElementById(containerId);
+  el.innerHTML = PROGRAMS.map(function(p) {
+    return '<button class="prog-btn ' + (selSet.has(p.id) ? "active" : "") + '" ' +
+      'onclick="' + toggleFn.name + "('" + p.id + "', this)" + '">' + p.label + '</button>';
+  }).join("");
 }
 
 function buildRegionGrids() {
-  ["originRegionGrid", "destRegionGrid"].forEach((id, idx) => {
-    const el = document.getElementById(id);
-    const isOrigin = idx === 0;
-    el.innerHTML = REGIONS.map(r => `
-      <button class="region-btn ${(isOrigin ? selectedOriginRegion : selectedDestRegion) === r.id ? "active" : ""}"
-        onclick="${isOrigin ? "setOriginRegion" : "setDestRegion"}('${r.id}', this)">
-        ${r.icon} ${r.id}
-      </button>
-    `).join("");
+  ["originRegionGrid","destRegionGrid"].forEach(function(id, idx) {
+    var el = document.getElementById(id);
+    var isOrigin = idx === 0;
+    el.innerHTML = REGIONS.map(function(r) {
+      var active = (isOrigin ? selectedOriginRegion : selectedDestRegion) === r.id;
+      var fn = isOrigin ? "setOriginRegion" : "setDestRegion";
+      return '<button class="region-btn ' + (active ? "active" : "") + '" ' +
+        'onclick="' + fn + "('" + r.id + "', this)" + '">' + r.icon + " " + r.id + '</button>';
+    }).join("");
   });
 }
 
 function setDefaultDates() {
-  const today = new Date();
-  const later = new Date();
-  later.setDate(today.getDate() + 90);
-  const fmt = d => d.toISOString().split("T")[0];
-  ["startDate","startDateRegion"].forEach(id => document.getElementById(id).value = fmt(today));
-  ["endDate","endDateRegion"].forEach(id => document.getElementById(id).value = fmt(later));
+  var today = new Date();
+  var later = new Date(); later.setDate(today.getDate() + 90);
+  var fmt = function(d) { return d.toISOString().split("T")[0]; };
+  document.getElementById("startDate").value = fmt(today);
+  document.getElementById("endDate").value   = fmt(later);
+  document.getElementById("startDateRegion").value = fmt(today);
+  document.getElementById("endDateRegion").value   = fmt(later);
 }
 
 // ── Mode ──
 function setMode(mode) {
   currentMode = mode;
-  ["route","region","saved"].forEach(m => {
+  ["route","region","saved"].forEach(function(m) {
     document.getElementById("mode-" + m).style.display = m === mode ? "block" : "none";
     document.getElementById("tab-" + m).classList.toggle("active", m === mode);
   });
@@ -715,36 +412,35 @@ function setMode(mode) {
 }
 
 // ── Program toggles ──
-function toggleProgram(id, btn) {
+function toggleRouteProgram(id, btn) {
   if (selectedPrograms.has(id)) {
-    if (selectedPrograms.size === 1) return; // keep at least one
-    selectedPrograms.delete(id);
-    btn.classList.remove("active");
+    if (selectedPrograms.size === 1) return;
+    selectedPrograms.delete(id); btn.classList.remove("active");
   } else {
-    selectedPrograms.add(id);
-    btn.classList.add("active");
+    selectedPrograms.add(id); btn.classList.add("active");
   }
 }
-
-function selectSingleProgram(id, btn) {
-  selectedProgramSingle = id;
-  document.querySelectorAll("#programGridSingle .prog-btn").forEach(b => b.classList.remove("active"));
-  btn.classList.add("active");
+function toggleRegionProgram(id, btn) {
+  if (selectedProgramsReg.has(id)) {
+    if (selectedProgramsReg.size === 1) return;
+    selectedProgramsReg.delete(id); btn.classList.remove("active");
+  } else {
+    selectedProgramsReg.add(id); btn.classList.add("active");
+  }
 }
 
 // ── Cabin ──
 function setCabin(cabin) {
   selectedCabin = cabin;
-  document.querySelectorAll("#cabinToggle .toggle-btn").forEach((b, i) => {
-    const vals = ["", "economy", "premium", "business", "first"];
+  var vals = ["","economy","premium","business","first"];
+  document.querySelectorAll("#cabinToggle .toggle-btn").forEach(function(b, i) {
     b.classList.toggle("active", vals[i] === cabin);
   });
 }
-
 function setCabinRegion(cabin) {
   selectedCabinRegion = cabin;
-  document.querySelectorAll("#cabinToggleRegion .toggle-btn").forEach((b, i) => {
-    const vals = ["", "economy", "premium", "business", "first"];
+  var vals = ["","economy","premium","business","first"];
+  document.querySelectorAll("#cabinToggleRegion .toggle-btn").forEach(function(b, i) {
     b.classList.toggle("active", vals[i] === cabin);
   });
 }
@@ -752,188 +448,272 @@ function setCabinRegion(cabin) {
 // ── Regions ──
 function setOriginRegion(region, btn) {
   selectedOriginRegion = selectedOriginRegion === region ? "" : region;
-  document.querySelectorAll("#originRegionGrid .region-btn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll("#originRegionGrid .region-btn").forEach(function(b) { b.classList.remove("active"); });
   if (selectedOriginRegion) btn.classList.add("active");
 }
-
 function setDestRegion(region, btn) {
   selectedDestRegion = selectedDestRegion === region ? "" : region;
-  document.querySelectorAll("#destRegionGrid .region-btn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll("#destRegionGrid .region-btn").forEach(function(b) { b.classList.remove("active"); });
   if (selectedDestRegion) btn.classList.add("active");
 }
 
 // ── Route Search ──
 async function runRouteSearch() {
-  const origin = document.getElementById("origin").value.trim().toUpperCase();
-  const dest   = document.getElementById("destination").value.trim().toUpperCase();
+  var origin = document.getElementById("origin").value.trim().toUpperCase();
+  var dest   = document.getElementById("destination").value.trim().toUpperCase();
   if (!origin || !dest) { alert("Enter origin and destination airport codes."); return; }
 
-  const params = new URLSearchParams({
-    origin_airport: origin,
-    destination_airport: dest,
-  });
-  if (selectedCabin) params.set("cabin", selectedCabin);
+  var startDate = document.getElementById("startDate").value;
+  var endDate   = document.getElementById("endDate").value;
+  var programs  = Array.from(selectedPrograms);
 
-  const startDate = document.getElementById("startDate").value;
-  const endDate   = document.getElementById("endDate").value;
-  if (startDate) params.set("start_date", startDate);
-  if (endDate)   params.set("end_date", endDate);
-
-  // Search across each selected program
-  const programs = [...selectedPrograms];
-  setLoading(true);
+  setLoading(true, "searchBtn", "Search Availability");
 
   try {
-    const allResults = [];
-    for (const source of programs) {
-      params.set("source", source);
-      const res = await fetch(`${WORKER}/search?${params}`);
+    var allResults = [];
+    for (var i = 0; i < programs.length; i++) {
+      var params = new URLSearchParams({
+        origin_airport: origin,
+        destination_airport: dest,
+        source: programs[i]
+      });
+      if (selectedCabin) params.set("cabin", selectedCabin);
+      if (startDate)     params.set("start_date", startDate);
+      if (endDate)       params.set("end_date", endDate);
+
+      var res = await fetch(WORKER + "/search?" + params);
       updateQuota(res);
       if (res.ok) {
-        const data = await res.json();
-        if (data.data) allResults.push(...data.data);
+        var data = await res.json();
+        if (data.data) allResults.push.apply(allResults, data.data);
       }
     }
-    // Offer to save this route
-    offerSave(origin, dest, [...selectedPrograms], selectedCabin);
+    offerSave(origin, dest, programs, selectedCabin);
     renderResults(allResults);
-  } catch (e) {
+  } catch(e) {
     showError("Request failed. Check your connection.");
   } finally {
-    setLoading(false);
+    setLoading(false, "searchBtn", "Search Availability");
   }
 }
 
-// ── Region / Bulk Search ──
+// ── Region Search (multi-program) ──
 async function runRegionSearch() {
-  const params = new URLSearchParams({ source: selectedProgramSingle });
-  if (selectedCabinRegion)  params.set("cabin", selectedCabinRegion);
-  if (selectedOriginRegion) params.set("origin_region", selectedOriginRegion);
-  if (selectedDestRegion)   params.set("destination_region", selectedDestRegion);
+  var startDate = document.getElementById("startDateRegion").value;
+  var endDate   = document.getElementById("endDateRegion").value;
+  var programs  = Array.from(selectedProgramsReg);
 
-  const startDate = document.getElementById("startDateRegion").value;
-  const endDate   = document.getElementById("endDateRegion").value;
-  if (startDate) params.set("start_date", startDate);
-  if (endDate)   params.set("end_date", endDate);
+  setLoading(true, "searchBtnRegion", "Explore Region");
 
-  params.set("take", "200");
-
-  setLoading(true);
   try {
-    const res = await fetch(`${WORKER}/availability?${params}`);
-    updateQuota(res);
-    if (!res.ok) throw new Error("API error");
-    const data = await res.json();
-    renderResults(data.availability || data.data || []);
-  } catch (e) {
+    var allResults = [];
+    for (var i = 0; i < programs.length; i++) {
+      var params = new URLSearchParams({ source: programs[i], take: "200" });
+      if (selectedCabinRegion)  params.set("cabin", selectedCabinRegion);
+      if (selectedOriginRegion) params.set("origin_region", selectedOriginRegion);
+      if (selectedDestRegion)   params.set("destination_region", selectedDestRegion);
+      if (startDate)            params.set("start_date", startDate);
+      if (endDate)              params.set("end_date", endDate);
+
+      var res = await fetch(WORKER + "/availability?" + params);
+      updateQuota(res);
+      if (res.ok) {
+        var data = await res.json();
+        var rows = data.availability || data.data || [];
+        // Tag each row with source since bulk doesn't always include it
+        rows.forEach(function(r) { if (!r.Source) r.Source = programs[i]; });
+        allResults.push.apply(allResults, rows);
+      }
+    }
+    renderResults(allResults);
+  } catch(e) {
     showError("Request failed. Check your connection.");
   } finally {
-    setLoading(false);
+    setLoading(false, "searchBtnRegion", "Explore Region");
   }
 }
 
 // ── Render Results ──
 function renderResults(items) {
-  const area = document.getElementById("resultsArea");
-  const list = document.getElementById("resultsList");
+  var area = document.getElementById("resultsArea");
+  var list = document.getElementById("resultsList");
   document.getElementById("resultsCount").textContent = items.length;
 
   if (!items.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div>No availability found.<br/>Try expanding your date range or cabin class.</div>`;
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>No availability found.<br/>Try expanding dates or cabin class.</div>';
     area.style.display = "block";
     return;
   }
 
   // Sort by date
-  items.sort((a, b) => new Date(a.DepartsAt || a.Date || 0) - new Date(b.DepartsAt || b.Date || 0));
+  items.sort(function(a, b) {
+    var da = a.Date || a.DepartsAt || "";
+    var db = b.Date || b.DepartsAt || "";
+    return da < db ? -1 : da > db ? 1 : 0;
+  });
 
-  list.innerHTML = items.map((item, i) => {
-    const origin = item.OriginAirport || item.Route?.OriginAirport || "—";
-    const dest   = item.DestinationAirport || item.Route?.DestinationAirport || "—";
-    const date   = item.DepartsAt ? new Date(item.DepartsAt).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" }) : (item.Date || "—");
-    const source = item.Source || selectedProgramSingle || "—";
-    const points = item.MileageCost ? item.MileageCost.toLocaleString() + " pts" : "";
-    const stops  = item.Stops === 0 ? '<span class="nonstop-badge">Nonstop</span>' : (item.Stops ? `${item.Stops} stop${item.Stops > 1 ? "s" : ""}` : "");
-    const cabin  = item.Cabin || "";
-
-    const cabinPills = buildCabinPills(item, cabin);
-
-    return `<div class="result-card" style="animation-delay:${i * 0.03}s">
-      <div class="result-route">
-        <div>
-          <div class="result-airports">
-            <span>${origin}</span><span class="result-arrow">→</span><span>${dest}</span>
-          </div>
-          <div class="result-date">${date}</div>
-        </div>
-        <div style="text-align:right">
-          ${stops}
-        </div>
-      </div>
-      <div class="cabin-pills">${cabinPills}</div>
-      <div class="result-meta">
-        <span class="result-source">${source}</span>
-        <span class="result-points">${points}</span>
-      </div>
-    </div>`;
+  list.innerHTML = items.map(function(item, i) {
+    return buildResultCard(item, i);
   }).join("");
 
   area.style.display = "block";
   area.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function buildCabinPills(item, primaryCabin) {
-  const cabins = [];
-  // Bulk availability uses YAvailable, JAvailable etc
-  if (item.YAvailable || item.YDirect) cabins.push({ cls: "economy",  label: "Economy" });
-  if (item.WAvailable || item.WDirect) cabins.push({ cls: "premium",  label: "Premium" });
-  if (item.JAvailable || item.JDirect) cabins.push({ cls: "business", label: "Business" });
-  if (item.FAvailable || item.FDirect) cabins.push({ cls: "first",    label: "First" });
-  // Search results use Cabin field
-  if (!cabins.length && primaryCabin) {
-    const map = { economy:"economy", premium:"premium", business:"business", first:"first" };
-    if (map[primaryCabin]) cabins.push({ cls: map[primaryCabin], label: primaryCabin.charAt(0).toUpperCase() + primaryCabin.slice(1) });
-  }
-  return cabins.map(c => `<span class="cabin-pill ${c.cls}">${c.label}</span>`).join("") || `<span class="cabin-pill economy">Available</span>`;
+function buildResultCard(item, i) {
+  // Route
+  var origin = (item.Route && item.Route.OriginAirport) || item.OriginAirport || "—";
+  var dest   = (item.Route && item.Route.DestinationAirport) || item.DestinationAirport || "—";
+
+  // Date
+  var rawDate = item.Date || item.DepartsAt || "";
+  var dateStr = rawDate ? formatDate(rawDate) : "—";
+
+  // Source
+  var source = item.Source || "—";
+
+  // ── Award cabin rows ──
+  var awardCabins = [
+    { key: "Y", label: "Economy",  cls: "economy"  },
+    { key: "W", label: "Premium",  cls: "premium"  },
+    { key: "J", label: "Business", cls: "business" },
+    { key: "F", label: "First",    cls: "first"    },
+  ];
+
+  var awardRows = awardCabins.filter(function(c) {
+    return item[c.key + "Available"] === true;
+  }).map(function(c) {
+    var pts    = item[c.key + "MileageCost"] || item[c.key + "MileageCostRaw"] || "";
+    var seats  = item[c.key + "RemainingSeats"] || "";
+    var direct = item[c.key + "Direct"] === true;
+    var ptsStr = pts ? formatPoints(pts) : "";
+    var seatStr = seats ? "(" + seats + " left)" : "";
+    return '<div class="cabin-row">' +
+      '<div class="cabin-row-left">' +
+        '<div class="cabin-dot ' + c.cls + '"></div>' +
+        '<span class="cabin-name">' + c.label + '</span>' +
+        (seatStr ? '<span class="cabin-seats">' + seatStr + '</span>' : '') +
+      '</div>' +
+      '<div class="cabin-row-right">' +
+        (direct ? '<span class="direct-badge">Nonstop</span>' : '') +
+        (ptsStr ? '<span class="cabin-points">' + ptsStr + '</span>' : '') +
+      '</div>' +
+    '</div>';
+  }).join("");
+
+  // ── Upgrade rows (United-specific: PZ, PN, RN) ──
+  var upgradeDefs = [
+    { key: "PZ", label: "PZ", desc: "PlusPoints / Mileage Upgrade (Plat, 1K)" },
+    { key: "PN", label: "PN", desc: "Instant Upgrade (Global Services)" },
+    { key: "RN", label: "RN", desc: "Premium Plus Upgrade (PlusPoints / MUA)" },
+  ];
+
+  var upgradeRows = upgradeDefs.filter(function(u) {
+    return item[u.key + "Available"] === true;
+  }).map(function(u) {
+    var seats = item[u.key + "RemainingSeats"] || item[u.key + "Seats"] || "";
+    var seatStr = seats ? seats + " open" : "";
+    return '<div class="upgrade-row">' +
+      '<span class="upgrade-badge">' + u.key + '</span>' +
+      '<span class="upgrade-desc">' + u.desc + '</span>' +
+      (seatStr ? '<span class="upgrade-seats">' + seatStr + '</span>' : '') +
+    '</div>';
+  }).join("");
+
+  var upgradeSection = upgradeRows
+    ? '<div class="upgrade-section"><div class="upgrade-label">⬆ Upgrade Space</div>' + upgradeRows + '</div>'
+    : "";
+
+  var hasAward = awardRows.length > 0;
+
+  return '<div class="result-card" style="animation-delay:' + (i * 0.025) + 's">' +
+    '<div class="result-route">' +
+      '<div>' +
+        '<div class="result-airports"><span>' + origin + '</span><span class="result-arrow">→</span><span>' + dest + '</span></div>' +
+        '<div class="result-date">' + dateStr + '</div>' +
+      '</div>' +
+      '<div class="result-source-badge">' + source.toUpperCase() + '</div>' +
+    '</div>' +
+    (hasAward ? '<div class="section-label">Award</div><div class="cabin-rows">' + awardRows + '</div>' : '') +
+    upgradeSection +
+  '</div>';
 }
 
-// ── Saved Routes ──
+// ── Helpers ──
+function formatDate(str) {
+  try {
+    var d = new Date(str);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch(e) { return str; }
+}
+
+function formatPoints(val) {
+  var n = parseInt(val, 10);
+  if (isNaN(n)) return val;
+  return n.toLocaleString() + " pts";
+}
+
+function updateQuota(res) {
+  var q = res.headers.get("x-ratelimit-remaining");
+  if (q) document.getElementById("quotaBadge").textContent = q + " calls left";
+}
+
+function setLoading(on, btnId, offLabel) {
+  var btn  = document.getElementById(btnId);
+  var area = document.getElementById("resultsArea");
+  if (on) {
+    btn.disabled = true;
+    btn.textContent = "Searching…";
+    area.style.display = "block";
+    document.getElementById("resultsList").innerHTML = '<div class="loading"><div class="spinner"></div>Fetching availability…</div>';
+    document.getElementById("resultsCount").textContent = "…";
+  } else {
+    btn.disabled = false;
+    btn.textContent = offLabel;
+  }
+}
+
+function showError(msg) {
+  document.getElementById("resultsList").innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div>' + msg + '</div>';
+  document.getElementById("resultsArea").style.display = "block";
+}
+
+// ── Saved routes ──
 function offerSave(origin, dest, programs, cabin) {
-  const key = `${origin}-${dest}`;
-  const exists = savedRoutes.some(r => r.key === key);
+  var key = origin + "-" + dest;
+  var exists = savedRoutes.some(function(r) { return r.key === key; });
   if (exists) return;
-  const save = confirm(`Save route ${origin} → ${dest}?`);
-  if (save) {
-    savedRoutes.push({ key, origin, dest, programs, cabin, label: `${origin} → ${dest}` });
+  if (confirm("Save route " + origin + " → " + dest + "?")) {
+    savedRoutes.push({ key: key, origin: origin, dest: dest, programs: programs, cabin: cabin });
     localStorage.setItem("afss_saved", JSON.stringify(savedRoutes));
   }
 }
 
 function renderSaved() {
-  const el = document.getElementById("savedList");
+  var el = document.getElementById("savedList");
   if (!savedRoutes.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🔖</div>No saved routes yet.<br/>Search a route and tap Save.</div>`;
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔖</div>No saved routes yet.<br/>Search a route and tap Save.</div>';
     return;
   }
-  el.innerHTML = savedRoutes.map((r, i) => `
-    <div class="saved-route-item" onclick="loadSaved(${i})">
-      <div>
-        <div class="saved-route-airports">${r.origin} → ${r.dest}</div>
-        <div class="saved-route-detail">${r.programs.join(", ")} · ${r.cabin || "Any cabin"}</div>
-      </div>
-      <div class="saved-route-del" onclick="deleteSaved(event, ${i})">✕</div>
-    </div>
-  `).join("");
+  el.innerHTML = savedRoutes.map(function(r, i) {
+    return '<div class="saved-route-item" onclick="loadSaved(' + i + ')">' +
+      '<div>' +
+        '<div class="saved-route-airports">' + r.origin + ' → ' + r.dest + '</div>' +
+        '<div class="saved-route-detail">' + r.programs.join(", ") + ' · ' + (r.cabin || "Any") + '</div>' +
+      '</div>' +
+      '<div class="saved-route-del" onclick="deleteSaved(event,' + i + ')">✕</div>' +
+    '</div>';
+  }).join("");
 }
 
 function loadSaved(i) {
-  const r = savedRoutes[i];
+  var r = savedRoutes[i];
   setMode("route");
   document.getElementById("origin").value = r.origin;
   document.getElementById("destination").value = r.dest;
   selectedPrograms = new Set(r.programs);
   selectedCabin = r.cabin || "business";
-  buildProgramGrid();
+  buildGrid("programGrid", selectedPrograms, toggleRouteProgram);
   setCabin(selectedCabin);
   runRouteSearch();
 }
@@ -945,35 +725,8 @@ function deleteSaved(e, i) {
   renderSaved();
 }
 
-// ── UI Helpers ──
-function setLoading(on) {
-  const btn  = document.getElementById(currentMode === "region" ? "searchBtnRegion" : "searchBtn");
-  const area = document.getElementById("resultsArea");
-  if (on) {
-    btn.disabled = true;
-    btn.textContent = "Searching…";
-    area.style.display = "block";
-    document.getElementById("resultsList").innerHTML = `<div class="loading"><div class="spinner"></div>Fetching availability…</div>`;
-    document.getElementById("resultsCount").textContent = "…";
-  } else {
-    btn.disabled = false;
-    btn.textContent = currentMode === "region" ? "Explore Region" : "Search Availability";
-  }
-}
-
-function showError(msg) {
-  const list = document.getElementById("resultsList");
-  list.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div>${msg}</div>`;
-  document.getElementById("resultsArea").style.display = "block";
-}
-
-function updateQuota(res) {
-  const q = res.headers.get("x-ratelimit-remaining");
-  if (q) document.getElementById("quotaBadge").textContent = q + " calls left";
-}
-
-// ── Auto-uppercase inputs ──
-["origin","destination"].forEach(id => {
+// Auto-uppercase airport inputs
+["origin","destination"].forEach(function(id) {
   document.getElementById(id).addEventListener("input", function() {
     this.value = this.value.toUpperCase();
   });
