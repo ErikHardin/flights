@@ -734,7 +734,13 @@ function updateUpgradeDeepLink(){
 }
 
 // ── OAuth ──
-function startOAuth(){var state=Math.random().toString(36).substring(2);localStorage.setItem("afss_oauth_state",state);var params=new URLSearchParams({client_id:CLIENT_ID,redirect_uri:REDIRECT_URI,response_type:"code",scope:"openid",state:state});window.location.href="https://seats.aero/oauth2/consent?"+params.toString()}
+function startOAuth(){
+  var state=Math.random().toString(36).substring(2);
+  localStorage.setItem("afss_oauth_state",state);
+  // Use exact parameter order from seats.aero example consent URL
+  var url="https://seats.aero/oauth2/consent?response_type=code&client_id="+encodeURIComponent(CLIENT_ID)+"&redirect_uri="+encodeURIComponent(REDIRECT_URI)+"&scope=openid&state="+encodeURIComponent(state);
+  window.location.href=url;
+}
 var oauthRunning=false;
 async function handleOAuthCallback(){
   if(oauthRunning)return;oauthRunning=true;
