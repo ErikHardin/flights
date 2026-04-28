@@ -353,6 +353,10 @@
   <!-- UPGRADES -->
   <!-- UPGRADES -->
   <div id="mode-upgrades" style="display:none">
+    <div style="text-align:center;margin-bottom:12px;">
+      <button onclick="startOAuth()" style="font-size:12px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:6px 16px;cursor:pointer;">🔗 Connect Live Data</button>
+      <div style="font-size:10px;color:var(--grey-light);margin-top:4px;">CSV loads below · Connect for real-time data</div>
+    </div>
     <div id="csvUpgradeLoading" style="text-align:center;padding:40px 20px;">
       <div class="spinner green" style="margin:0 auto 12px;width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite"></div>
       <div style="font-size:13px;color:var(--grey-light);">Loading upgrade data…</div>
@@ -740,7 +744,23 @@ async function handleOAuthCallback(){
   window.history.replaceState({},document.title,window.location.pathname);
   localStorage.removeItem("afss_oauth_state");
   try{
-    var res=await fetch(WORKER+"/token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code:code,redirect_uri:REDIRECT_URI,state:state})});
+    // Get credentials from Worker, then POST directly to seats.aero from browser
+    // This bypasses Cloudflare IP blocks that may cause invalid_request
+    var paramsRes=await fetch(WORKER+"/token-params",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code:code,redirect_uri:REDIRECT_URI,state:state})});
+    var params=await paramsRes.json();
+    var formBody=[
+      "grant_type=authorization_code",
+      "code="+params.code,
+      "redirect_uri="+encodeURIComponent(params.redirect_uri),
+      "client_id="+params.client_id,
+      "client_secret="+params.client_secret,
+      "state="+encodeURIComponent(params.state)
+    ].join("&");
+    var res=await fetch("https://seats.aero/oauth2/token",{
+      method:"POST",
+      headers:{"Content-Type":"application/x-www-form-urlencoded","Accept":"application/json"},
+      body:formBody
+    });
     var raw=await res.text(),data;try{data=JSON.parse(raw)}catch(e){data={}}
     if(data.access_token){accessToken=data.access_token;refreshToken=data.refresh_token||"";localStorage.setItem("afss_access_token",accessToken);localStorage.setItem("afss_refresh_token",refreshToken);updateAuthUI();setMode("upgrades")}
     else alert("Login failed: "+(data.error_description||data.error||raw||"Unknown"));
@@ -1012,11 +1032,9 @@ function buildResultCard(item,i){
       var carriers=trip.Carriers||trip.Airlines||"";
       var flightNums=trip.FlightNumbers||"";
       var cabin=trip.Cabin||"";
-      var pts=trip.MileageCost?formatPoints(trip.MileageCost):"";
-      var taxes=trip.TotalTaxes?(", $"+(trip.TotalTaxes/100).toFixed(0)+" taxes"):"";
       var cabinLabel=cabin.charAt(0).toUpperCase()+cabin.slice(1);
       return '<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border)">'+
-        '<div style="font-size:11px;font-weight:700;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">'+cabinLabel+(pts?" · "+pts+" pts"+taxes:"")+'</div>'+
+        '<div style="font-size:11px;font-weight:700;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">'+cabinLabel+'</div>'+
         (dep&&arr?'<div class="detail-row"><span class="detail-label">Time</span><span class="detail-value">'+dep+' → '+arr+nextDay+(dur?" ("+dur+")":"")+'</span></div>':"")+
         '<div class="detail-row"><span class="detail-label">Stops</span><span class="detail-value">'+stops+'</span></div>'+
         (flightNums?'<div class="detail-row"><span class="detail-label">Flights</span><span class="detail-value">'+flightNums+'</span></div>':"")+
