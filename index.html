@@ -549,18 +549,37 @@ async function verifyPin(){
 }
 
 // ── Init ──
+var cachedBearerToken = "";
+
+async function getBearerToken() {
+  if (cachedBearerToken) return cachedBearerToken;
+  var res = await fetch(WORKER + "/get-token");
+  var data = await res.json();
+  cachedBearerToken = data.token || "";
+  return cachedBearerToken;
+}
+
 async function fetchUpgradeCSV() {
   try {
     document.getElementById("csvUpgradeLoading").style.display = "block";
     document.getElementById("csvUpgradeError").style.display = "none";
     document.getElementById("csvUpgradePanel").style.display = "none";
 
-    // Fetch all fare classes in parallel
+    // Get token from Worker, then call seats.aero directly from browser
+    var token = await getBearerToken();
+    if (!token) throw new Error("No token");
+
     var fareClasses = ["PZ","PN","RN"];
     var allRows = [];
     for(var f = 0; f < fareClasses.length; f++){
-      var res = await fetch(WORKER + "/pnpz-live?fare_class=" + fareClasses[f]);
-      if(res.status === 401){
+      var res = await fetch("https://seats.aero/_api/pnpz?fare_class=" + fareClasses[f], {
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Accept": "application/json"
+        }
+      });
+      if(res.status === 401 || res.status === 403){
+        cachedBearerToken = "";
         document.getElementById("csvUpgradeLoading").style.display = "none";
         document.getElementById("csvUpgradeError").innerHTML = '<div class="empty-icon">🔑</div>Token expired. Please sync a new token.';
         document.getElementById("csvUpgradeError").style.display = "block";
