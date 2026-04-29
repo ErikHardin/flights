@@ -353,10 +353,6 @@
   <!-- UPGRADES -->
   <!-- UPGRADES -->
   <div id="mode-upgrades" style="display:none">
-    <div style="text-align:center;margin-bottom:12px;">
-      <button onclick="startOAuth()" style="font-size:12px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:6px 16px;cursor:pointer;">🔗 Connect Live Data</button>
-      <div style="font-size:10px;color:var(--grey-light);margin-top:4px;">CSV loads below · Connect for real-time data</div>
-    </div>
     <div id="csvUpgradeLoading" style="text-align:center;padding:40px 20px;">
       <div class="spinner green" style="margin:0 auto 12px;width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite"></div>
       <div style="font-size:13px;color:var(--grey-light);">Loading live upgrade data…</div>
@@ -670,6 +666,7 @@ function setMode(mode){
   });
   if(mode!=="route"&&mode!=="region")document.getElementById("resultsArea").style.display="none";
   if(mode==="saved")renderSaved();
+  if(mode==="upgrades")fetchUpgradeCSV();
 }
 
 // ── Programs ──
