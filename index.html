@@ -549,15 +549,7 @@ async function verifyPin(){
 }
 
 // ── Init ──
-var cachedBearerToken = "";
-
-async function getBearerToken() {
-  if (cachedBearerToken) return cachedBearerToken;
-  var res = await fetch(WORKER + "/get-token");
-  var data = await res.json();
-  cachedBearerToken = data.token || "";
-  return cachedBearerToken;
-}
+var CSV_URL = "https://raw.githubusercontent.com/ErikHardin/flights/main/flights/PNPZ_Data_PZ.csv";
 
 async function fetchUpgradeCSV() {
   try {
@@ -565,50 +557,30 @@ async function fetchUpgradeCSV() {
     document.getElementById("csvUpgradeError").style.display = "none";
     document.getElementById("csvUpgradePanel").style.display = "none";
 
-    // Get token from Worker, then call seats.aero directly from browser
-    var token = await getBearerToken();
-    if (!token) throw new Error("No token");
-
-    var fareClasses = ["PZ","PN","RN"];
-    var allRows = [];
-    for(var f = 0; f < fareClasses.length; f++){
-      var res = await fetch("https://seats.aero/_api/pnpz?fare_class=" + fareClasses[f], {
-        headers: {
-          "Authorization": "Bearer " + token,
-          "Accept": "application/json"
-        }
-      });
-      if(res.status === 401 || res.status === 403){
-        cachedBearerToken = "";
-        document.getElementById("csvUpgradeLoading").style.display = "none";
-        document.getElementById("csvUpgradeError").innerHTML = '<div class="empty-icon">🔑</div>Token expired. Please sync a new token.';
-        document.getElementById("csvUpgradeError").style.display = "block";
-        return;
-      }
-      if(!res.ok) continue;
-      var data = await res.json();
-      var rows = data.rows || data.data || data || [];
-      rows.forEach(function(row){
-        allRows.push({
-          departure_date:      row.departureDate || row.departure_date || "",
-          last_seen:           row.lastSeenHours ? row.lastSeenHours + "h ago" : (row.last_seen || ""),
-          flight_number:       row.flightNumber || row.flight_number || "",
-          aircraft:            row.aircraftName || row.aircraft || "",
-          origin_airport:      row.originAirport || row.origin_airport || "",
-          destination_airport: row.destinationAirport || row.destination_airport || "",
-          inventory:           String(row.availability || row.inventory || ""),
-          fare_class:          fareClasses[f],
-          deeplink:            row.deeplink || ""
-        });
+    var res = await fetch(CSV_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    var text = await res.text();
+    var lines = text.split("\n").filter(Boolean);
+    csvUpgradeData = [];
+    for (var i = 1; i < lines.length; i++) {
+      var cols = lines[i].split(",");
+      if (cols.length < 7) continue;
+      csvUpgradeData.push({
+        departure_date:      cols[0].trim(),
+        last_seen:           cols[1].trim(),
+        flight_number:       cols[2].trim(),
+        aircraft:            cols[3].trim(),
+        origin_airport:      cols[4].trim(),
+        destination_airport: cols[5].trim(),
+        inventory:           cols[6].trim(),
+        fare_class:          cols[6].trim().replace(/[0-9]/g,"")
       });
     }
-
-    csvUpgradeData = allRows;
     showCSVUpgradeResults();
   } catch(e) {
     document.getElementById("csvUpgradeLoading").style.display = "none";
     document.getElementById("csvUpgradeError").style.display = "block";
-    console.error("Live fetch failed:", e);
+    console.error("CSV fetch failed:", e);
   }
 }
 
@@ -1135,8 +1107,20 @@ function loadUpgradeCSV(input) {
 
 async function refreshUpgradeCSV() {
   var btn = document.getElementById("csvRefreshBtn");
-  if (btn) { btn.textContent = "⏳ Loading…"; btn.disabled = true; }
-  await fetchUpgradeCSV();
+  if (btn) { btn.textContent = "⏳ Fetching…"; btn.disabled = true; }
+  try {
+    // Trigger GitHub Action to fetch fresh data
+    var res = await fetch(WORKER + "/trigger-refresh", { method: "POST" });
+    var data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Trigger failed");
+
+    // Wait for Action to complete then reload CSV (poll GitHub)
+    if (btn) btn.textContent = "⏳ Updating…";
+    await new Promise(function(resolve) { setTimeout(resolve, 15000); }); // wait 15s for Action
+    await fetchUpgradeCSV();
+  } catch(e) {
+    alert("Refresh failed: " + e.message);
+  }
   if (btn) { btn.textContent = "🔄 Refresh"; btn.disabled = false; }
 }
 
