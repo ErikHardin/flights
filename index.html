@@ -359,7 +359,7 @@
     </div>
     <div id="csvUpgradeLoading" style="text-align:center;padding:40px 20px;">
       <div class="spinner green" style="margin:0 auto 12px;width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite"></div>
-      <div style="font-size:13px;color:var(--grey-light);">Loading upgrade data…</div>
+      <div style="font-size:13px;color:var(--grey-light);">Loading live upgrade data…</div>
     </div>
     <div id="csvUpgradeError" style="display:none" class="empty-state"><div class="empty-icon">⚠️</div>Could not load upgrade data.</div>
     <div id="csvUpgradePanel" style="display:none"></div>
@@ -553,33 +553,47 @@ async function verifyPin(){
 }
 
 // ── Init ──
-var CSV_URL = "https://ech-technicalsolutions.com/flights/PNPZ_Data_PZ.csv";
-
 async function fetchUpgradeCSV() {
   try {
-    var res = await fetch(CSV_URL + "?t=" + Date.now());
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    var text = await res.text();
-    var lines = text.split("\n").filter(Boolean);
-    csvUpgradeData = [];
-    for (var i = 1; i < lines.length; i++) {
-      var cols = lines[i].split(",");
-      if (cols.length < 7) continue;
-      csvUpgradeData.push({
-        departure_date:      cols[0].trim(),
-        last_seen:           cols[1].trim(),
-        flight_number:       cols[2].trim(),
-        aircraft:            cols[3].trim(),
-        origin_airport:      cols[4].trim(),
-        destination_airport: cols[5].trim(),
-        inventory:           cols[6].trim()
+    document.getElementById("csvUpgradeLoading").style.display = "block";
+    document.getElementById("csvUpgradeError").style.display = "none";
+    document.getElementById("csvUpgradePanel").style.display = "none";
+
+    // Fetch all fare classes in parallel
+    var fareClasses = ["PZ","PN","RN"];
+    var allRows = [];
+    for(var f = 0; f < fareClasses.length; f++){
+      var res = await fetch(WORKER + "/pnpz-live?fare_class=" + fareClasses[f]);
+      if(res.status === 401){
+        document.getElementById("csvUpgradeLoading").style.display = "none";
+        document.getElementById("csvUpgradeError").innerHTML = '<div class="empty-icon">🔑</div>Token expired. Please sync a new token.';
+        document.getElementById("csvUpgradeError").style.display = "block";
+        return;
+      }
+      if(!res.ok) continue;
+      var data = await res.json();
+      var rows = data.rows || data.data || data || [];
+      rows.forEach(function(row){
+        allRows.push({
+          departure_date:      row.departureDate || row.departure_date || "",
+          last_seen:           row.lastSeenHours ? row.lastSeenHours + "h ago" : (row.last_seen || ""),
+          flight_number:       row.flightNumber || row.flight_number || "",
+          aircraft:            row.aircraftName || row.aircraft || "",
+          origin_airport:      row.originAirport || row.origin_airport || "",
+          destination_airport: row.destinationAirport || row.destination_airport || "",
+          inventory:           String(row.availability || row.inventory || ""),
+          fare_class:          fareClasses[f],
+          deeplink:            row.deeplink || ""
+        });
       });
     }
+
+    csvUpgradeData = allRows;
     showCSVUpgradeResults();
   } catch(e) {
     document.getElementById("csvUpgradeLoading").style.display = "none";
     document.getElementById("csvUpgradeError").style.display = "block";
-    console.error("CSV fetch failed:", e);
+    console.error("Live fetch failed:", e);
   }
 }
 
@@ -750,23 +764,7 @@ async function handleOAuthCallback(){
   window.history.replaceState({},document.title,window.location.pathname);
   localStorage.removeItem("afss_oauth_state");
   try{
-    // Get credentials from Worker, then POST directly to seats.aero from browser
-    // This bypasses Cloudflare IP blocks that may cause invalid_request
-    var paramsRes=await fetch(WORKER+"/token-params",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code:code,redirect_uri:REDIRECT_URI,state:state})});
-    var params=await paramsRes.json();
-    var formBody=[
-      "grant_type=authorization_code",
-      "code="+params.code,
-      "redirect_uri="+encodeURIComponent(params.redirect_uri),
-      "client_id="+params.client_id,
-      "client_secret="+params.client_secret,
-      "state="+encodeURIComponent(params.state)
-    ].join("&");
-    var res=await fetch("https://seats.aero/oauth2/token",{
-      method:"POST",
-      headers:{"Content-Type":"application/x-www-form-urlencoded","Accept":"application/json"},
-      body:formBody
-    });
+    var res=await fetch(WORKER+"/token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code:code,redirect_uri:REDIRECT_URI,state:state})});
     var raw=await res.text(),data;try{data=JSON.parse(raw)}catch(e){data={}}
     if(data.access_token){accessToken=data.access_token;refreshToken=data.refresh_token||"";localStorage.setItem("afss_access_token",accessToken);localStorage.setItem("afss_refresh_token",refreshToken);updateAuthUI();setMode("upgrades")}
     else alert("Login failed: "+(data.error_description||data.error||raw||"Unknown"));
@@ -1119,8 +1117,17 @@ function loadUpgradeCSV(input) {
   reader.readAsText(file);
 }
 
+async function refreshUpgradeCSV() {
+  var btn = document.getElementById("csvRefreshBtn");
+  if (btn) { btn.textContent = "⏳ Loading…"; btn.disabled = true; }
+  await fetchUpgradeCSV();
+  if (btn) { btn.textContent = "🔄 Refresh"; btn.disabled = false; }
+}
+
 function showCSVUpgradeResults() {
   document.getElementById("csvUpgradeLoading").style.display = "none";
+  var ts = document.getElementById("csvLastUpdated");
+  if (ts) ts.textContent = "Loaded "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})+" · "+csvUpgradeData.length.toLocaleString()+" flights";
   var panel = document.getElementById("csvUpgradePanel");
   panel.style.display = "block";
   panel.innerHTML = buildCSVPanel();
@@ -1173,12 +1180,13 @@ function buildCSVPanel() {
   '</div>'+
   '<div class="results-header"><span>Upgrade Availability</span>'+
     '<div style="display:flex;align-items:center;gap:8px;">'+
+      '<button onclick="refreshUpgradeCSV()" id="csvRefreshBtn" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">🔄 Refresh</button>'+
       '<button onclick="exportFilteredCSV()" style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button>'+
       '<span class="results-count" id="csvResultCount">0</span>'+
     '</div>'+
   '</div>'+
   '<div id="csvResultsList"></div>'+
-  '<div style="margin-top:12px;text-align:center;font-size:11px;color:var(--grey-light);">Data refreshes each time you open the app</div>';
+  '<div style="margin-top:12px;text-align:center;font-size:11px;color:var(--grey-light);" id="csvLastUpdated">Loaded '+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})+'</div>';
 }
 
 function renderCSVResults() {
@@ -1235,7 +1243,7 @@ function renderCSVResults() {
     var invColor = inv >= 6 ? "var(--green)" : inv >= 3 ? "#b45309" : "var(--grey-text)";
     var originCity = AIRPORT_CITIES[row.origin_airport]||"";
     var destCity   = AIRPORT_CITIES[row.destination_airport]||"";
-    var bookUrl    = "https://www.united.com/en/us/fsr/choose-flights?f="+row.origin_airport+"&t="+row.destination_airport+"&d="+row.departure_date+"&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True";
+    var bookUrl    = row.deeplink || ("https://www.united.com/en/us/fsr/choose-flights?f="+row.origin_airport+"&t="+row.destination_airport+"&d="+row.departure_date+"&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True");
     return '<div class="upgrade-card" style="animation-delay:'+(i*.01)+'s">'+
       '<div class="upgrade-route">'+
         '<div>'+
@@ -1248,6 +1256,7 @@ function renderCSVResults() {
         '</div>'+
         '<div style="text-align:right;">'+
           '<div style="font-family:DM Mono,monospace;font-size:18px;font-weight:700;color:'+invColor+'">'+row.inventory+'</div>'+
+          '<div style="font-size:10px;font-weight:600;color:var(--grey-light);margin-top:2px;">'+(row.fare_class||"PZ")+'</div>'+
           '<div style="font-size:10px;color:var(--grey-light);">seen '+row.last_seen+'</div>'+
         '</div>'+
       '</div>'+
