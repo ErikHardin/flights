@@ -1,0 +1,54 @@
+name: Update PNPZ Data
+
+on:
+  workflow_dispatch:  # Manual trigger via API
+
+jobs:
+  update-csv:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Fetch PNPZ data and save CSV
+        env:
+          SEATS_BEARER_TOKEN: ${{ secrets.SEATS_BEARER_TOKEN }}
+        run: |
+          python3 << 'EOF'
+          import urllib.request
+          import os
+
+          token = os.environ["SEATS_BEARER_TOKEN"]
+          fare_classes = ["PZ", "PN", "RN"]
+          all_rows = []
+          header = None
+
+          for fare in fare_classes:
+              url = f"https://seats.aero/_api/pnpz?fare_class={fare}&origin_region=Anywhere&destination_region=Anywhere&csv=true"
+              req = urllib.request.Request(url, headers={
+                  "Authorization": f"Bearer {token}",
+                  "Accept": "text/csv,*/*",
+                  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                  "Referer": "https://seats.aero/pnpz"
+              })
+              with urllib.request.urlopen(req) as response:
+                  text = response.read().decode("utf-8")
+                  lines = text.strip().split("\n")
+                  if not header:
+                      header = lines[0]
+                  all_rows.extend(lines[1:])
+              print(f"{fare}: {len(lines)-1} rows")
+
+          csv_content = header + "\n" + "\n".join(all_rows)
+          with open("PNPZ_Data_PZ.csv", "w") as f:
+              f.write(csv_content)
+          print(f"Total rows: {len(all_rows)}")
+          EOF
+
+      - name: Commit and push
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add PNPZ_Data_PZ.csv
+          git diff --staged --quiet || git commit -m "Update PNPZ data $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
