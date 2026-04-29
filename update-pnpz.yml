@@ -40,7 +40,7 @@ jobs:
               print(f"{fare}: {len(lines)-1} rows")
 
           csv_content = header + "\n" + "\n".join(all_rows)
-          with open("flights/PNPZ_Data_PZ.csv", "w") as f:
+          with open("PNPZ_Data_PZ.csv", "w") as f:
               f.write(csv_content)
           print(f"Total rows: {len(all_rows)}")
           EOF
@@ -49,6 +49,6 @@ jobs:
         run: |
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
-          git add flights/PNPZ_Data_PZ.csv
+          git add PNPZ_Data_PZ.csv
           git diff --staged --quiet || git commit -m "Update PNPZ data $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
