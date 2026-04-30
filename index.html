@@ -2000,7 +2000,26 @@ async function requestDataUpdate(btn) {
   btn.disabled = true;
   btn.textContent = "⏳ Sending…";
   try {
-    var res = await fetch(WORKER + "/send-notification", { method: "POST" });
+    // Get last update time
+    var lastUpdate = document.getElementById("csvGitHubDateTop") ? document.getElementById("csvGitHubDateTop").textContent : "Unknown";
+
+    // Get user location
+    var location = "Unknown location";
+    try {
+      var geoRes = await fetch("https://ipapi.co/json/");
+      var geoData = await geoRes.json();
+      if (geoData.city && geoData.region) location = geoData.city + ", " + geoData.region;
+    } catch(e) {}
+
+    // Format request time
+    var now = new Date();
+    var requestTime = now.toLocaleDateString("en-US", {month:"short",day:"numeric",year:"numeric"}) + " at " + now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+
+    var res = await fetch(WORKER + "/send-notification", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ requestTime: requestTime, location: location, lastUpdate: lastUpdate })
+    });
     var data = await res.json();
     if (data.ok) {
       btn.textContent = "✅ Request Sent";
