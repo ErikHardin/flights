@@ -372,6 +372,7 @@
           <select class="control-select" id="sortBy" onchange="applyFilters()">
             <option value="date">Date</option>
             <option value="points">Points (low→high)</option>
+            <option value="duration">Duration (fastest)</option>
             <option value="program">Program</option>
           </select>
         </div>
@@ -922,6 +923,14 @@ function applyFilters(){
       var ap=Math.min(a.YMileageCostRaw||Infinity,a.WMileageCostRaw||Infinity,a.JMileageCostRaw||Infinity,a.FMileageCostRaw||Infinity);
       var bp=Math.min(b.YMileageCostRaw||Infinity,b.WMileageCostRaw||Infinity,b.JMileageCostRaw||Infinity,b.FMileageCostRaw||Infinity);
       return ap-bp;
+    }else if(sortBy==="duration"){
+      // Sort by shortest trip duration from AvailabilityTrips
+      var getMinDur=function(item){
+        var trips=item.AvailabilityTrips||[];
+        if(!trips.length)return 9999;
+        return Math.min.apply(null,trips.map(function(t){return t.TotalDuration||9999}));
+      };
+      return getMinDur(a)-getMinDur(b);
     }else if(sortBy==="program"){return(a.Source||"").localeCompare(b.Source||"")}
     else{var da=a.Date||a.DepartsAt||"",db=b.Date||b.DepartsAt||"";return da<db?-1:da>db?1:0}
   });
@@ -1025,11 +1034,8 @@ function buildResultCard(item,i){
       var dur=trip.TotalDuration||9999, edur=existing.TotalDuration||9999;
       var pts=parseInt(trip.MileageCost)||0, epts=parseInt(existing.MileageCost)||0;
       // Fastest: shortest duration wins; Cheapest: fewest stops then shortest
-      if(tripSortMode==="fastest"){
-        if(dur<edur||(dur===edur&&stops<estops))bestByCabin[cabin]=trip;
-      } else {
-        if(stops<estops||(stops===estops&&dur<edur))bestByCabin[cabin]=trip;
-      }
+      // Always pick fewest stops then shortest duration at matching price
+      if(stops<estops||(stops===estops&&dur<edur))bestByCabin[cabin]=trip;
     });
     // Only show cabins that were searched for (or all if no filter)
     var searchedCabins=[];
@@ -1093,10 +1099,7 @@ function buildResultCard(item,i){
     '<div class="flight-details'+(isExpanded?" open":"")+'" id="details-'+id+'">'+
       '<div class="trip-details" style="margin-bottom:8px;"></div>'+
       (detailHtml||"")+
-      '<div style="display:flex;gap:6px;margin-bottom:10px;">'+
-        '<button onclick="setTripSort(\'cheapest\',this)" id="sort-cheapest-'+id+'" style="flex:1;padding:6px;font-size:11px;font-weight:600;border-radius:var(--radius-sm);border:1.5px solid var(--border);cursor:pointer;background:'+(tripSortMode==='cheapest'?'var(--blue-pale)':'var(--surface2)')+';color:'+(tripSortMode==='cheapest'?'var(--blue-dark)':'var(--grey-text)')+';">💰 Cheapest</button>'+
-        '<button onclick="setTripSort(\'fastest\',this)" id="sort-fastest-'+id+'" style="flex:1;padding:6px;font-size:11px;font-weight:600;border-radius:var(--radius-sm);border:1.5px solid var(--border);cursor:pointer;background:'+(tripSortMode==='fastest'?'var(--blue-pale)':'var(--surface2)')+';color:'+(tripSortMode==='fastest'?'var(--blue-dark)':'var(--grey-text)')+';">⚡ Fastest</button>'+
-      '</div>'+
+
       '<div class="book-links">'+bookLinks+'</div>'+
       '<button onclick="shareResult(event,'+i+')" style="width:100%;margin-top:8px;padding:9px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;color:var(--grey-text);cursor:pointer;">📤 Share</button>'+
     '</div>'+
