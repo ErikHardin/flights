@@ -1497,9 +1497,35 @@ function buildTripCard(entry, i) {
       '<div onclick="toggleTripDetails(this)" data-detail="td-'+id+'" style="text-align:center;font-size:11px;font-weight:600;color:var(--grey-light);cursor:pointer;padding:6px 0 2px;margin-top:4px;" id="tdlabel-'+id+'">&#9660; Details</div>'+
       '<div id="td-'+id+'" style="display:none;border-top:1px solid var(--border);margin-top:6px;padding-top:10px;">'+
         (dep&&arr?'<div class="detail-row"><span class="detail-label">Time</span><span class="detail-value">'+dep+' → '+arr+(nextDay?' +1':'')+' '+(dur?'('+dur+')':'')+'</span></div>':'')+
-        '<div class="detail-row"><span class="detail-label">Stops</span><span class="detail-value">'+(trip.Stops===0?'Nonstop':trip.Stops+' stop'+(trip.Stops>1?'s':''))+'</span></div>'+
-        (flights?'<div class="detail-row"><span class="detail-label">Flights</span><span class="detail-value">'+flights+'</span></div>':'')+
-        (carrierNames?'<div class="detail-row"><span class="detail-label">Carriers</span><span class="detail-value">'+carrierNames+'</span></div>':'')+
+        (function(){
+          var flightArr=(trip.FlightNumbers||"").split(",").map(function(f){return f.trim()});
+          var carrierArr=(trip.Carriers||"").split(",").map(function(c){return c.trim()});
+          var aircraftArr=trip.Aircraft||[];
+          var connections=trip.Connections||[];
+          var html='';
+          if(flightArr.length<=1){
+            // Nonstop - simple display
+            html+='<div class="detail-row"><span class="detail-label">Flight</span><span class="detail-value">'+flights+(aircraftArr[0]?' · '+aircraftArr[0]:'')+'</span></div>';
+            html+='<div class="detail-row"><span class="detail-label">Carrier</span><span class="detail-value">'+expandAirlines(carrierArr[0]||'')+'</span></div>';
+          } else {
+            // Connecting - show each segment
+            html+='<div style="margin-top:4px;">';
+            for(var s=0;s<flightArr.length;s++){
+              var segOrigin=s===0?origin:(connections[s-1]||'?');
+              var segDest=s===flightArr.length-1?dest:(connections[s]||'?');
+              html+='<div style="background:var(--surface);border-radius:6px;padding:8px 10px;margin-bottom:4px;">'+
+                '<div style="font-size:12px;font-weight:700;color:var(--text);">'+flightArr[s]+'</div>'+
+                '<div style="font-size:12px;color:var(--grey-text);">'+segOrigin+' → '+segDest+'</div>'+
+                (aircraftArr[s]?'<div style="font-size:11px;color:var(--grey-light);">'+aircraftArr[s]+' · '+expandAirlines(carrierArr[s]||carrierArr[0]||'')+'</div>':'')+
+              '</div>';
+              if(s<connections.length){
+                html+='<div style="text-align:center;font-size:11px;color:var(--grey-light);padding:2px 0;">✈ Connection at '+connections[s]+'</div>';
+              }
+            }
+            html+='</div>';
+          }
+          return html;
+        })()+
       '</div>'+
       '<div style="display:flex;gap:6px;margin-top:8px;">'+
         '<a href="'+bookUrl+'" target="_blank" class="book-link" style="flex:1;margin:0;">Book →</a>'+
