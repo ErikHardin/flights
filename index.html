@@ -549,6 +549,7 @@ async function verifyPin(){
 }
 
 // ── Init ──
+var csvJustLoaded = false;
 var CSV_URL = "https://raw.githubusercontent.com/ErikHardin/flights/main/PNPZ_Data_PZ.csv"; // Also accepts "PNPZ Data PZ.csv"
 
 async function fetchUpgradeCSV() {
@@ -1151,7 +1152,9 @@ async function handleCSVFile(input) {
         fare_class:          cols[6].trim().replace(/[0-9]/g,"")
       });
     }
+    csvJustLoaded = true;
     showCSVUpgradeResults();
+    csvJustLoaded = false;
 
     // Push to GitHub so it's fresh next load
     try {
@@ -1182,21 +1185,24 @@ function showCSVUpgradeResults() {
   renderCSVResults();
 
   // Show count immediately
+  var loadedAt = new Date();
   var immediateStr = "Data as of: just now — " + csvUpgradeData.length.toLocaleString() + " flights";
   var el = document.getElementById("csvGitHubDateTop");
   if (el) el.textContent = immediateStr;
 
-  // Then fetch exact GitHub commit date
-  fetch("https://api.github.com/repos/ErikHardin/flights/commits?path=PNPZ_Data_PZ.csv&per_page=1")
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      if(data&&data[0]&&data[0].commit){
-        var date = new Date(data[0].commit.author.date);
-        var dateStr = "Last updated: " + date.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) + " at " + date.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
-        var el2 = document.getElementById("csvGitHubDateTop");
-        if(el2) el2.textContent = dateStr;
-      }
-    }).catch(function(){});
+  // Only fetch GitHub date if loading from cache (not fresh file)
+  if (!csvJustLoaded) {
+    fetch("https://api.github.com/repos/ErikHardin/flights/commits?path=PNPZ_Data_PZ.csv&per_page=1")
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data&&data[0]&&data[0].commit){
+          var date = new Date(data[0].commit.author.date);
+          var dateStr = "Last updated: " + date.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) + " at " + date.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+          var el2 = document.getElementById("csvGitHubDateTop");
+          if(el2) el2.textContent = dateStr;
+        }
+      }).catch(function(){});
+  }
 }
 
 function buildCSVPanel() {
