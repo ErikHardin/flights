@@ -1436,7 +1436,16 @@ function exportResultsCSV(){
 }
 
 // ── Helpers ──
-function formatDate(str){try{return new Date(str).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}catch(e){return str}}
+function formatDate(str){
+  try{
+    // Parse YYYY-MM-DD as local time (not UTC) to avoid day shift
+    if(str && str.match(/^\d{4}-\d{2}-\d{2}$/)){
+      var parts=str.split('-');
+      return new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2])).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+    }
+    return new Date(str).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+  }catch(e){return str}
+}
 function formatPoints(val){var n=parseInt(val,10);return isNaN(n)?val:n.toLocaleString()+" pts"}
 function updateQuota(res){}
 function setLoading(on,btnId,offLabel){var btn=document.getElementById(btnId);if(on){btn.disabled=true;btn.textContent="Searching…";document.getElementById("resultsArea").style.display="block";document.getElementById("resultsList").innerHTML='<div class="loading"><div class="spinner"></div>Fetching availability…</div>';document.getElementById("resultsCount").textContent="…"}else{btn.disabled=false;btn.textContent=offLabel}}
