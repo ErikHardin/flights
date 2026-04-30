@@ -1106,6 +1106,31 @@ function loadUpgradeCSV(input) {
 }
 
 function startUpgradeRefresh() {}
+// Long press to reveal admin buttons
+var csvLongPressTimer = null;
+var csvAdminVisible = false;
+
+function startCSVLongPress() {
+  csvLongPressTimer = setTimeout(function() {
+    csvAdminVisible = !csvAdminVisible;
+    var btns = document.getElementById("csvAdminBtns");
+    if (btns) btns.style.display = csvAdminVisible ? "flex" : "none";
+    // Subtle haptic-like feedback via brief color change
+    var header = document.getElementById("upgradeResultsHeader");
+    if (header) {
+      header.style.opacity = "0.5";
+      setTimeout(function(){ header.style.opacity = "1"; }, 200);
+    }
+  }, 3000);
+}
+
+function cancelCSVLongPress() {
+  if (csvLongPressTimer) {
+    clearTimeout(csvLongPressTimer);
+    csvLongPressTimer = null;
+  }
+}
+
 function getUpgradeCSV() {
   window.location.href = "x-safari-https://seats.aero/_api/pnpz?fare_class=PZ&origin_region=Anywhere&destination_region=Anywhere&csv=true";
 }
@@ -1159,6 +1184,18 @@ async function refreshUpgradeCSV() {
 
 function showCSVUpgradeResults() {
   document.getElementById("csvUpgradeLoading").style.display = "none";
+  // Attach long press listeners after panel renders
+  setTimeout(function() {
+    var header = document.getElementById("upgradeResultsHeader");
+    if (header) {
+      header.addEventListener("touchstart", startCSVLongPress, {passive:true});
+      header.addEventListener("touchend", cancelCSVLongPress, {passive:true});
+      header.addEventListener("touchmove", cancelCSVLongPress, {passive:true});
+      header.addEventListener("mousedown", startCSVLongPress);
+      header.addEventListener("mouseup", cancelCSVLongPress);
+      header.addEventListener("mouseleave", cancelCSVLongPress);
+    }
+  }, 100);
   // Fetch last commit date from GitHub
   fetch("https://api.github.com/repos/ErikHardin/flights/commits?path=PNPZ_Data_PZ.csv&per_page=1")
     .then(function(r){ return r.json(); })
@@ -1224,10 +1261,12 @@ function buildCSVPanel() {
     '<div class="filter-clear" onclick="clearCSVFilters()">Clear all filters</div>'+
   '</div>'+
   '<div style="font-size:11px;color:var(--grey-light);margin-bottom:8px;" id="csvGitHubDateTop">Checking last update…</div>'+
-  '<div class="results-header"><span>Upgrade Availability</span>'+
+  '<div class="results-header" id="upgradeResultsHeader" oncontextmenu="return false;" style="user-select:none;-webkit-user-select:none;"><span>Upgrade Availability</span>'+
     '<div style="display:flex;align-items:center;gap:8px;">'+
-      '<button onclick="getUpgradeCSV()" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">🔄 Get CSV</button>'+
-      '<label style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">📂 Load CSV<input type="file" accept=".csv" style="display:none" onchange="handleCSVFile(this)"/></label>'+
+      '<div id="csvAdminBtns" style="display:none;display:flex;gap:6px;align-items:center;">'+
+        '<button onclick="getUpgradeCSV()" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">🔄 Get CSV</button>'+
+        '<label style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">📂 Load CSV<input type="file" accept=".csv" style="display:none" onchange="handleCSVFile(this)"/></label>'+
+      '</div>'+
       '<button onclick="exportFilteredCSV()" style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button>'+
       '<span class="results-count" id="csvResultCount">0</span>'+
     '</div>'+
