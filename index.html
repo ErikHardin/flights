@@ -264,18 +264,7 @@
     <div style="font-size:13px;color:var(--grey-light);margin-bottom:20px;">Fill in your info to request a PIN</div>
     <input id="reg_first" placeholder="First name" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:10px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
     <input id="reg_last" placeholder="Last name" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:10px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
-    <input id="reg_phone" placeholder="Phone number (10 digits)" type="tel" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:10px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
-    <select id="reg_carrier" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:10px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
-      <option value="">Select carrier</option>
-      <option value="verizon">Verizon</option>
-      <option value="att">AT&amp;T</option>
-      <option value="tmobile">T-Mobile</option>
-      <option value="sprint">Sprint</option>
-      <option value="boost">Boost Mobile</option>
-      <option value="cricket">Cricket</option>
-      <option value="metro">Metro by T-Mobile</option>
-      <option value="uscellular">US Cellular</option>
-    </select>
+    <input id="reg_email" placeholder="Email address" type="email" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:10px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
     <input id="reg_pin" placeholder="Desired 4-digit PIN" type="password" maxlength="4" inputmode="numeric" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:16px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
     <div id="reg_error" style="color:#e53e3e;font-size:12px;margin-bottom:10px;display:none;"></div>
     <div style="display:flex;gap:10px;">
@@ -288,8 +277,8 @@
 <div id="forgotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:100%;max-width:360px;box-shadow:var(--shadow);">
     <div style="font-size:18px;font-weight:700;margin-bottom:4px;">Forgot PIN</div>
-    <div style="font-size:13px;color:var(--grey-light);margin-bottom:20px;">Enter your phone number to receive a temporary PIN</div>
-    <input id="forgot_phone" placeholder="Phone number (10 digits)" type="tel" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:16px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
+    <div style="font-size:13px;color:var(--grey-light);margin-bottom:20px;">Enter your email address to receive a temporary PIN</div>
+    <input id="forgot_email" placeholder="Email address" type="email" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:16px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
     <div id="forgot_error" style="color:#e53e3e;font-size:12px;margin-bottom:10px;display:none;"></div>
     <div style="display:flex;gap:10px;">
       <button onclick="hideForgotPin()" style="flex:1;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;color:var(--text);">Cancel</button>
@@ -2221,7 +2210,7 @@ function showRegisterForm() {
 }
 function hideRegisterForm() {
   document.getElementById("registerModal").style.display = "none";
-  ["reg_first","reg_last","reg_phone","reg_pin"].forEach(function(id){ document.getElementById(id).value = ""; });
+  ["reg_first","reg_last","reg_email","reg_pin"].forEach(function(id){ document.getElementById(id).value = ""; });
   document.getElementById("reg_carrier").value = "";
   document.getElementById("reg_error").style.display = "none";
 }
@@ -2231,7 +2220,7 @@ function showForgotPin() {
 }
 function hideForgotPin() {
   document.getElementById("forgotModal").style.display = "none";
-  document.getElementById("forgot_phone").value = "";
+  document.getElementById("forgot_email").value = "";
   document.getElementById("forgot_error").style.display = "none";
 }
 
@@ -2247,14 +2236,12 @@ function hideChangePin() {
 async function submitRegistration() {
   var first = document.getElementById("reg_first").value.trim();
   var last = document.getElementById("reg_last").value.trim();
-  var phone = document.getElementById("reg_phone").value.replace(/\D/g,"");
-  var carrier = document.getElementById("reg_carrier").value;
+  var email = document.getElementById("reg_email").value.trim().toLowerCase();
   var pin = document.getElementById("reg_pin").value.trim();
   var errEl = document.getElementById("reg_error");
 
   if (!first || !last) { errEl.textContent = "Please enter your full name."; errEl.style.display = "block"; return; }
-  if (phone.length !== 10) { errEl.textContent = "Please enter a valid 10-digit phone number."; errEl.style.display = "block"; return; }
-  if (!carrier) { errEl.textContent = "Please select your carrier."; errEl.style.display = "block"; return; }
+  if (!email || !email.includes("@")) { errEl.textContent = "Please enter a valid email address."; errEl.style.display = "block"; return; }
   if (pin.length !== 4 || !/^\d{4}$/.test(pin)) { errEl.textContent = "PIN must be exactly 4 digits."; errEl.style.display = "block"; return; }
 
   // Check if PIN already taken
@@ -2269,7 +2256,7 @@ async function submitRegistration() {
   // Save to Firebase pending_users
   var userId = phone + "_" + Date.now();
   await fbSet("/pending_users/" + userId, {
-    firstName: first, lastName: last, phone: phone, carrier: carrier, pin: pin,
+    firstName: first, lastName: last, email: email, pin: pin,
     requestedAt: new Date().toISOString(), status: "pending"
   });
 
@@ -2277,7 +2264,7 @@ async function submitRegistration() {
   await fetch(WORKER + "/notify-registration", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ firstName: first, lastName: last, phone: phone, carrier: carrier, pin: pin, userId: userId })
+    body: JSON.stringify({ firstName: first, lastName: last, email: email, pin: pin, userId: userId })
   });
 
   btn.textContent = "Submit"; btn.disabled = false;
@@ -2286,40 +2273,34 @@ async function submitRegistration() {
 }
 
 async function submitForgotPin() {
-  var phone = document.getElementById("forgot_phone").value.replace(/\D/g,"");
+  var email = document.getElementById("forgot_email").value.trim().toLowerCase();
   var errEl = document.getElementById("forgot_error");
-  if (phone.length !== 10) { errEl.textContent = "Please enter a valid 10-digit phone number."; errEl.style.display = "block"; return; }
+  if (!email || !email.includes("@")) { errEl.textContent = "Please enter a valid email address."; errEl.style.display = "block"; return; }
 
   var btn = document.getElementById("forgot_submit");
   btn.textContent = "Sending…"; btn.disabled = true;
 
-  var users = await fbQuery("approved_users", "phone", phone);
+  var users = await fbQuery("approved_users", "email", email);
   if (!users.length) {
-    errEl.textContent = "No account found for that phone number.";
+    errEl.textContent = "No account found for that email address.";
     errEl.style.display = "block";
     btn.textContent = "Send PIN"; btn.disabled = false;
     return;
   }
 
   var user = users[0];
-  // Generate temp PIN
   var tempPin = generateTempPin();
-  // Save temp PIN to Firebase
   await fbSet("/approved_users/" + user._id, Object.assign({}, user, { pin: tempPin, tempPin: true }));
 
-  // Send text via Worker
   await fetch(WORKER + "/notify-user", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      phone: user.phone, carrier: user.carrier,
-      message: "Your Flight Seat Search temporary PIN is: " + tempPin + ". Please change it after logging in."
-    })
+    body: JSON.stringify({ email: user.email, firstName: user.firstName, tempPin: tempPin })
   });
 
   btn.textContent = "Send PIN"; btn.disabled = false;
   hideForgotPin();
-  alert("A temporary PIN has been sent to your phone.");
+  alert("A temporary PIN has been sent to your email.");
 }
 
 async function submitChangePin() {
