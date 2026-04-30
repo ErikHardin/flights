@@ -480,6 +480,254 @@ var REGION_COUNTRIES = {
   "Oceania":["Australia","New Zealand","Fiji","Hawaii"],
 };
 
+var AIRPORT_TZ = {
+  // US Eastern
+  "JFK":"America/New_York","EWR":"America/New_York","LGA":"America/New_York","BOS":"America/New_York",
+  "MIA":"America/New_York","FLL":"America/New_York","MCO":"America/New_York","ATL":"America/New_York",
+  "CLT":"America/New_York","PHL":"America/New_York","IAD":"America/New_York","DCA":"America/New_York",
+  "BWI":"America/New_York","DTW":"America/New_York","PIT":"America/New_York","CVG":"America/New_York",
+  "CLE":"America/New_York","IND":"America/New_York","CMH":"America/New_York","RDU":"America/New_York",
+  "TPA":"America/New_York","MSY":"America/New_York","BNA":"America/New_York","MEM":"America/New_York",
+  // US Central
+  "ORD":"America/Chicago","MDW":"America/Chicago","DFW":"America/Chicago","IAH":"America/Chicago",
+  "HOU":"America/Chicago","MSP":"America/Chicago","STL":"America/Chicago","MCI":"America/Chicago",
+  "MKE":"America/Chicago","OMA":"America/Chicago","DSM":"America/Chicago",
+  // US Mountain
+  "DEN":"America/Denver","SLC":"America/Denver","ABQ":"America/Denver","BIL":"America/Denver",
+  "PHX":"America/Phoenix","TUS":"America/Phoenix",
+  // US Pacific
+  "LAX":"America/Los_Angeles","SFO":"America/Los_Angeles","SJC":"America/Los_Angeles",
+  "OAK":"America/Los_Angeles","SEA":"America/Los_Angeles","PDX":"America/Los_Angeles",
+  "SAN":"America/Los_Angeles","LAS":"America/Los_Angeles","SMF":"America/Los_Angeles",
+  // US Hawaii/Alaska
+  "HNL":"Pacific/Honolulu","OGG":"Pacific/Honolulu","KOA":"Pacific/Honolulu",
+  "ANC":"America/Anchorage","FAI":"America/Anchorage",
+  // Canada
+  "YYZ":"America/Toronto","YOW":"America/Toronto","YUL":"America/Montreal",
+  "YVR":"America/Vancouver","YYC":"America/Edmonton","YEG":"America/Edmonton",
+  // Mexico/Caribbean
+  "MEX":"America/Mexico_City","CUN":"America/Cancun","GDL":"America/Mexico_City",
+  "SJU":"America/Puerto_Rico","NAS":"America/Nassau","KIN":"America/Jamaica",
+  "HAV":"America/Havana","PTY":"America/Panama","SJO":"America/Costa_Rica",
+  // Europe
+  "LHR":"Europe/London","LGW":"Europe/London","MAN":"Europe/London","EDI":"Europe/London",
+  "GLA":"Europe/London","DUB":"Europe/Dublin","CDG":"Europe/Paris","ORY":"Europe/Paris",
+  "AMS":"Europe/Amsterdam","FRA":"Europe/Berlin","MUC":"Europe/Berlin","BER":"Europe/Berlin",
+  "DUS":"Europe/Berlin","HAM":"Europe/Berlin","VIE":"Europe/Vienna","ZRH":"Europe/Zurich",
+  "GVA":"Europe/Zurich","BCN":"Europe/Madrid","MAD":"Europe/Madrid","LIS":"Europe/Lisbon",
+  "FCO":"Europe/Rome","MXP":"Europe/Rome","VCE":"Europe/Rome","ATH":"Europe/Athens",
+  "IST":"Europe/Istanbul","CPH":"Europe/Copenhagen","ARN":"Europe/Stockholm",
+  "OSL":"Europe/Oslo","HEL":"Europe/Helsinki","PRG":"Europe/Prague","WAW":"Europe/Warsaw",
+  "BRU":"Europe/Brussels","NCE":"Europe/Paris","LYS":"Europe/Paris",
+  // Middle East
+  "DXB":"Asia/Dubai","AUH":"Asia/Dubai","DOH":"Asia/Qatar","TLV":"Asia/Jerusalem",
+  // Asia
+  "NRT":"Asia/Tokyo","HND":"Asia/Tokyo","KIX":"Asia/Tokyo","ICN":"Asia/Seoul",
+  "PEK":"Asia/Shanghai","PVG":"Asia/Shanghai","HKG":"Asia/Hong_Kong","TPE":"Asia/Taipei",
+  "BKK":"Asia/Bangkok","SIN":"Asia/Singapore","KUL":"Asia/Kuala_Lumpur",
+  "DEL":"Asia/Kolkata","BOM":"Asia/Kolkata","CGK":"Asia/Jakarta","MNL":"Asia/Manila",
+  // Africa
+  "JNB":"Africa/Johannesburg","CPT":"Africa/Johannesburg","CAI":"Africa/Cairo",
+  "CMN":"Africa/Casablanca","NBO":"Africa/Nairobi","ADD":"Africa/Addis_Ababa",
+  // Oceania
+  "SYD":"Australia/Sydney","MEL":"Australia/Melbourne","BNE":"Australia/Brisbane",
+  "PER":"Australia/Perth","AKL":"Pacific/Auckland","NAN":"Pacific/Fiji",
+  // South America
+  "GRU":"America/Sao_Paulo","GIG":"America/Sao_Paulo","EZE":"America/Argentina/Buenos_Aires",
+  "BOG":"America/Bogota","SCL":"America/Santiago","LIM":"America/Lima",
+  // Additional airports
+  // US Eastern additions
+  "SYR":"America/New_York","ALB":"America/New_York","BDL":"America/New_York","PWM":"America/New_York",
+  "BUF":"America/New_York","ROC":"America/New_York","ORF":"America/New_York","RIC":"America/New_York",
+  "GSP":"America/New_York","SAV":"America/New_York","JAX":"America/New_York","MYR":"America/New_York",
+  "CAE":"America/New_York","CHS":"America/New_York","AGS":"America/New_York","AVL":"America/New_York",
+  "GSO":"America/New_York","FAY":"America/New_York","ILM":"America/New_York","EWN":"America/New_York",
+  "DAY":"America/New_York","TOL":"America/New_York","FNT":"America/New_York","LAN":"America/New_York",
+  "GRR":"America/New_York","MKG":"America/New_York","LEX":"America/New_York","SDF":"America/New_York",
+  "EVV":"America/New_York","HTS":"America/New_York","CRW":"America/New_York","MGM":"America/New_York",
+  "BHM":"America/New_York","HSV":"America/New_York","MOB":"America/New_York","PNS":"America/New_York",
+  "VPS":"America/New_York","TLH":"America/New_York","GNV":"America/New_York","DAB":"America/New_York",
+  "SRQ":"America/New_York","RSW":"America/New_York","PBI":"America/New_York","EYW":"America/New_York",
+  // US Central additions  
+  "MSN":"America/Chicago","GRB":"America/Chicago","ATW":"America/Chicago","CWA":"America/Chicago",
+  "LSE":"America/Chicago","DBQ":"America/Chicago","MLI":"America/Chicago","PIA":"America/Chicago",
+  "BMI":"America/Chicago","CMI":"America/Chicago","SPI":"America/Chicago","MDT":"America/New_York",
+  "TUL":"America/Chicago","OKC":"America/Chicago","XNA":"America/Chicago","FSM":"America/Chicago",
+  "LIT":"America/Chicago","SHV":"America/Chicago","BTR":"America/Chicago","LFT":"America/Chicago",
+  "AEX":"America/Chicago","MLU":"America/Chicago","GPT":"America/Chicago","JAN":"America/Chicago",
+  "MEI":"America/Chicago","GRI":"America/Chicago","LNK":"America/Chicago","FSD":"America/Chicago",
+  "SUX":"America/Chicago","RAP":"America/Denver","BIS":"America/Chicago","FAR":"America/Chicago",
+  "GFK":"America/Chicago","MOT":"America/Chicago","ICT":"America/Chicago","MHK":"America/Chicago",
+  "COU":"America/Chicago","SGF":"America/Chicago","TYS":"America/New_York","CHA":"America/New_York",
+  // US Mountain additions
+  "BOI":"America/Boise","IDA":"America/Boise","TWF":"America/Boise","SUN":"America/Boise",
+  "GJT":"America/Denver","MTJ":"America/Denver","DRO":"America/Denver","PUB":"America/Denver",
+  "COS":"America/Denver","GUC":"America/Denver","ASE":"America/Denver","EGE":"America/Denver",
+  "HDN":"America/Denver","CNY":"America/Denver","CDC":"America/Denver","PIH":"America/Denver",
+  "BZN":"America/Denver","MSO":"America/Denver","GPI":"America/Denver","HLN":"America/Denver",
+  "GTF":"America/Denver","FCA":"America/Denver","JAC":"America/Denver","CPR":"America/Denver",
+  "CYS":"America/Denver","RKS":"America/Denver","BFF":"America/Denver","LAR":"America/Denver",
+  // US Pacific additions
+  "BUR":"America/Los_Angeles","LGB":"America/Los_Angeles","ONT":"America/Los_Angeles",
+  "PSP":"America/Los_Angeles","SBA":"America/Los_Angeles","SBP":"America/Los_Angeles",
+  "MRY":"America/Los_Angeles","FAT":"America/Los_Angeles","RDD":"America/Los_Angeles",
+  "EUG":"America/Los_Angeles","MFR":"America/Los_Angeles","RDM":"America/Los_Angeles",
+  "GEG":"America/Los_Angeles","YKM":"America/Los_Angeles","PSC":"America/Los_Angeles",
+  "BLI":"America/Los_Angeles","SIT":"America/Sitka","KTN":"America/Sitka",
+  // Europe additions
+  "STN":"Europe/London","LTN":"Europe/London","BRS":"Europe/London","BHX":"Europe/London",
+  "LPL":"Europe/London","NCL":"Europe/London","ABZ":"Europe/London","INV":"Europe/London",
+  "SEN":"Europe/London","EXT":"Europe/London","BOH":"Europe/London","SOU":"Europe/London",
+  "ORK":"Europe/Dublin","SNN":"Europe/Dublin","KIR":"Europe/Dublin","NOC":"Europe/Dublin",
+  "NTE":"Europe/Paris","BOD":"Europe/Paris","TLS":"Europe/Paris","MPL":"Europe/Paris",
+  "MRS":"Europe/Paris","LYS":"Europe/Paris","NTE":"Europe/Paris","SXB":"Europe/Paris",
+  "CGN":"Europe/Berlin","STR":"Europe/Berlin","NUE":"Europe/Berlin","HAJ":"Europe/Berlin",
+  "BRE":"Europe/Berlin","LEJ":"Europe/Berlin","DRS":"Europe/Berlin","ERF":"Europe/Berlin",
+  "GRZ":"Europe/Vienna","INN":"Europe/Vienna","SZG":"Europe/Vienna","KLU":"Europe/Vienna",
+  "BSL":"Europe/Zurich","BRN":"Europe/Zurich","LUZ":"Europe/Zurich",
+  "AGP":"Europe/Madrid","PMI":"Europe/Madrid","VLC":"Europe/Madrid","SVQ":"Europe/Madrid",
+  "TFS":"Europe/Madrid","LPA":"Europe/Madrid","ACE":"Europe/Madrid","FUE":"Europe/Madrid",
+  "IBZ":"Europe/Madrid","MAH":"Europe/Madrid","SDR":"Europe/Madrid","BIO":"Europe/Madrid",
+  "OPO":"Europe/Lisbon","FAO":"Europe/Lisbon","FNC":"Atlantic/Madeira",
+  "SKG":"Europe/Athens","HER":"Europe/Athens","RHO":"Europe/Athens","CFU":"Europe/Athens",
+  "KGS":"Europe/Athens","ZTH":"Europe/Athens","JMK":"Europe/Athens","JSI":"Europe/Athens",
+  "OTP":"Europe/Bucharest","CLJ":"Europe/Bucharest","TSR":"Europe/Bucharest",
+  "SOF":"Europe/Sofia","VAR":"Europe/Sofia","BOJ":"Europe/Sofia",
+  "BEG":"Europe/Belgrade","TGD":"Europe/Podgorica","DBV":"Europe/Zagreb","SPU":"Europe/Zagreb",
+  "ZAG":"Europe/Zagreb","LJU":"Europe/Ljubljana","SKP":"Europe/Skopje","TIA":"Europe/Tirane",
+  "SJJ":"Europe/Sarajevo","PRN":"Europe/Belgrade",
+  "BUD":"Europe/Budapest","LWO":"Europe/Kiev","KBP":"Europe/Kiev","ODS":"Europe/Kiev",
+  "RIX":"Europe/Riga","TLL":"Europe/Tallinn","VNO":"Europe/Vilnius","MSQ":"Europe/Minsk",
+  "HRK":"Europe/Kiev","DNK":"Europe/Kiev","IEV":"Europe/Kiev",
+  "SAW":"Europe/Istanbul","AYT":"Europe/Istanbul","DLM":"Europe/Istanbul","BJV":"Europe/Istanbul",
+  "ADB":"Europe/Istanbul","ESB":"Europe/Istanbul","ADA":"Europe/Istanbul","TZX":"Europe/Istanbul",
+  "SXF":"Europe/Berlin","TXL":"Europe/Berlin",
+  // Middle East additions
+  "SHJ":"Asia/Dubai","RKT":"Asia/Dubai","AMM":"Asia/Amman","BEY":"Asia/Beirut",
+  "BGW":"Asia/Baghdad","BSR":"Asia/Baghdad","EBL":"Asia/Baghdad","NJF":"Asia/Baghdad",
+  "KWI":"Asia/Kuwait","BAH":"Asia/Bahrain","MCT":"Asia/Muscat","SLL":"Asia/Muscat",
+  "SAH":"Asia/Aden","ADD":"Africa/Addis_Ababa","JED":"Asia/Riyadh","RUH":"Asia/Riyadh",
+  "DMM":"Asia/Riyadh","MED":"Asia/Riyadh","AHB":"Asia/Riyadh","GIZ":"Asia/Riyadh",
+  // Asia additions
+  "CTS":"Asia/Tokyo","OKA":"Asia/Tokyo","FSZ":"Asia/Tokyo","KMJ":"Asia/Tokyo",
+  "KOJ":"Asia/Tokyo","NGO":"Asia/Tokyo","HIJ":"Asia/Tokyo","TAK":"Asia/Tokyo",
+  "MYJ":"Asia/Tokyo","KCZ":"Asia/Tokyo","AOJ":"Asia/Tokyo","SDJ":"Asia/Tokyo",
+  "GMP":"Asia/Seoul","PUS":"Asia/Seoul","CJU":"Asia/Seoul","TAE":"Asia/Seoul",
+  "MWX":"Asia/Seoul","KPO":"Asia/Seoul","RSU":"Asia/Seoul","WJU":"Asia/Seoul",
+  "SHA":"Asia/Shanghai","CAN":"Asia/Shanghai","CTU":"Asia/Shanghai","KMG":"Asia/Shanghai",
+  "SZX":"Asia/Shanghai","HGH":"Asia/Shanghai","XIY":"Asia/Shanghai","WUH":"Asia/Shanghai",
+  "CSX":"Asia/Shanghai","NKG":"Asia/Shanghai","TAO":"Asia/Shanghai","TNA":"Asia/Shanghai",
+  "DLC":"Asia/Shanghai","HRB":"Asia/Shanghai","SHE":"Asia/Shanghai","CGO":"Asia/Shanghai",
+  "XMN":"Asia/Shanghai","HAK":"Asia/Shanghai","SYX":"Asia/Shanghai","LHW":"Asia/Shanghai",
+  "KHH":"Asia/Taipei","RMQ":"Asia/Taipei","TNN":"Asia/Taipei","HUN":"Asia/Taipei",
+  "CNX":"Asia/Bangkok","HKT":"Asia/Bangkok","USM":"Asia/Bangkok","HDY":"Asia/Bangkok",
+  "CEI":"Asia/Bangkok","DAD":"Asia/Ho_Chi_Minh","HUI":"Asia/Ho_Chi_Minh",
+  "CXR":"Asia/Ho_Chi_Minh","PQC":"Asia/Ho_Chi_Minh","VII":"Asia/Ho_Chi_Minh",
+  "PEN":"Asia/Kuala_Lumpur","BKI":"Asia/Kuching","KCH":"Asia/Kuching","MYY":"Asia/Kuching",
+  "SUB":"Asia/Jakarta","UPG":"Asia/Makassar","DPS":"Asia/Makassar","LOP":"Asia/Makassar",
+  "CEB":"Asia/Manila","DVO":"Asia/Manila","ILO":"Asia/Manila","KLO":"Asia/Manila",
+  "CCU":"Asia/Kolkata","MAA":"Asia/Kolkata","HYD":"Asia/Kolkata","BLR":"Asia/Kolkata",
+  "COK":"Asia/Kolkata","GOI":"Asia/Kolkata","AMD":"Asia/Kolkata","PNQ":"Asia/Kolkata",
+  "NAG":"Asia/Kolkata","JAI":"Asia/Kolkata","LKO":"Asia/Kolkata","PAT":"Asia/Kolkata",
+  "IXC":"Asia/Kolkata","ATQ":"Asia/Kolkata","SXR":"Asia/Kolkata","GAU":"Asia/Kolkata",
+  "ISB":"Asia/Karachi","KHI":"Asia/Karachi","LHE":"Asia/Karachi","PEW":"Asia/Karachi",
+  "CMB":"Asia/Colombo","MLE":"Indian/Maldives","DAC":"Asia/Dhaka","CXB":"Asia/Dhaka",
+  "RGN":"Asia/Rangoon","MDL":"Asia/Rangoon","NYT":"Asia/Rangoon",
+  "PNH":"Asia/Phnom_Penh","REP":"Asia/Phnom_Penh","VTE":"Asia/Vientiane",
+  "ULN":"Asia/Ulaanbaatar","HFE":"Asia/Shanghai","MFM":"Asia/Macau",
+  // Africa additions
+  "DUR":"Africa/Johannesburg","PLZ":"Africa/Johannesburg","ELS":"Africa/Johannesburg",
+  "GRJ":"Africa/Johannesburg","HRE":"Africa/Harare","BUQ":"Africa/Harare",
+  "LUN":"Africa/Lusaka","NBO":"Africa/Nairobi","MBA":"Africa/Nairobi",
+  "ADD":"Africa/Addis_Ababa","DIR":"Africa/Addis_Ababa","MQX":"Africa/Addis_Ababa",
+  "DAR":"Africa/Dar_es_Salaam","ZNZ":"Africa/Dar_es_Salaam","JRO":"Africa/Dar_es_Salaam",
+  "KGL":"Africa/Kigali","EBB":"Africa/Kampala","BKO":"Africa/Bamako",
+  "ABJ":"Africa/Abidjan","ACC":"Africa/Accra","LOS":"Africa/Lagos","ABV":"Africa/Lagos",
+  "PHC":"Africa/Lagos","KAN":"Africa/Lagos","DKR":"Africa/Dakar","BJL":"Africa/Banjul",
+  "OUA":"Africa/Ouagadougou","NIM":"Africa/Niamey","COO":"Africa/Porto-Novo",
+  "LFW":"Africa/Lome","SSG":"Africa/Malabo","LBV":"Africa/Libreville",
+  "DLA":"Africa/Douala","NSI":"Africa/Douala","YAO":"Africa/Douala",
+  "BGF":"Africa/Bangui","NDJ":"Africa/Ndjamena","SSG":"Africa/Malabo",
+  "CAI":"Africa/Cairo","HRG":"Africa/Cairo","SSH":"Africa/Cairo","LXR":"Africa/Cairo",
+  "ALG":"Africa/Algiers","ORN":"Africa/Algiers","CZL":"Africa/Algiers",
+  "TUN":"Africa/Tunis","TBR":"Africa/Tunis","MIR":"Africa/Tunis",
+  "CMN":"Africa/Casablanca","RAK":"Africa/Casablanca","AGA":"Africa/Casablanca",
+  "TNG":"Africa/Casablanca","FEZ":"Africa/Casablanca","OUD":"Africa/Casablanca",
+  "TRI":"Africa/Tripoli","BEN":"Africa/Tripoli","MJI":"Africa/Tripoli",
+  "KRT":"Africa/Khartoum","PZU":"Africa/Khartoum",
+  "TNR":"Indian/Antananarivo","MJN":"Indian/Antananarivo","DIE":"Indian/Antananarivo",
+  "MRU":"Indian/Mauritius","RRG":"Indian/Mauritius","SEZ":"Indian/Mahe",
+  // Oceania additions
+  "OOL":"Australia/Brisbane","CNS":"Australia/Brisbane","TSV":"Australia/Brisbane",
+  "ROK":"Australia/Brisbane","MKY":"Australia/Brisbane","HTI":"Australia/Brisbane",
+  "HBA":"Australia/Hobart","LST":"Australia/Hobart","CBR":"Australia/Sydney",
+  "NTL":"Australia/Sydney","AVV":"Australia/Melbourne","MEB":"Australia/Melbourne",
+  "ASP":"Australia/Darwin","DRW":"Australia/Darwin","KTA":"Australia/Perth",
+  "BME":"Australia/Perth","PHE":"Australia/Perth","GET":"Australia/Perth",
+  "WUN":"Australia/Perth","MJK":"Australia/Perth","PPP":"Australia/Brisbane",
+  "WSY":"Australia/Brisbane","BNE":"Australia/Brisbane",
+  "CHC":"Pacific/Auckland","WLG":"Pacific/Auckland","ZQN":"Pacific/Auckland",
+  "PMR":"Pacific/Auckland","NSN":"Pacific/Auckland","DUD":"Pacific/Auckland",
+  "APW":"Pacific/Apia","TBU":"Pacific/Tongatapu","SUV":"Pacific/Fiji",
+  "PPT":"Pacific/Tahiti","RAR":"Pacific/Rarotonga","IPC":"Pacific/Easter",
+  "GUM":"Pacific/Guam","SPN":"Pacific/Saipan","MNL":"Asia/Manila",
+  // South America additions
+  "SSA":"America/Bahia","REC":"America/Recife","FOR":"America/Fortaleza",
+  "BEL":"America/Belem","MCZ":"America/Maceio","NAT":"America/Fortaleza",
+  "CGH":"America/Sao_Paulo","VCP":"America/Sao_Paulo","SDU":"America/Sao_Paulo",
+  "CWB":"America/Sao_Paulo","FLN":"America/Sao_Paulo","POA":"America/Sao_Paulo",
+  "IGU":"America/Sao_Paulo","BHZ":"America/Sao_Paulo","UDI":"America/Sao_Paulo",
+  "CGB":"America/Cuiaba","COR":"America/Argentina/Cordoba","MDZ":"America/Argentina/Mendoza",
+  "SLA":"America/Argentina/Salta","TUC":"America/Argentina/Tucuman",
+  "NQN":"America/Argentina/Salta","BRC":"America/Argentina/Salta",
+  "SCL":"America/Santiago","PMC":"America/Santiago","IQQ":"America/Santiago",
+  "ANF":"America/Santiago","CJC":"America/Santiago","PUQ":"America/Santiago",
+  "IPC":"America/Santiago","LSC":"America/Santiago",
+  "BOG":"America/Bogota","MDE":"America/Bogota","CLO":"America/Bogota",
+  "BAQ":"America/Bogota","CTG":"America/Bogota","SMR":"America/Bogota",
+  "GYE":"America/Guayaquil","UIO":"America/Guayaquil","CUE":"America/Guayaquil",
+  "LIM":"America/Lima","AQP":"America/Lima","CUZ":"America/Lima","JUL":"America/Lima",
+  "MVD":"America/Montevideo","PDP":"America/Montevideo",
+  "ASU":"America/Asuncion","CIO":"America/Asuncion",
+  "VVI":"America/La_Paz","LPB":"America/La_Paz","CBB":"America/La_Paz",
+  "ORU":"America/La_Paz","SRE":"America/La_Paz",
+  "CCS":"America/Caracas","MAR":"America/Caracas","BLA":"America/Caracas",
+  "PMV":"America/Caracas","VLN":"America/Caracas","BRM":"America/Caracas",
+  "GEO":"America/Guyana","PBM":"America/Paramaribo","CAY":"America/Cayenne",
+  "POS":"America/Port_of_Spain","BGI":"America/Barbados","ANU":"America/Antigua",
+  "SXM":"America/Lower_Princes","SDQ":"America/Santo_Domingo","PUJ":"America/Santo_Domingo",
+  "STT":"America/St_Thomas","STX":"America/St_Thomas","SJU":"America/Puerto_Rico",
+  "MBJ":"America/Jamaica","KIN":"America/Jamaica","NAS":"America/Nassau",
+  "GGT":"America/Nassau","FPO":"America/Nassau","ELH":"America/Nassau",
+  "HAV":"America/Havana","SNU":"America/Havana","CMW":"America/Havana",
+  "HOG":"America/Havana","SCU":"America/Havana","CFG":"America/Havana",
+  "CYB":"America/Cayman","GCM":"America/Cayman",
+  "MBJ":"America/Jamaica","NEG":"America/Jamaica",
+};
+
+function formatTimeInTz(dateStr, airportCode) {
+  if (!dateStr) return "";
+  var tz = AIRPORT_TZ[airportCode] || "UTC";
+  try {
+    return new Date(dateStr).toLocaleTimeString("en-US", {
+      hour: "numeric", minute: "2-digit", timeZone: tz
+    });
+  } catch(e) {
+    return new Date(dateStr).toLocaleTimeString("en-US", {hour:"numeric",minute:"2-digit"});
+  }
+}
+
+function isNextDay(depStr, arrStr, depAirport, arrAirport) {
+  if (!depStr || !arrStr) return false;
+  var depTz = AIRPORT_TZ[depAirport] || "UTC";
+  var arrTz = AIRPORT_TZ[arrAirport] || "UTC";
+  try {
+    var depDay = new Date(depStr).toLocaleDateString("en-US", {timeZone: depTz});
+    var arrDay = new Date(arrStr).toLocaleDateString("en-US", {timeZone: arrTz});
+    return depDay !== arrDay;
+  } catch(e) { return false; }
+}
+
 var AIRLINE_NAMES = {
   "UA":"United","AA":"American","DL":"Delta","B6":"JetBlue","AS":"Alaska","WN":"Southwest",
   "F9":"Frontier","NK":"Spirit","G4":"Allegiant","SY":"Sun Country","HA":"Hawaiian",
@@ -1068,11 +1316,9 @@ function buildTripCard(entry, i) {
   var isDirect=trip.Stops===0&&airlines.length<=1;
   var stopBadge=isDirect?'<span class="direct-badge">Nonstop</span>':'<span class="connecting-badge">'+(trip.Stops===1?"1 stop":trip.Stops+" stops")+'</span>';
 
-  var depDate=trip.DepartsAt?new Date(trip.DepartsAt):null;
-  var arrDate=trip.ArrivesAt?new Date(trip.ArrivesAt):null;
-  var dep=depDate?depDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
-  var arr=arrDate?arrDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
-  var nextDay=(depDate&&arrDate&&arrDate.toDateString()!==depDate.toDateString())?" +1":"";
+  var dep=formatTimeInTz(trip.DepartsAt, origin);
+  var arr=formatTimeInTz(trip.ArrivesAt, dest);
+  var nextDay=isNextDay(trip.DepartsAt, trip.ArrivesAt, origin, dest)?" +1":"";
   var dur="";
   if(trip.TotalDuration){var h=Math.floor(trip.TotalDuration/60),m=trip.TotalDuration%60;dur=h+"h"+(m>0?" "+m+"m":"");}
   var flights=trip.FlightNumbers||"";
@@ -1095,7 +1341,7 @@ function buildTripCard(entry, i) {
       '<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;margin-top:8px;">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'+
           '<span style="font-size:13px;font-weight:600;color:var(--grey-text);">'+cabin.charAt(0).toUpperCase()+cabin.slice(1)+(seats?' <span style="font-size:11px;color:var(--grey-light);">('+seats+' left)</span>':'')+' '+stopBadge+'</span>'+
-          '<span style="font-family:DM Mono,monospace;font-size:13px;font-weight:600;color:var(--blue-dark);">'+pts+' pts</span>'+
+          '<span style="font-family:DM Mono,monospace;font-size:13px;font-weight:600;color:var(--blue-dark);">'+pts+'</span>'+
         '</div>'+
         (dep&&arr?'<div style="font-size:12px;color:var(--grey-text);">'+dep+' → '+arr+nextDay+(dur?' ('+dur+')':'')+' · '+flights+'</div>':'')+
         '<div style="font-size:11px;color:var(--grey-light);margin-top:3px;">'+carrierNames+(taxStr?' · '+taxStr:'')+'</div>'+
@@ -1123,11 +1369,9 @@ function shareTripCard(i) {
   var pts=formatPoints(item[key+"MileageCost"]||"");
   var taxes=item[key+"TotalTaxes"]||0;
   var taxStr=taxes>0?", $"+(taxes/100).toFixed(0)+" taxes":"";
-  var depDate=trip.DepartsAt?new Date(trip.DepartsAt):null;
-  var arrDate=trip.ArrivesAt?new Date(trip.ArrivesAt):null;
-  var dep=depDate?depDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
-  var arr=arrDate?arrDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
-  var nextDay=(depDate&&arrDate&&arrDate.toDateString()!==depDate.toDateString())?" +1":"";
+  var dep=formatTimeInTz(trip.DepartsAt, origin);
+  var arr=formatTimeInTz(trip.ArrivesAt, dest);
+  var nextDay=isNextDay(trip.DepartsAt, trip.ArrivesAt, origin, dest)?" +1":"";
   var dur="";if(trip.TotalDuration){var h=Math.floor(trip.TotalDuration/60),m=trip.TotalDuration%60;dur=" ("+h+"h"+(m>0?" "+m+"m":"")+")"}
   var isDirect=trip.Stops===0&&(trip.Carriers||"").split(",").length<=1;
   var stops=isDirect?"Nonstop":(trip.Stops===1?"1 stop":trip.Stops+" stops");
