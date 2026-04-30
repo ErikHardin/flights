@@ -1219,7 +1219,7 @@ function buildCSVPanel() {
   '</div>'+
   '<div class="results-header"><span>Upgrade Availability</span>'+
     '<div style="display:flex;align-items:center;gap:8px;">'+
-      '<a href="https://seats.aero/_api/pnpz?fare_class=PZ&origin_region=Anywhere&destination_region=Anywhere&csv=true" target="_blank" rel="noopener" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;text-decoration:none;">🔄 Get CSV</a>'+
+      '<a href="x-safari-https://seats.aero/_api/pnpz?fare_class=PZ&origin_region=Anywhere&destination_region=Anywhere&csv=true" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;text-decoration:none;">🔄 Get CSV</a>'+
       '<label style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">📂 Load CSV<input type="file" accept=".csv" style="display:none" onchange="handleCSVFile(this)"/></label>'+
       '<button onclick="exportFilteredCSV()" style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button>'+
       '<span class="results-count" id="csvResultCount">0</span>'+
