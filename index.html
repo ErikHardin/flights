@@ -249,15 +249,74 @@
     <button class="pin-btn" onclick="pinPress('9')">9</button>
     <button class="pin-btn empty"></button>
     <button class="pin-btn" onclick="pinPress('0')">0</button>
-    <button class="pin-btn delete" onclick="pinDelete()">⌫</button>
+    <button class="pin-btn delete" onclick="pinDelete()">&#x232B;</button>
   </div>
   <div class="lock-error" id="lockError"></div>
+  <div style="text-align:center;margin-top:16px;display:flex;justify-content:center;gap:24px;">
+    <button onclick="showRegisterForm()" style="background:none;border:none;font-size:13px;color:var(--blue-dark);cursor:pointer;text-decoration:underline;">Request Access</button>
+    <button onclick="showForgotPin()" style="background:none;border:none;font-size:13px;color:var(--grey-light);cursor:pointer;text-decoration:underline;">Forgot PIN</button>
+  </div>
+</div>
+
+<div id="registerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:100%;max-width:360px;box-shadow:var(--shadow);">
+    <div style="font-size:18px;font-weight:700;margin-bottom:4px;">Request Access</div>
+    <div style="font-size:13px;color:var(--grey-light);margin-bottom:20px;">Fill in your info to request a PIN</div>
+    <input id="reg_first" placeholder="First name" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:10px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
+    <input id="reg_last" placeholder="Last name" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:10px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
+    <input id="reg_phone" placeholder="Phone number (10 digits)" type="tel" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:10px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
+    <select id="reg_carrier" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:10px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
+      <option value="">Select carrier</option>
+      <option value="verizon">Verizon</option>
+      <option value="att">AT&amp;T</option>
+      <option value="tmobile">T-Mobile</option>
+      <option value="sprint">Sprint</option>
+      <option value="boost">Boost Mobile</option>
+      <option value="cricket">Cricket</option>
+      <option value="metro">Metro by T-Mobile</option>
+      <option value="uscellular">US Cellular</option>
+    </select>
+    <input id="reg_pin" placeholder="Desired 4-digit PIN" type="password" maxlength="4" inputmode="numeric" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:16px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
+    <div id="reg_error" style="color:#e53e3e;font-size:12px;margin-bottom:10px;display:none;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="hideRegisterForm()" style="flex:1;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;color:var(--text);">Cancel</button>
+      <button onclick="submitRegistration()" id="reg_submit" style="flex:1;padding:12px;background:var(--blue-dark);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;color:white;">Submit</button>
+    </div>
+  </div>
+</div>
+
+<div id="forgotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:100%;max-width:360px;box-shadow:var(--shadow);">
+    <div style="font-size:18px;font-weight:700;margin-bottom:4px;">Forgot PIN</div>
+    <div style="font-size:13px;color:var(--grey-light);margin-bottom:20px;">Enter your phone number to receive a temporary PIN</div>
+    <input id="forgot_phone" placeholder="Phone number (10 digits)" type="tel" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:16px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
+    <div id="forgot_error" style="color:#e53e3e;font-size:12px;margin-bottom:10px;display:none;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="hideForgotPin()" style="flex:1;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;color:var(--text);">Cancel</button>
+      <button onclick="submitForgotPin()" style="flex:1;padding:12px;background:var(--blue-dark);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;color:white;">Send PIN</button>
+    </div>
+  </div>
+</div>
+
+<div id="changePinModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:100%;max-width:360px;box-shadow:var(--shadow);">
+    <div style="font-size:18px;font-weight:700;margin-bottom:20px;">Change PIN</div>
+    <input id="change_current" placeholder="Current PIN" type="password" maxlength="4" inputmode="numeric" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:10px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
+    <input id="change_new" placeholder="New 4-digit PIN" type="password" maxlength="4" inputmode="numeric" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:10px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
+    <input id="change_confirm" placeholder="Confirm new PIN" type="password" maxlength="4" inputmode="numeric" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:16px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
+    <div id="change_error" style="color:#e53e3e;font-size:12px;margin-bottom:10px;display:none;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="hideChangePin()" style="flex:1;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;color:var(--text);">Cancel</button>
+      <button onclick="submitChangePin()" style="flex:1;padding:12px;background:var(--blue-dark);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;color:white;">Update PIN</button>
+    </div>
+  </div>
 </div>
 
 <div class="header">
   <div class="header-top">
     <div class="app-title">✈ Flight Seat Search</div>
     <div class="header-right">
+      <button onclick="showChangePin()" style="background:none;border:none;font-size:12px;color:var(--grey-light);cursor:pointer;padding:4px 8px;">Change PIN</button>
     </div>
   </div>
 </div>
@@ -399,6 +458,80 @@
 
 <script>
 var WORKER       = "https://seats-proxy.erikchardin.workers.dev";
+
+// Firebase config
+var FIREBASE_API_KEY = "AIzaSyD9lN9LHSsofgb7iyanon6DIJ06L898Ews";
+var FIREBASE_PROJECT = "afss-df164";
+var FB_BASE = "https://firestore.googleapis.com/v1/projects/" + FIREBASE_PROJECT + "/databases/(default)/documents";
+
+async function fbGet(path) {
+  var res = await fetch(FB_BASE + path + "?key=" + FIREBASE_API_KEY);
+  if (!res.ok) return null;
+  return await res.json();
+}
+
+async function fbSet(path, data) {
+  var fields = {};
+  Object.keys(data).forEach(function(k) {
+    var v = data[k];
+    if (typeof v === "string") fields[k] = { stringValue: v };
+    else if (typeof v === "number") fields[k] = { integerValue: String(v) };
+    else if (typeof v === "boolean") fields[k] = { booleanValue: v };
+  });
+  var res = await fetch(FB_BASE + path + "?key=" + FIREBASE_API_KEY, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fields: fields })
+  });
+  return await res.json();
+}
+
+async function fbDelete(path) {
+  await fetch(FB_BASE + path + "?key=" + FIREBASE_API_KEY, { method: "DELETE" });
+}
+
+async function fbQuery(collection, field, value) {
+  var res = await fetch("https://firestore.googleapis.com/v1/projects/" + FIREBASE_PROJECT + "/databases/(default)/documents:runQuery?key=" + FIREBASE_API_KEY, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: collection }],
+        where: { fieldFilter: { field: { fieldPath: field }, op: "EQUAL", value: { stringValue: String(value) } } }
+      }
+    })
+  });
+  var data = await res.json();
+  return data.filter(function(d) { return d.document; }).map(function(d) {
+    var doc = d.document;
+    var out = { _id: doc.name.split("/").pop() };
+    Object.keys(doc.fields || {}).forEach(function(k) {
+      var f = doc.fields[k];
+      out[k] = f.stringValue !== undefined ? f.stringValue : (f.integerValue !== undefined ? parseInt(f.integerValue) : f.booleanValue);
+    });
+    return out;
+  });
+}
+
+function generateTempPin() {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
+function getCarrierEmail(phone, carrier) {
+  var gateways = {
+    "verizon": "@vtext.com",
+    "att": "@txt.att.net",
+    "tmobile": "@tmomail.net",
+    "sprint": "@messaging.sprintpcs.com",
+    "boost": "@sms.myboostmobile.com",
+    "cricket": "@sms.cricketwireless.net",
+    "metro": "@mymetropcs.com",
+    "uscellular": "@email.uscc.net"
+  };
+  var gateway = gateways[carrier] || "@vtext.com";
+  return phone.replace(/\D/g, "") + gateway;
+}
+
 var CLIENT_ID    = "seats:cid:3Cqzkq2dWuvPdYEhrNOsooSleJo";
 var REDIRECT_URI = "https://ech-technicalsolutions.com/flights/";
 
@@ -816,9 +949,28 @@ function pinDelete(){pinEntry=pinEntry.slice(0,-1);updatePinDots(false);document
 function updatePinDots(error){for(var i=0;i<4;i++){var d=document.getElementById("dot"+i);d.className="pin-dot";if(error)d.classList.add("error");else if(i<pinEntry.length)d.classList.add("filled")}}
 async function verifyPin(){
   try{
+    // Check admin passcode via Worker
     var res=await fetch(WORKER+"/verify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passcode:pinEntry})});
-    if(res.ok){sessionStorage.setItem("afss_unlocked","1");document.getElementById("lockScreen").style.display="none"}
-    else{updatePinDots(true);document.getElementById("lockError").textContent="Incorrect passcode";setTimeout(function(){pinEntry="";updatePinDots(false);document.getElementById("lockError").textContent=""},800)}
+    if(res.ok){
+      currentUserPin=pinEntry;
+      sessionStorage.setItem("afss_unlocked","1");
+      sessionStorage.setItem("afss_pin",pinEntry);
+      document.getElementById("lockScreen").style.display="none";
+      return;
+    }
+    // Check Firebase approved_users
+    var users=await fbQuery("approved_users","pin",pinEntry);
+    if(users.length>0){
+      currentUserPin=pinEntry;
+      sessionStorage.setItem("afss_unlocked","1");
+      sessionStorage.setItem("afss_pin",pinEntry);
+      document.getElementById("lockScreen").style.display="none";
+      return;
+    }
+    // Invalid PIN
+    updatePinDots(true);
+    document.getElementById("lockError").textContent="Incorrect passcode";
+    setTimeout(function(){pinEntry="";updatePinDots(false);document.getElementById("lockError").textContent=""},800);
   }catch(e){document.getElementById("lockError").textContent="Connection error";pinEntry="";updatePinDots(false)}
 }
 
@@ -2058,6 +2210,142 @@ function shareUpgrade(origin, dest, date, flight, aircraft, inventory) {
       alert(text);
     });
   }
+}
+
+
+// ── User Management ──
+var currentUserPin = "";
+
+function showRegisterForm() {
+  document.getElementById("registerModal").style.display = "flex";
+}
+function hideRegisterForm() {
+  document.getElementById("registerModal").style.display = "none";
+  ["reg_first","reg_last","reg_phone","reg_pin"].forEach(function(id){ document.getElementById(id).value = ""; });
+  document.getElementById("reg_carrier").value = "";
+  document.getElementById("reg_error").style.display = "none";
+}
+
+function showForgotPin() {
+  document.getElementById("forgotModal").style.display = "flex";
+}
+function hideForgotPin() {
+  document.getElementById("forgotModal").style.display = "none";
+  document.getElementById("forgot_phone").value = "";
+  document.getElementById("forgot_error").style.display = "none";
+}
+
+function showChangePin() {
+  document.getElementById("changePinModal").style.display = "flex";
+}
+function hideChangePin() {
+  document.getElementById("changePinModal").style.display = "none";
+  ["change_current","change_new","change_confirm"].forEach(function(id){ document.getElementById(id).value = ""; });
+  document.getElementById("change_error").style.display = "none";
+}
+
+async function submitRegistration() {
+  var first = document.getElementById("reg_first").value.trim();
+  var last = document.getElementById("reg_last").value.trim();
+  var phone = document.getElementById("reg_phone").value.replace(/\D/g,"");
+  var carrier = document.getElementById("reg_carrier").value;
+  var pin = document.getElementById("reg_pin").value.trim();
+  var errEl = document.getElementById("reg_error");
+
+  if (!first || !last) { errEl.textContent = "Please enter your full name."; errEl.style.display = "block"; return; }
+  if (phone.length !== 10) { errEl.textContent = "Please enter a valid 10-digit phone number."; errEl.style.display = "block"; return; }
+  if (!carrier) { errEl.textContent = "Please select your carrier."; errEl.style.display = "block"; return; }
+  if (pin.length !== 4 || !/^\d{4}$/.test(pin)) { errEl.textContent = "PIN must be exactly 4 digits."; errEl.style.display = "block"; return; }
+
+  // Check if PIN already taken
+  var existing = await fbQuery("approved_users", "pin", pin);
+  if (existing.length > 0) { errEl.textContent = "That PIN is already taken. Please choose another."; errEl.style.display = "block"; return; }
+  var pendingExisting = await fbQuery("pending_users", "pin", pin);
+  if (pendingExisting.length > 0) { errEl.textContent = "That PIN is already requested. Please choose another."; errEl.style.display = "block"; return; }
+
+  var btn = document.getElementById("reg_submit");
+  btn.textContent = "Submitting…"; btn.disabled = true;
+
+  // Save to Firebase pending_users
+  var userId = phone + "_" + Date.now();
+  await fbSet("/pending_users/" + userId, {
+    firstName: first, lastName: last, phone: phone, carrier: carrier, pin: pin,
+    requestedAt: new Date().toISOString(), status: "pending"
+  });
+
+  // Notify admin via Worker
+  await fetch(WORKER + "/notify-registration", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ firstName: first, lastName: last, phone: phone, carrier: carrier, pin: pin, userId: userId })
+  });
+
+  btn.textContent = "Submit"; btn.disabled = false;
+  hideRegisterForm();
+  alert("Request submitted! You will receive a text when your account is approved.");
+}
+
+async function submitForgotPin() {
+  var phone = document.getElementById("forgot_phone").value.replace(/\D/g,"");
+  var errEl = document.getElementById("forgot_error");
+  if (phone.length !== 10) { errEl.textContent = "Please enter a valid 10-digit phone number."; errEl.style.display = "block"; return; }
+
+  var btn = document.getElementById("forgot_submit");
+  btn.textContent = "Sending…"; btn.disabled = true;
+
+  var users = await fbQuery("approved_users", "phone", phone);
+  if (!users.length) {
+    errEl.textContent = "No account found for that phone number.";
+    errEl.style.display = "block";
+    btn.textContent = "Send PIN"; btn.disabled = false;
+    return;
+  }
+
+  var user = users[0];
+  // Generate temp PIN
+  var tempPin = generateTempPin();
+  // Save temp PIN to Firebase
+  await fbSet("/approved_users/" + user._id, Object.assign({}, user, { pin: tempPin, tempPin: true }));
+
+  // Send text via Worker
+  await fetch(WORKER + "/notify-user", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      phone: user.phone, carrier: user.carrier,
+      message: "Your Flight Seat Search temporary PIN is: " + tempPin + ". Please change it after logging in."
+    })
+  });
+
+  btn.textContent = "Send PIN"; btn.disabled = false;
+  hideForgotPin();
+  alert("A temporary PIN has been sent to your phone.");
+}
+
+async function submitChangePin() {
+  var current = document.getElementById("change_current").value.trim();
+  var newPin = document.getElementById("change_new").value.trim();
+  var confirm = document.getElementById("change_confirm").value.trim();
+  var errEl = document.getElementById("change_error");
+
+  if (current !== currentUserPin) { errEl.textContent = "Current PIN is incorrect."; errEl.style.display = "block"; return; }
+  if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) { errEl.textContent = "New PIN must be exactly 4 digits."; errEl.style.display = "block"; return; }
+  if (newPin !== confirm) { errEl.textContent = "PINs do not match."; errEl.style.display = "block"; return; }
+
+  // Check if new PIN taken
+  var existing = await fbQuery("approved_users", "pin", newPin);
+  if (existing.length > 0) { errEl.textContent = "That PIN is already in use."; errEl.style.display = "block"; return; }
+
+  // Find current user by pin and update
+  var users = await fbQuery("approved_users", "pin", current);
+  if (!users.length) { errEl.textContent = "Could not find your account."; errEl.style.display = "block"; return; }
+  var user = users[0];
+  await fbSet("/approved_users/" + user._id, Object.assign({}, user, { pin: newPin, tempPin: false }));
+  currentUserPin = newPin;
+  sessionStorage.setItem("afss_pin", newPin);
+
+  hideChangePin();
+  alert("PIN updated successfully!");
 }
 
 // ── Helpers ──
