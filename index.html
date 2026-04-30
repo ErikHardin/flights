@@ -1758,7 +1758,8 @@ function buildCSVPanel() {
     '</div>'+
     '<div class="filter-clear" onclick="clearCSVFilters()">Clear all filters</div>'+
   '</div>'+
-  '<div style="font-size:11px;color:var(--grey-light);margin-bottom:8px;" id="csvGitHubDateTop">Checking last update…</div>'+
+  '<div style="font-size:11px;color:var(--grey-light);margin-bottom:4px;" id="csvGitHubDateTop">Checking last update…</div>'+
+  '<button onclick="requestDataUpdate(this)" id="requestDataBtn" style="width:100%;margin-bottom:12px;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--grey-text);cursor:pointer;">📡 Request Updated Data</button>'+
   '<div class="results-header"><span>Upgrade Availability</span>'+
     '<div style="display:flex;align-items:center;gap:8px;">'+
       '<div id="csvAdminBtns" style="display:none;gap:6px;align-items:center;">'+
@@ -1770,8 +1771,7 @@ function buildCSVPanel() {
     '</div>'+
   '</div>'+
   '<div id="csvResultsList"></div>'+
-  '<div style="text-align:center;font-size:11px;color:var(--grey-light);margin-top:12px;" id="csvGitHubDate"></div>';+
-  '<button onclick="requestDataUpdate(this)" style="width:100%;margin-top:12px;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--grey-text);cursor:pointer;">📡 Request Updated Data</button>';
+  '<div style="text-align:center;font-size:11px;color:var(--grey-light);margin-top:12px;" id="csvGitHubDate"></div>';
 }
 
 function renderCSVResults() {
