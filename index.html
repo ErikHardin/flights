@@ -1121,7 +1121,7 @@ function startCSVLongPress() {
       header.style.opacity = "0.5";
       setTimeout(function(){ header.style.opacity = "1"; }, 200);
     }
-  }, 3000);
+  }, 2000);
 }
 
 function cancelCSVLongPress() {
@@ -1159,6 +1159,10 @@ async function handleCSVFile(input) {
         fare_class:          cols[6].trim().replace(/[0-9]/g,"")
       });
     }
+    // Update timestamp immediately
+    var el = document.getElementById("csvGitHubDateTop");
+    if (el) el.textContent = "Data as of: just now — " + csvUpgradeData.length.toLocaleString() + " flights";
+
     showCSVUpgradeResults();
 
     // Push to GitHub so it's fresh next load
@@ -1184,6 +1188,12 @@ async function refreshUpgradeCSV() {
 
 function showCSVUpgradeResults() {
   document.getElementById("csvUpgradeLoading").style.display = "none";
+  // Show last updated from CSV data immediately
+  if (csvUpgradeData.length > 0) {
+    var el2 = document.getElementById("csvGitHubDateTop");
+    if (el2) el2.textContent = "Data as of: just now — " + csvUpgradeData.length.toLocaleString() + " flights";
+  }
+
   // Attach long press listeners after panel renders
   setTimeout(function() {
     var header = document.getElementById("upgradeResultsHeader");
