@@ -2254,7 +2254,7 @@ async function submitRegistration() {
   btn.textContent = "Submitting…"; btn.disabled = true;
 
   // Save to Firebase pending_users
-  var userId = phone + "_" + Date.now();
+  var userId = email.replace(/[^a-z0-9]/gi, "_") + "_" + Date.now();
   await fbSet("/pending_users/" + userId, {
     firstName: first, lastName: last, email: email, pin: pin,
     requestedAt: new Date().toISOString(), status: "pending"
