@@ -905,6 +905,16 @@ function applyFilters(){
   var program=document.getElementById("filterProgram").value;
   var directOnly=document.getElementById("directOnly").checked;
   var sortBy=document.getElementById("sortBy").value;
+
+  // Get active cabin keys for filtering
+  var cabinFilter = currentMode==="route" ? selectedCabins : selectedCabinsRegion;
+  var cabinKeyMap={"economy":"Y","premium economy":"W","premium":"W","business":"J","first":"F"};
+  var activeCabinKeys=[];
+  if(cabinFilter&&cabinFilter.size>0){
+    cabinFilter.forEach(function(c){ if(cabinKeyMap[c])activeCabinKeys.push(cabinKeyMap[c]); });
+  }
+  if(!activeCabinKeys.length) activeCabinKeys=["Y","W","J","F"];
+
   var filtered=allResults.filter(function(item){
     var origin=((item.Route&&item.Route.OriginAirport)||item.OriginAirport||"").toUpperCase();
     var dest=((item.Route&&item.Route.DestinationAirport)||item.DestinationAirport||"").toUpperCase();
@@ -912,23 +922,33 @@ function applyFilters(){
     if(program&&(item.Source||"")!==program)return false;
     if(airline){var airlines=[item.YAirlines,item.WAirlines,item.JAirlines,item.FAirlines,item.YAirlinesRaw,item.WAirlinesRaw,item.JAirlinesRaw,item.FAirlinesRaw].join(",").toUpperCase();if(airlines.indexOf(airline)===-1)return false}
     if(directOnly){
-      // Check if ANY available cabin is direct
-      var anyDirect=CABIN_DEFS.some(function(c){return item[c.key+"Available"]&&item[c.key+"Direct"]});
+      // Check if ANY searched cabin is direct
+      var anyDirect=activeCabinKeys.some(function(k){return item[k+"Available"]&&item[k+"Direct"]});
       if(!anyDirect)return false;
     }
     return true;
   });
+
   filtered.sort(function(a,b){
     if(sortBy==="points"){
-      var ap=Math.min(a.YMileageCostRaw||Infinity,a.WMileageCostRaw||Infinity,a.JMileageCostRaw||Infinity,a.FMileageCostRaw||Infinity);
-      var bp=Math.min(b.YMileageCostRaw||Infinity,b.WMileageCostRaw||Infinity,b.JMileageCostRaw||Infinity,b.FMileageCostRaw||Infinity);
-      return ap-bp;
+      // Sort by lowest points in the searched cabins
+      var getMinPts=function(item){
+        var vals=activeCabinKeys.map(function(k){return item[k+"Available"]?(item[k+"MileageCostRaw"]||Infinity):Infinity});
+        return Math.min.apply(null,vals);
+      };
+      return getMinPts(a)-getMinPts(b);
     }else if(sortBy==="duration"){
-      // Sort by shortest trip duration from AvailabilityTrips
       var getMinDur=function(item){
         var trips=item.AvailabilityTrips||[];
         if(!trips.length)return 9999;
-        return Math.min.apply(null,trips.map(function(t){return t.TotalDuration||9999}));
+        // Filter trips to searched cabins
+        var relevant=trips.filter(function(t){
+          var cabin=(t.Cabin||"").toLowerCase();
+          var k=cabinKeyMap[cabin]||"";
+          return activeCabinKeys.indexOf(k)!==-1;
+        });
+        if(!relevant.length)relevant=trips;
+        return Math.min.apply(null,relevant.map(function(t){return t.TotalDuration||9999}));
       };
       return getMinDur(a)-getMinDur(b);
     }else if(sortBy==="program"){return(a.Source||"").localeCompare(b.Source||"")}
