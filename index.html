@@ -1151,10 +1151,6 @@ async function handleCSVFile(input) {
         fare_class:          cols[6].trim().replace(/[0-9]/g,"")
       });
     }
-    // Update timestamp immediately
-    var el = document.getElementById("csvGitHubDateTop");
-    if (el) el.textContent = "Data as of: just now — " + csvUpgradeData.length.toLocaleString() + " flights";
-
     showCSVUpgradeResults();
 
     // Push to GitHub so it's fresh next load
