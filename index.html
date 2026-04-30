@@ -549,7 +549,7 @@ async function verifyPin(){
 }
 
 // ── Init ──
-var CSV_URL = "https://raw.githubusercontent.com/ErikHardin/flights/main/PNPZ_Data_PZ.csv";
+var CSV_URL = "https://raw.githubusercontent.com/ErikHardin/flights/main/PNPZ_Data_PZ.csv"; // Also accepts "PNPZ Data PZ.csv"
 
 async function fetchUpgradeCSV() {
   try {
@@ -1106,9 +1106,14 @@ function loadUpgradeCSV(input) {
 }
 
 function startUpgradeRefresh() {
-  // Open the seats.aero CSV download URL in Safari
-  // User taps Download, then comes back and uses Load CSV button
-  window.open("https://seats.aero/_api/pnpz?fare_class=PZ&origin_region=Anywhere&destination_region=Anywhere&csv=true", "_blank");
+  // Create a temporary link and click it - works better in PWA mode
+  var a = document.createElement("a");
+  a.href = "https://seats.aero/_api/pnpz?fare_class=PZ&origin_region=Anywhere&destination_region=Anywhere&csv=true";
+  a.target = "_blank";
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 async function handleCSVFile(input) {
