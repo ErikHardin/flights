@@ -1316,9 +1316,17 @@ function buildTripCard(entry, i) {
   var isDirect=trip.Stops===0&&airlines.length<=1;
   var stopBadge=isDirect?'<span class="direct-badge">Nonstop</span>':'<span class="connecting-badge">'+(trip.Stops===1?"1 stop":trip.Stops+" stops")+'</span>';
 
-  var dep=formatTimeInTz(trip.DepartsAt, origin);
-  var arr=formatTimeInTz(trip.ArrivesAt, dest);
-  var nextDay=isNextDay(trip.DepartsAt, trip.ArrivesAt, origin, dest)?" +1":"";
+  // API returns local times despite Z suffix - display as-is
+  var dep=trip.DepartsAt?trip.DepartsAt.substring(11,16):"";
+  var arr=trip.ArrivesAt?trip.ArrivesAt.substring(11,16):"";
+  // Format to 12hr
+  function to12hr(t){if(!t)return "";var p=t.split(":");var h=parseInt(p[0]),m=p[1],ampm=h>=12?"PM":"AM";h=h%12||12;return h+":"+m+" "+ampm;}
+  dep=to12hr(dep);
+  arr=to12hr(arr);
+  // Next day check using date portion
+  var depDateStr=trip.DepartsAt?trip.DepartsAt.substring(0,10):"";
+  var arrDateStr=trip.ArrivesAt?trip.ArrivesAt.substring(0,10):"";
+  var nextDay=(depDateStr&&arrDateStr&&depDateStr!==arrDateStr)?" +1":"";
   var dur="";
   if(trip.TotalDuration){var h=Math.floor(trip.TotalDuration/60),m=trip.TotalDuration%60;dur=h+"h"+(m>0?" "+m+"m":"");}
   var flights=trip.FlightNumbers||"";
@@ -1369,9 +1377,18 @@ function shareTripCard(i) {
   var pts=formatPoints(item[key+"MileageCost"]||"");
   var taxes=item[key+"TotalTaxes"]||0;
   var taxStr=taxes>0?", $"+(taxes/100).toFixed(0)+" taxes":"";
-  var dep=formatTimeInTz(trip.DepartsAt, origin);
-  var arr=formatTimeInTz(trip.ArrivesAt, dest);
-  var nextDay=isNextDay(trip.DepartsAt, trip.ArrivesAt, origin, dest)?" +1":"";
+  // API returns local times despite Z suffix - display as-is
+  function to12hrS(t){if(!t)return '';var p=t.split(':');var h=parseInt(p[0]),m=p[1],ampm=h>=12?'PM':'AM';h=h%12||12;return h+':'+m+' '+ampm;}
+  var dep=to12hrS(trip.DepartsAt?trip.DepartsAt.substring(11,16):'');
+  var arr=trip.ArrivesAt?trip.ArrivesAt.substring(11,16):"";
+  // Format to 12hr
+  function to12hr(t){if(!t)return "";var p=t.split(":");var h=parseInt(p[0]),m=p[1],ampm=h>=12?"PM":"AM";h=h%12||12;return h+":"+m+" "+ampm;}
+  dep=to12hr(dep);
+  arr=to12hr(arr);
+  // Next day check using date portion
+  var depDateStr=trip.DepartsAt?trip.DepartsAt.substring(0,10):"";
+  var arrDateStr=trip.ArrivesAt?trip.ArrivesAt.substring(0,10):"";
+  var nextDay=(depDateStr&&arrDateStr&&depDateStr!==arrDateStr)?" +1":"";
   var dur="";if(trip.TotalDuration){var h=Math.floor(trip.TotalDuration/60),m=trip.TotalDuration%60;dur=" ("+h+"h"+(m>0?" "+m+"m":"")+")"}
   var isDirect=trip.Stops===0&&(trip.Carriers||"").split(",").length<=1;
   var stops=isDirect?"Nonstop":(trip.Stops===1?"1 stop":trip.Stops+" stops");
@@ -1753,7 +1770,8 @@ function buildCSVPanel() {
     '</div>'+
   '</div>'+
   '<div id="csvResultsList"></div>'+
-  '<div style="text-align:center;font-size:11px;color:var(--grey-light);margin-top:12px;" id="csvGitHubDate"></div>';
+  '<div style="text-align:center;font-size:11px;color:var(--grey-light);margin-top:12px;" id="csvGitHubDate"></div>';+
+  '<button onclick="requestDataUpdate(this)" style="width:100%;margin-top:12px;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--grey-text);cursor:pointer;">📡 Request Updated Data</button>';
 }
 
 function renderCSVResults() {
@@ -1975,6 +1993,27 @@ function shareResult(e, idx) {
     navigator.clipboard.writeText(text).then(function(){
       alert("Copied to clipboard!");
     }).catch(function(){ alert(text); });
+  }
+}
+
+async function requestDataUpdate(btn) {
+  btn.disabled = true;
+  btn.textContent = "⏳ Sending…";
+  try {
+    var res = await fetch(WORKER + "/send-notification", { method: "POST" });
+    var data = await res.json();
+    if (data.ok) {
+      btn.textContent = "✅ Request Sent";
+      btn.style.color = "var(--green)";
+      btn.style.borderColor = "var(--green-border)";
+      btn.style.background = "var(--green-pale)";
+    } else {
+      btn.textContent = "❌ Failed — try again";
+      btn.disabled = false;
+    }
+  } catch(e) {
+    btn.textContent = "❌ Failed — try again";
+    btn.disabled = false;
   }
 }
 
