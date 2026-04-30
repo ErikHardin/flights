@@ -267,7 +267,7 @@
     <button class="mode-tab active" onclick="setMode('region')"   id="tab-region">Region</button>
     <button class="mode-tab"        onclick="setMode('route')"    id="tab-route">Route</button>
     <button class="mode-tab"        onclick="setMode('upgrades')" id="tab-upgrades">United Upgrades</button>
-    <button class="mode-tab"        onclick="setMode('saved')"    id="tab-saved">Saved</button>
+
   </div>
 
   <!-- ROUTE -->
@@ -362,10 +362,7 @@
   </div>
 
 
-  <!-- SAVED -->
-  <div id="mode-saved" style="display:none">
-    <div class="card"><div class="card-label">Saved Routes</div><div id="savedList"></div></div>
-  </div>
+
 
   <!-- RESULTS -->
   <div id="resultsArea" style="display:none">
@@ -589,7 +586,7 @@ function init(){
   checkUnlocked();
   buildGrid("programGrid",selectedPrograms,toggleRouteProgram);
   buildGrid("programGridRegion",selectedProgramsReg,toggleRegionProgram);
-  buildRegionGrids();setDefaultDates();renderSaved();updateAuthUI();updateUpgradeDeepLink();
+  buildRegionGrids();setDefaultDates();updateAuthUI();updateUpgradeDeepLink();
   handleOAuthCallback();
   fetchUpgradeCSV();
 }
@@ -652,7 +649,7 @@ function syncEndDate(startId,endId){
 // ── Mode ──
 function setMode(mode){
   currentMode=mode;
-  ["route","region","upgrades","saved"].forEach(function(m){
+  ["route","region","upgrades"].forEach(function(m){
     document.getElementById("mode-"+m).style.display=m===mode?"block":"none";
     document.getElementById("tab-"+m).classList.toggle("active",m===mode);
   });
@@ -1063,6 +1060,7 @@ function buildResultCard(item,i){
         '<button onclick="setTripSort(\'fastest\',this)" id="sort-fastest-'+id+'" style="flex:1;padding:6px;font-size:11px;font-weight:600;border-radius:var(--radius-sm);border:1.5px solid var(--border);cursor:pointer;background:'+(tripSortMode==='fastest'?'var(--blue-pale)':'var(--surface2)')+';color:'+(tripSortMode==='fastest'?'var(--blue-dark)':'var(--grey-text)')+';">⚡ Fastest</button>'+
       '</div>'+
       '<div class="book-links">'+bookLinks+'</div>'+
+      '<button onclick="shareResult(event,\'\'+id+\'\')" style="width:100%;margin-top:8px;padding:9px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;color:var(--grey-text);cursor:pointer;">📤 Share</button>'+
     '</div>'+
   '</div>';
 }
@@ -1336,6 +1334,7 @@ function renderCSVResults() {
         '</div>'+
       '</div>'+
       '<a href="'+bookUrl+'" target="_blank" class="upgrade-book">Book on United →</a>'+
+      '<button class="upgrade-share-btn" data-o="'+row.origin_airport+'" data-d="'+row.destination_airport+'" data-date="'+row.departure_date+'" data-flight="'+row.flight_number+'" data-aircraft="'+row.aircraft+'" data-inv="'+row.inventory+'" onclick="shareUpgradeBtn(this)" style="width:100%;margin-top:6px;padding:8px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;color:var(--grey-text);cursor:pointer;">📤 Share</button>'+
     '</div>';
   }).join("")+(filtered.length>200?'<div class="empty-state" style="font-size:12px;">Showing first 200 of '+filtered.length+' — use filters to narrow down.</div>':"");
 }
@@ -1433,6 +1432,90 @@ function exportResultsCSV(){
   var a=document.createElement("a");
   a.href=url;a.download="availability-"+new Date().toISOString().split("T")[0]+".csv";
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+// ── Share ──
+function shareResult(e, cardId) {
+  e.stopPropagation();
+  var card = document.getElementById(cardId);
+  if (!card) return;
+
+  // Get route info
+  var airports = card.querySelector('.result-airports');
+  var date = card.querySelector('.result-date');
+  var source = card.querySelector('.source-badge');
+  var cabinRows = card.querySelectorAll('.cabin-row');
+
+  var routeText = airports ? airports.textContent.trim() : '';
+  var dateText = date ? date.textContent.split('\n')[0].trim() : '';
+  var sourceText = source ? source.textContent.trim() : '';
+
+  var cabinLines = [];
+  cabinRows.forEach(function(row) {
+    var name = row.querySelector('.cabin-name');
+    var pts = row.querySelector('.cabin-points');
+    var stop = row.querySelector('.direct-badge, .connecting-badge');
+    var seats = row.querySelector('.seats-badge');
+    if (name && pts) {
+      cabinLines.push(
+        (name.textContent.trim()) +
+        (seats ? ' ' + seats.textContent.trim() : '') +
+        ' · ' + pts.textContent.trim() +
+        (stop ? ' · ' + stop.textContent.trim() : '')
+      );
+    }
+  });
+
+  // Get flight details if expanded
+  var flightLines = [];
+  var details = document.getElementById('details-' + cardId);
+  if (details && details.classList.contains('open')) {
+    details.querySelectorAll('.detail-row').forEach(function(row) {
+      var label = row.querySelector('.detail-label');
+      var val = row.querySelector('.detail-value');
+      if (label && val) flightLines.push(label.textContent.trim() + ': ' + val.textContent.trim());
+    });
+  }
+
+  var text = '✈ ' + routeText + '\n' +
+    dateText + ' · ' + sourceText + '\n' +
+    cabinLines.join('\n') +
+    (flightLines.length ? '\n' + flightLines.join('\n') : '') +
+    '\n\nFound via Advanced Flight Seat Search';
+
+  if (navigator.share) {
+    navigator.share({ text: text }).catch(function(){});
+  } else {
+    navigator.clipboard.writeText(text).then(function(){
+      alert('Copied to clipboard!');
+    }).catch(function(){
+      alert(text);
+    });
+  }
+}
+
+function shareUpgradeBtn(btn) {
+  var o=btn.dataset.o,d=btn.dataset.d,date=btn.dataset.date,flight=btn.dataset.flight,aircraft=btn.dataset.aircraft,inv=btn.dataset.inv;
+  shareUpgrade(o,d,date,flight,aircraft,inv);
+}
+
+function shareUpgrade(origin, dest, date, flight, aircraft, inventory) {
+  var text = '⬆ United Upgrade Available\n' +
+    origin + ' → ' + dest + '\n' +
+    date + ' · ' + flight + '\n' +
+    aircraft + '\n' +
+    inventory + ' upgrade seat(s) available\n\n' +
+    'Book: https://www.united.com/en/us/fsr/choose-flights?f=' + origin + '&t=' + dest + '&d=' + date + '&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True';
+
+  if (navigator.share) {
+    navigator.share({ text: text }).catch(function(){});
+  } else {
+    navigator.clipboard.writeText(text).then(function(){
+      alert('Copied to clipboard!');
+    }).catch(function(){
+      alert(text);
+    });
+  }
 }
 
 // ── Helpers ──
