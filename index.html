@@ -1105,15 +1105,9 @@ function loadUpgradeCSV(input) {
   reader.readAsText(file);
 }
 
-function startUpgradeRefresh() {
-  // Create a temporary link and click it - works better in PWA mode
-  var a = document.createElement("a");
-  a.href = "https://seats.aero/_api/pnpz?fare_class=PZ&origin_region=Anywhere&destination_region=Anywhere&csv=true";
-  a.target = "_blank";
-  a.rel = "noopener";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+function startUpgradeRefresh() {}
+function getUpgradeCSV() {
+  window.location.href = "x-safari-https://seats.aero/_api/pnpz?fare_class=PZ&origin_region=Anywhere&destination_region=Anywhere&csv=true";
 }
 
 async function handleCSVFile(input) {
@@ -1165,6 +1159,16 @@ async function refreshUpgradeCSV() {
 
 function showCSVUpgradeResults() {
   document.getElementById("csvUpgradeLoading").style.display = "none";
+  // Fetch last commit date from GitHub
+  fetch("https://api.github.com/repos/ErikHardin/flights/commits?path=PNPZ_Data_PZ.csv&per_page=1")
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data&&data[0]&&data[0].commit){
+        var date = new Date(data[0].commit.author.date);
+        var el = document.getElementById("csvGitHubDate");
+        if(el) el.textContent = "Last updated: " + date.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) + " at " + date.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+      }
+    }).catch(function(){});
   var ts = document.getElementById("csvLastUpdated");
   if (ts) ts.textContent = "Loaded "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})+" · "+csvUpgradeData.length.toLocaleString()+" flights";
   var panel = document.getElementById("csvUpgradePanel");
@@ -1219,14 +1223,15 @@ function buildCSVPanel() {
   '</div>'+
   '<div class="results-header"><span>Upgrade Availability</span>'+
     '<div style="display:flex;align-items:center;gap:8px;">'+
-      '<a href="x-safari-https://seats.aero/_api/pnpz?fare_class=PZ&origin_region=Anywhere&destination_region=Anywhere&csv=true" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;text-decoration:none;">🔄 Get CSV</a>'+
+      '<button onclick="getUpgradeCSV()" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">🔄 Get CSV</button>'+
       '<label style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">📂 Load CSV<input type="file" accept=".csv" style="display:none" onchange="handleCSVFile(this)"/></label>'+
       '<button onclick="exportFilteredCSV()" style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button>'+
       '<span class="results-count" id="csvResultCount">0</span>'+
     '</div>'+
   '</div>'+
   '<div id="csvResultsList"></div>'+
-  '<div style="margin-top:12px;text-align:center;font-size:11px;color:var(--grey-light);" id="csvLastUpdated">Loaded '+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})+'</div>';
+  '<div style="margin-top:12px;text-align:center;font-size:11px;color:var(--grey-light);" id="csvLastUpdated">Loaded '+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})+'</div>'+
+  '<div style="text-align:center;font-size:11px;color:var(--grey-light);margin-top:4px;" id="csvGitHubDate">Checking last update…</div>';
 }
 
 function renderCSVResults() {
