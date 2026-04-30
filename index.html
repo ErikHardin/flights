@@ -954,30 +954,208 @@ function applyFilters(){
     }else if(sortBy==="program"){return(a.Source||"").localeCompare(b.Source||"")}
     else{var da=a.Date||a.DepartsAt||"",db=b.Date||b.DepartsAt||"";return da<db?-1:da>db?1:0}
   });
-  document.getElementById("resultsCount").textContent=filtered.length+(filtered.length<allResults.length?" of "+allResults.length:"");
-  renderResultCards(filtered);
+  var expanded=expandToTrips(filtered);
+  // Apply direct filter to expanded trips
+  if(directOnly){
+    expanded=expanded.filter(function(entry){
+      if(!entry.trip)return false;
+      var airlines=(entry.trip.Carriers||"").split(",").filter(Boolean);
+      return entry.trip.Stops===0&&airlines.length<=1;
+    });
+  }
+  // Apply sort to expanded trips
+  expanded.sort(function(a,b){
+    var ai=a.item,bi=b.item,at=a.trip,bt=b.trip;
+    if(sortBy==="points"){
+      var ak=a.key||"J",bk=b.key||"J";
+      return (parseInt(ai[ak+"MileageCost"])||0)-(parseInt(bi[bk+"MileageCost"])||0);
+    } else if(sortBy==="duration"){
+      return ((at&&at.TotalDuration)||9999)-((bt&&bt.TotalDuration)||9999);
+    } else if(sortBy==="program"){
+      return (ai.Source||"").localeCompare(bi.Source||"");
+    } else {
+      var da=ai.Date||"",db=bi.Date||"";
+      if(da!==db)return da<db?-1:1;
+      var ta=(at&&at.DepartsAt)||"",tb=(bt&&bt.DepartsAt)||"";
+      return ta<tb?-1:ta>tb?1:0;
+    }
+  });
+  document.getElementById("resultsCount").textContent=expanded.length+(expanded.length<allResults.length?" of "+allResults.length+" routes":"");
+  renderResultCards(expanded);
 }
 function clearFilters(){document.getElementById("filterAirport").value="";document.getElementById("filterAirline").value="";document.getElementById("filterProgram").value="";document.getElementById("directOnly").checked=false;document.getElementById("sortBy").value="date"}
 
 // ── Render ──
 function renderResults(items){
-  items.sort(function(a,b){var da=a.Date||a.DepartsAt||"",db=b.Date||b.DepartsAt||"";return da<db?-1:da>db?1:0});
-  document.getElementById("resultsCount").textContent=items.length;
-  renderResultCards(items);
+  // Expand items into individual trips
+  var expanded = expandToTrips(items);
+  document.getElementById("resultsCount").textContent=expanded.length;
+  renderResultCards(expanded);
   document.getElementById("resultsArea").style.display="block";
   document.getElementById("resultsArea").scrollIntoView({behavior:"smooth",block:"start"});
 }
 
-function renderResultCards(items){
+function expandToTrips(items){
+  var cabinKeyMap={"economy":"Y","premium economy":"W","premium":"W","business":"J","first":"F"};
+  var cabinFilter = currentMode==="route" ? selectedCabins : selectedCabinsRegion;
+  var expanded=[];
+  items.forEach(function(item){
+    var trips=item.AvailabilityTrips||[];
+    if(!trips.length){
+      // No trip data - show as single card
+      expanded.push({item:item, trip:null});
+      return;
+    }
+    // Filter trips to searched cabins and matching price
+    var cabinMap={"economy":"economy","premium economy":"premium","premium":"premium","business":"business","first":"first"};
+    var seen={};
+    trips.forEach(function(trip){
+      var rawCabin=(trip.Cabin||"").toLowerCase();
+      var cabin=cabinMap[rawCabin]||rawCabin;
+      var key=cabinKeyMap[rawCabin]||cabinKeyMap[cabin];
+      if(!key||!item[key+"Available"])return;
+      if(cabinFilter&&cabinFilter.size>0&&!cabinFilter.has(cabin))return;
+      var cardPrice=parseInt(item[key+"MileageCost"])||0;
+      var tripPrice=parseInt(trip.MileageCost)||0;
+      if(tripPrice!==cardPrice)return;
+      // Deduplicate by flight numbers
+      var dedupeKey=(trip.FlightNumbers||"")+"|"+(trip.DepartsAt||"");
+      if(seen[dedupeKey])return;
+      seen[dedupeKey]=true;
+      expanded.push({item:item, trip:trip, cabin:cabin, key:key});
+    });
+  });
+  return expanded;
+}
+
+function renderResultCards(expanded){
+  expandedResults=expanded;
   var list=document.getElementById("resultsList");
-  if(!items.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div>No results match your filters.</div>';return}
-  list.innerHTML=items.map(function(item,i){return buildResultCard(item,i)}).join("");
+  if(!expanded.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div>No results match your filters.</div>';return}
+  list.innerHTML=expanded.map(function(entry,i){return buildTripCard(entry,i)}).join("");
 }
 
 function setTripSort(mode, btn) {
   tripSortMode = mode;
   // Re-render all results with new sort mode
   applyFilters();
+}
+
+function buildTripCard(entry, i) {
+  var item=entry.item, trip=entry.trip;
+  var id="card-"+i;
+  var origin=(item.Route&&item.Route.OriginAirport)||item.OriginAirport||"—";
+  var dest=(item.Route&&item.Route.DestinationAirport)||item.DestinationAirport||"—";
+  var originCity=AIRPORT_CITIES[origin]||"";
+  var destCity=AIRPORT_CITIES[dest]||"";
+  var source=item.Source||"—";
+  var rawDate=(item.Date||"").split("T")[0];
+
+  if(!trip){
+    // No trip data - fall back to original card
+    return buildResultCard(item, i);
+  }
+
+  var cabin=entry.cabin||trip.Cabin||"";
+  var key=entry.key||"J";
+  var pts=formatPoints(item[key+"MileageCost"]||"");
+  var seats=item[key+"RemainingSeats"]||"";
+  var taxes=item[key+"TotalTaxes"]||0;
+  var taxStr=taxes>0?"$"+(taxes/100).toFixed(0)+" taxes":"";
+
+  // Direct check - multiple airlines = not direct
+  var airlines=(trip.Carriers||"").split(",").map(function(s){return s.trim()}).filter(Boolean);
+  var isDirect=trip.Stops===0&&airlines.length<=1;
+  var stopBadge=isDirect?'<span class="direct-badge">Nonstop</span>':'<span class="connecting-badge">'+(trip.Stops===1?"1 stop":trip.Stops+" stops")+'</span>';
+
+  var depDate=trip.DepartsAt?new Date(trip.DepartsAt):null;
+  var arrDate=trip.ArrivesAt?new Date(trip.ArrivesAt):null;
+  var dep=depDate?depDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
+  var arr=arrDate?arrDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
+  var nextDay=(depDate&&arrDate&&arrDate.toDateString()!==depDate.toDateString())?" +1":"";
+  var dur="";
+  if(trip.TotalDuration){var h=Math.floor(trip.TotalDuration/60),m=trip.TotalDuration%60;dur=h+"h"+(m>0?" "+m+"m":"");}
+  var flights=trip.FlightNumbers||"";
+  var carrierNames=expandAirlines(trip.Carriers||"");
+  var dateStr=formatDate(item.Date||item.DepartsAt||"");
+
+  var bookFn=BOOKING_URLS[source];
+  var bookUrl=bookFn?bookFn(origin,dest,rawDate):"https://www.united.com/en/us/fsr/choose-flights?f="+origin+"&t="+dest+"&d="+rawDate+"&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True";
+
+  return '<div class="result-card" style="animation-delay:'+(i*.01)+'s" id="'+id+'">'+
+    '<div style="padding:14px;">'+
+      '<div class="result-route">'+
+        '<div>'+
+          '<div class="result-airports"><span>'+origin+'</span><span class="result-arrow">→</span><span>'+dest+'</span></div>'+
+          (originCity||destCity?'<div style="font-size:11px;color:var(--grey-light);margin-top:1px;">'+(originCity||origin)+' → '+(destCity||dest)+'</div>':'')+
+          '<div class="result-date">'+dateStr+'</div>'+
+        '</div>'+
+        '<div class="result-right"><div class="source-badge">'+source.toUpperCase()+'</div></div>'+
+      '</div>'+
+      '<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;margin-top:8px;">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'+
+          '<span style="font-size:13px;font-weight:600;color:var(--grey-text);">'+cabin.charAt(0).toUpperCase()+cabin.slice(1)+(seats?' <span style="font-size:11px;color:var(--grey-light);">('+seats+' left)</span>':'')+' '+stopBadge+'</span>'+
+          '<span style="font-family:DM Mono,monospace;font-size:13px;font-weight:600;color:var(--blue-dark);">'+pts+' pts</span>'+
+        '</div>'+
+        (dep&&arr?'<div style="font-size:12px;color:var(--grey-text);">'+dep+' → '+arr+nextDay+(dur?' ('+dur+')':'')+' · '+flights+'</div>':'')+
+        '<div style="font-size:11px;color:var(--grey-light);margin-top:3px;">'+carrierNames+(taxStr?' · '+taxStr:'')+'</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:6px;margin-top:8px;">'+
+        '<a href="'+bookUrl+'" target="_blank" class="book-link" style="flex:1;margin:0;">Book →</a>'+
+        '<button onclick="shareTripCard('+i+')" style="flex:0 0 auto;padding:9px 14px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;color:var(--grey-text);cursor:pointer;">📤</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+var expandedResults = [];
+
+function shareTripCard(i) {
+  var entry = expandedResults[i];
+  if (!entry) return;
+  var item=entry.item, trip=entry.trip;
+  var origin=(item.Route&&item.Route.OriginAirport)||item.OriginAirport||"";
+  var dest=(item.Route&&item.Route.DestinationAirport)||item.DestinationAirport||"";
+  var originCity=AIRPORT_CITIES[origin]||"";
+  var destCity=AIRPORT_CITIES[dest]||"";
+  var key=entry.key||"J";
+  var cabin=entry.cabin||"business";
+  var pts=formatPoints(item[key+"MileageCost"]||"");
+  var taxes=item[key+"TotalTaxes"]||0;
+  var taxStr=taxes>0?", $"+(taxes/100).toFixed(0)+" taxes":"";
+  var depDate=trip.DepartsAt?new Date(trip.DepartsAt):null;
+  var arrDate=trip.ArrivesAt?new Date(trip.ArrivesAt):null;
+  var dep=depDate?depDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
+  var arr=arrDate?arrDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
+  var nextDay=(depDate&&arrDate&&arrDate.toDateString()!==depDate.toDateString())?" +1":"";
+  var dur="";if(trip.TotalDuration){var h=Math.floor(trip.TotalDuration/60),m=trip.TotalDuration%60;dur=" ("+h+"h"+(m>0?" "+m+"m":"")+")"}
+  var isDirect=trip.Stops===0&&(trip.Carriers||"").split(",").length<=1;
+  var stops=isDirect?"Nonstop":(trip.Stops===1?"1 stop":trip.Stops+" stops");
+  var rawDate=(item.Date||"").split("T")[0];
+  var bookFn=BOOKING_URLS[item.Source];
+  var bookUrl=bookFn?bookFn(origin,dest,rawDate):"https://www.united.com/en/us/fsr/choose-flights?f="+origin+"&t="+dest+"&d="+rawDate+"&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True";
+  var text="✈ "+origin+" → "+dest;
+  if(originCity||destCity)text+="\n"+(originCity||origin)+" → "+(destCity||dest);
+  text+="\n"+formatDate(item.Date||"")+" · "+(item.Source||"").toUpperCase();
+  text+="\n"+cabin.charAt(0).toUpperCase()+cabin.slice(1)+" · "+pts+" pts"+taxStr+" · "+stops;
+  if(dep&&arr)text+="\n"+dep+" → "+arr+nextDay+dur;
+  text+="\n"+(trip.FlightNumbers||"")+" · "+expandAirlines(trip.Carriers||"");
+  text+="\n\nBook: "+bookUrl;
+  text+="\n\nFound via Advanced Flight Seat Search";
+  if(navigator.share){navigator.share({text:text}).catch(function(){});}
+  else{navigator.clipboard.writeText(text).then(function(){alert("Copied!");}).catch(function(){alert(text);});}
+}
+
+function toggleAlt(altId, btn) {
+  var el = document.getElementById(altId);
+  if (!el) return;
+  if (el.style.display === "none") {
+    el.style.display = "block";
+    btn.textContent = btn.textContent.replace("▼","▲");
+  } else {
+    el.style.display = "none";
+    btn.textContent = btn.textContent.replace("▲","▼");
+  }
 }
 
 function toggleCard(id){
@@ -1018,6 +1196,9 @@ function buildResultCard(item,i){
     var pts=item[c.key+"MileageCost"]||"";
     var seats=item[c.key+"RemainingSeats"]||"";
     var direct=item[c.key+"Direct"]===true;
+    // Override: if airlines field has multiple carriers, it's not truly direct
+    var airlinesRaw=item[c.key+"Airlines"]||"";
+    if(airlinesRaw.split(",").length>1)direct=false;
     var taxes=item[c.key+"TotalTaxes"]||0;
     var taxDisplay=taxes>0?"$"+(taxes/100).toFixed(0)+" taxes":"";
     var airlines=expandAirlines(item[c.key+"Airlines"]||"");
@@ -1061,32 +1242,48 @@ function buildResultCard(item,i){
       return (a.TotalDuration||9999)-(b.TotalDuration||9999);
     });
 
-    detailHtml=bestTrips.map(function(trip){
-      var isDirect=(trip.Stops===0)||(trip.Direct===true);
-      var stops=trip.Stops===0?"Nonstop":(isDirect&&trip.Stops>0?"Direct ("+trip.Stops+" stop, same plane)":"1 stop"+(trip.Stops>1?"s":""));
-      if(trip.Stops>1)stops=trip.Stops+" stops";
-      var dur="";
-      if(trip.TotalDuration){
-        var h=Math.floor(trip.TotalDuration/60),m=trip.TotalDuration%60;
-        dur=h+"h"+(m>0?" "+m+"m":"");
+    // Show best trip prominently, rest collapsed
+    detailHtml="";
+    if(bestTrips.length===0){detailHtml="";}
+    else {
+      var renderTrip=function(trip, isAlt){
+        var isDirect=(trip.Stops===0);
+        var stops=trip.Stops===0?"Nonstop":(trip.Stops===1?"1 stop":trip.Stops+" stops");
+        var dur="";
+        if(trip.TotalDuration){
+          var h=Math.floor(trip.TotalDuration/60),m=trip.TotalDuration%60;
+          dur=h+"h"+(m>0?" "+m+"m":"");
+        }
+        var depDate=trip.DepartsAt?new Date(trip.DepartsAt):null;
+        var arrDate=trip.ArrivesAt?new Date(trip.ArrivesAt):null;
+        var dep=depDate?depDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
+        var arr=arrDate?arrDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
+        var nextDay=(depDate&&arrDate&&arrDate.toDateString()!==depDate.toDateString())?" (+1)":"";
+        var carriers=expandAirlines(trip.Carriers||trip.Airlines||"");
+        var flightNums=trip.FlightNumbers||"";
+        return '<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);'+(isAlt?"opacity:0.85":"")+'">' +
+          (dep&&arr?'<div class="detail-row"><span class="detail-label">Time</span><span class="detail-value">'+dep+' → '+arr+nextDay+(dur?" ("+dur+")":"")+'</span></div>':"")+
+          '<div class="detail-row"><span class="detail-label">Stops</span><span class="detail-value">'+stops+'</span></div>'+
+          (flightNums?'<div class="detail-row"><span class="detail-label">Flights</span><span class="detail-value">'+flightNums+'</span></div>':"")+
+          (carriers?'<div class="detail-row"><span class="detail-label">Carriers</span><span class="detail-value">'+carriers+'</span></div>':"")+
+        '</div>';
+      };
+
+      // Best trip
+      detailHtml = renderTrip(bestTrips[0], false);
+
+      // Additional options
+      if(bestTrips.length>1){
+        var altId="alt-"+id;
+        detailHtml += '<div style="font-size:11px;font-weight:600;color:var(--grey-light);cursor:pointer;margin-bottom:6px;" onclick="toggleAlt(\''+altId+'\',this)">▼ '+( bestTrips.length-1)+' more option'+(bestTrips.length>2?"s":"")+'</div>';
+        detailHtml += '<div id="'+altId+'" style="display:none">';
+        for(var t=1;t<bestTrips.length;t++){
+          detailHtml += renderTrip(bestTrips[t], true);
+        }
+        detailHtml += '</div>';
       }
-      var depDate=trip.DepartsAt?new Date(trip.DepartsAt):null;
-      var arrDate=trip.ArrivesAt?new Date(trip.ArrivesAt):null;
-      var dep=depDate?depDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
-      var arr=arrDate?arrDate.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
-      var nextDay=(depDate&&arrDate&&arrDate.toDateString()!==depDate.toDateString())?" (+1)":"";
-      var carriers=expandAirlines(trip.Carriers||trip.Airlines||"");
-      var flightNums=trip.FlightNumbers||"";
-      var cabin=trip.Cabin||"";
-      var cabinLabel=cabin.charAt(0).toUpperCase()+cabin.slice(1);
-      return '<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border)">'+
-        '<div style="font-size:11px;font-weight:700;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">'+cabinLabel+'</div>'+
-        (dep&&arr?'<div class="detail-row"><span class="detail-label">Time</span><span class="detail-value">'+dep+' → '+arr+nextDay+(dur?" ("+dur+")":"")+'</span></div>':"")+
-        '<div class="detail-row"><span class="detail-label">Stops</span><span class="detail-value">'+stops+'</span></div>'+
-        (flightNums?'<div class="detail-row"><span class="detail-label">Flights</span><span class="detail-value">'+flightNums+'</span></div>':"")+
-        (carriers?'<div class="detail-row"><span class="detail-label">Carriers</span><span class="detail-value">'+carriers+'</span></div>':"")+
-      '</div>';
-    }).join("");
+    }
+    detailHtml=detailHtml; // already built above
   } else if(allCarriers){
     detailHtml='<div class="detail-row"><span class="detail-label">Carriers</span><span class="detail-value">'+allCarriers+'</span></div>';
   }
