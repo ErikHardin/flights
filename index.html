@@ -1165,12 +1165,14 @@ function showCSVUpgradeResults() {
     .then(function(data){
       if(data&&data[0]&&data[0].commit){
         var date = new Date(data[0].commit.author.date);
+        var dateStr = "Last updated: " + date.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) + " at " + date.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
         var el = document.getElementById("csvGitHubDate");
-        if(el) el.textContent = "Last updated: " + date.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) + " at " + date.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+        if(el) el.textContent = dateStr;
+        var el2 = document.getElementById("csvGitHubDateTop");
+        if(el2) el2.textContent = dateStr;
       }
     }).catch(function(){});
-  var ts = document.getElementById("csvLastUpdated");
-  if (ts) ts.textContent = "Loaded "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})+" · "+csvUpgradeData.length.toLocaleString()+" flights";
+
   var panel = document.getElementById("csvUpgradePanel");
   panel.style.display = "block";
   panel.innerHTML = buildCSVPanel();
@@ -1221,6 +1223,7 @@ function buildCSVPanel() {
     '</div>'+
     '<div class="filter-clear" onclick="clearCSVFilters()">Clear all filters</div>'+
   '</div>'+
+  '<div style="font-size:11px;color:var(--grey-light);margin-bottom:8px;" id="csvGitHubDateTop">Checking last update…</div>'+
   '<div class="results-header"><span>Upgrade Availability</span>'+
     '<div style="display:flex;align-items:center;gap:8px;">'+
       '<button onclick="getUpgradeCSV()" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">🔄 Get CSV</button>'+
@@ -1230,8 +1233,7 @@ function buildCSVPanel() {
     '</div>'+
   '</div>'+
   '<div id="csvResultsList"></div>'+
-  '<div style="margin-top:12px;text-align:center;font-size:11px;color:var(--grey-light);" id="csvLastUpdated">Loaded '+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})+'</div>'+
-  '<div style="text-align:center;font-size:11px;color:var(--grey-light);margin-top:4px;" id="csvGitHubDate">Checking last update…</div>';
+  '<div style="text-align:center;font-size:11px;color:var(--grey-light);margin-top:12px;" id="csvGitHubDate"></div>';
 }
 
 function renderCSVResults() {
