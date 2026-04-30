@@ -388,7 +388,7 @@
       </div>
       <div class="direct-check-row">
         <input type="checkbox" id="directOnly" onchange="applyFilters()" />
-        <label for="directOnly">Nonstop flights only</label>
+        <label for="directOnly">Direct flights only (no plane change)</label>
       </div>
       <div class="filter-clear" onclick="clearFilters()">Clear all filters</div>
     </div>
@@ -1023,7 +1023,7 @@ function buildResultCard(item,i){
     var airlines=expandAirlines(item[c.key+"Airlines"]||"");
     var ptsStr=(pts&&parseInt(pts)>0)?formatPoints(pts):"";
     var sub=[airlines,taxDisplay].filter(Boolean).join(" · ");
-    var stopBadge=direct?'<span class="direct-badge">Nonstop</span>':'<span class="connecting-badge">Connecting</span>';
+    var stopBadge=direct?'<span class="direct-badge">Direct</span>':'<span class="connecting-badge">Connecting</span>';
     return '<div class="cabin-row">'+
       '<div class="cabin-row-left"><div class="cabin-dot '+c.cls+'"></div>'+
       '<div class="cabin-info"><div style="display:flex;align-items:center;gap:6px;"><span class="cabin-name">'+c.label+'</span>'+(seats?'<span class="seats-badge">('+seats+' left)</span>':'')+'</div>'+(sub?'<div class="cabin-sub">'+sub+'</div>':'')+'</div></div>'+
@@ -1036,43 +1036,35 @@ function buildResultCard(item,i){
   // Group trips by cabin, show best (lowest points) per cabin, max 1 per cabin
   var trips=item.AvailabilityTrips||[];
   if(trips.length>0){
-    // Match trips per cabin - cheapest mode: match card price; fastest mode: any price, pick shortest
-    var cabinKeyMap={"economy":"Y","premium":"W","business":"J","first":"F"};
+    // Show ALL trips matching searched cabin(s) and card price - no picking
+    var cabinKeyMap={"economy":"Y","premium":"W","premium economy":"W","business":"J","first":"F"};
     var cabinMap={"economy":"economy","premium economy":"premium","premium":"premium","business":"business","first":"first"};
-    var bestByCabin={};
-    trips.forEach(function(trip){
-      var rawCabin=(trip.Cabin||"").toLowerCase();
-      var cabin=cabinMap[rawCabin]||rawCabin;
-      var key=cabinKeyMap[cabin];
-      if(!key||!item[key+"Available"])return;
-      var cardPrice=parseInt(item[key+"MileageCost"])||0;
-      var tripPrice=parseInt(trip.MileageCost)||0;
-      if(tripSortMode==="cheapest"&&tripPrice!==cardPrice)return;
-      var existing=bestByCabin[cabin];
-      if(!existing){bestByCabin[cabin]=trip;return}
-      var stops=trip.Stops||99, estops=existing.Stops||99;
-      var dur=trip.TotalDuration||9999, edur=existing.TotalDuration||9999;
-      var pts=parseInt(trip.MileageCost)||0, epts=parseInt(existing.MileageCost)||0;
-      // Fastest: shortest duration wins; Cheapest: fewest stops then shortest
-      // Always pick fewest stops then shortest duration at matching price
-      if(stops<estops||(stops===estops&&dur<edur))bestByCabin[cabin]=trip;
-    });
-    // Only show cabins that were searched for (or all if no filter)
     var searchedCabins=[];
     if(currentMode==="route"){
       if(selectedCabins&&selectedCabins.size>0)selectedCabins.forEach(function(c){searchedCabins.push(c)});
     } else if(currentMode==="region"){
       if(selectedCabinsRegion&&selectedCabinsRegion.size>0)selectedCabinsRegion.forEach(function(c){searchedCabins.push(c)});
     }
-    var cabinOrder=["first","business","premium","economy"];
-    var bestTrips=[];
-    cabinOrder.forEach(function(c){
-      if(!bestByCabin[c])return;
-      if(searchedCabins.length===0||searchedCabins.indexOf(c)!==-1)bestTrips.push(bestByCabin[c]);
+    var bestTrips=trips.filter(function(trip){
+      var rawCabin=(trip.Cabin||"").toLowerCase();
+      var cabin=cabinMap[rawCabin]||rawCabin;
+      var key=cabinKeyMap[rawCabin]||cabinKeyMap[cabin];
+      if(!key||!item[key+"Available"])return false;
+      if(searchedCabins.length&&searchedCabins.indexOf(cabin)===-1)return false;
+      var cardPrice=parseInt(item[key+"MileageCost"])||0;
+      var tripPrice=parseInt(trip.MileageCost)||0;
+      return tripPrice===cardPrice;
+    });
+    bestTrips.sort(function(a,b){
+      var sa=a.Stops||99,sb=b.Stops||99;
+      if(sa!==sb)return sa-sb;
+      return (a.TotalDuration||9999)-(b.TotalDuration||9999);
     });
 
     detailHtml=bestTrips.map(function(trip){
-      var stops=trip.Stops===0?"Nonstop":(trip.Stops===1?"1 stop":trip.Stops+" stops");
+      var isDirect=(trip.Stops===0)||(trip.Direct===true);
+      var stops=trip.Stops===0?"Nonstop":(isDirect&&trip.Stops>0?"Direct ("+trip.Stops+" stop, same plane)":"1 stop"+(trip.Stops>1?"s":""));
+      if(trip.Stops>1)stops=trip.Stops+" stops";
       var dur="";
       if(trip.TotalDuration){
         var h=Math.floor(trip.TotalDuration/60),m=trip.TotalDuration%60;
