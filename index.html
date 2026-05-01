@@ -1292,7 +1292,9 @@ async function runRegionSearch(){
           });
         }
         allResults=allResults.concat(rows);
-        // Update display progressively
+        // Update display progressively after each page
+        buildProgramFilter(allResults);
+        renderResults(allResults);
         document.getElementById("resultsCount").textContent="Loading… "+allResults.length;
         hasMore=data.hasMore||false;
         cursor=data.cursor||0;
