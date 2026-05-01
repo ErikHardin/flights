@@ -1355,9 +1355,16 @@ async function runRegionSearch(){
         hasMore=data.hasMore||false;
         cursor=data.cursor||0;
         pageCount++;
-        // Stop if no more or cursor gone
         if(!hasMore||!cursor)break;
-        // Stop if all rows were filtered out (past end date)
+        // Stop if ALL unfiltered rows are past end date
+        var allRows=data.availability||data.data||[];
+        if(endDate&&allRows.length>0){
+          var minDate=allRows.reduce(function(min,r){
+            var d=(r.Date||r.DepartsAt||"").substring(0,10);
+            return d&&d<min?d:min;
+          },"9999");
+          if(minDate>endDate)break;
+        }
         if(rows.length===0)break;
       }
     }
