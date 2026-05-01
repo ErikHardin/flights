@@ -1663,16 +1663,16 @@ function renderCalendarView() {
     return "#ef4444"; // red
   }
 
-  // Find date range
+  // Find date range from actual results
   var dates = Object.keys(byDate).sort();
-  var startDate = new Date(dates[0]);
-  var endDate = new Date(dates[dates.length-1]);
+  var firstDate = new Date(dates[0] + "T12:00:00");
+  var lastDate = new Date(dates[dates.length-1] + "T12:00:00");
 
   // Build month grids
   var html = '<div style="font-size:11px;color:var(--grey-light);margin-bottom:8px;">Tap a day to filter results</div>';
-  var cur = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+  var cur = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
 
-  while (cur <= endDate) {
+  while (cur <= lastDate) {
     var year = cur.getFullYear();
     var month = cur.getMonth();
     var monthName = cur.toLocaleDateString("en-US", {month:"long",year:"numeric"});
