@@ -1296,7 +1296,7 @@ async function runRouteSearch(){
         var quota=res.headers.get("x-ratelimit-remaining");
         decrementQuota();
         var data=await res.json();
-        var rows=data.availability||data.data||[];
+        var rows=data.data||data.availability||[];
         rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
         allResults=allResults.concat(rows);
         hasMore=data.hasMore||false;
@@ -1324,31 +1324,46 @@ async function runRegionSearch(){
     for(var i=0;i<programs.length;i++){
       if(searchCancelled)break;
       var cabinArrR=selectedCabinsRegion&&selectedCabinsRegion.size>0?Array.from(selectedCabinsRegion):[];
-      var params=new URLSearchParams({source:programs[i]});
-      if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
-      else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
-      if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
-      if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
-      if(regionStart)params.set("start_date",regionStart);
-      if(regionEnd)params.set("end_date",regionEnd);
-      var res;
-      try{res=await fetch(WORKER+"/availability?"+params,{signal:abortController.signal});}
-      catch(e){continue;}
-      if(!res.ok)continue;
-      decrementQuota();
-      var data=await res.json();
-      var rows=data.availability||data.data||[];
-      rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
-      if(originAirports||destAirports){
-        rows=rows.filter(function(r){
-          var ro=(r.Route&&r.Route.OriginAirport)||r.OriginAirport||"";
-          var rd=(r.Route&&r.Route.DestinationAirport)||r.DestinationAirport||"";
-          if(originAirports&&!originAirports.has(ro))return false;
-          if(destAirports&&!destAirports.has(rd))return false;
-          return true;
-        });
+      // Split date range into 3-day chunks to get full coverage
+      var chunkStart = regionStart ? new Date(regionStart+"T12:00:00") : new Date();
+      var chunkEnd = regionEnd ? new Date(regionEnd+"T12:00:00") : new Date(chunkStart.getTime()+7*86400000);
+      var fmt=function(d){return d.toISOString().split("T")[0]};
+      var currentChunk = new Date(chunkStart);
+      var maxChunks = 8; var chunkCount = 0;
+      while(!searchCancelled && currentChunk <= chunkEnd && chunkCount < maxChunks) {
+        var chunkEndDate = new Date(currentChunk);
+        chunkEndDate.setDate(chunkEndDate.getDate()+2);
+        if(chunkEndDate > chunkEnd) chunkEndDate = new Date(chunkEnd);
+        var params=new URLSearchParams({source:programs[i]});
+        if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
+        else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
+        if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
+        if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
+        params.set("start_date",fmt(currentChunk));
+        params.set("end_date",fmt(chunkEndDate));
+        var res;
+        try{res=await fetch(WORKER+"/availability?"+params,{signal:abortController.signal});}
+        catch(e){break;}
+        if(!res.ok)break;
+        decrementQuota();
+        var data=await res.json();
+        var rows=data.data||data.availability||[];
+        rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
+        if(originAirports||destAirports){
+          rows=rows.filter(function(r){
+            var ro=(r.Route&&r.Route.OriginAirport)||r.OriginAirport||"";
+            var rd=(r.Route&&r.Route.DestinationAirport)||r.DestinationAirport||"";
+            if(originAirports&&!originAirports.has(ro))return false;
+            if(destAirports&&!destAirports.has(rd))return false;
+            return true;
+          });
+        }
+        allResults=allResults.concat(rows);
+        buildProgramFilter(allResults);renderResults(allResults);
+        document.getElementById("resultsCount").textContent="Loading... "+allResults.length;
+        currentChunk.setDate(currentChunk.getDate()+3);
+        chunkCount++;
       }
-      allResults=allResults.concat(rows);
     }
     buildProgramFilter(allResults);clearFilters();renderResults(allResults);
   }catch(e){showError("Request failed.")}
