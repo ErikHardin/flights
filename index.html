@@ -1857,17 +1857,19 @@ function toggleTripDetails(btn) {
   if (el.style.display === "none") {
     el.style.display = "block";
     btn.innerHTML = "&#9650; Hide";
-    // If no trip data pre-loaded, show basic info from card data
-    if (el.innerHTML.trim() === "" || el.innerHTML.includes("Loading")) {
+    // If no trip data pre-loaded, show basic info and offer full details
+    if (el.innerHTML.trim() === "" || el.dataset.basic === "1") {
       var cardIdx = btn.dataset.idx;
       var entry = expandedResults[parseInt(cardIdx)];
       if (entry && entry.item && !entry.trip) {
+        el.dataset.basic = "1";
         var item = entry.item;
         var k = entry.key || "J";
         var airlines = expandAirlines(item[k+"Airlines"]||item[k+"AirlinesRaw"]||"");
-        var direct = item[k+"Direct"] ? "Direct" : "Connecting";
+        var direct = item[k+"Direct"] ? "Nonstop" : "Connecting";
         el.innerHTML = '<div class="detail-row"><span class="detail-label">Carriers</span><span class="detail-value">'+(airlines||"—")+'</span></div>'+
-          '<div class="detail-row"><span class="detail-label">Routing</span><span class="detail-value">'+direct+'</span></div>';
+          '<div class="detail-row"><span class="detail-label">Routing</span><span class="detail-value">'+direct+'</span></div>'+
+          '<div id="fd-'+cardIdx+'" style="font-size:11px;color:var(--blue-dark);margin-top:8px;cursor:pointer;font-weight:600;" onclick="loadFullDetails(this,'+cardIdx+')">↓ Load flight details</div>';
       }
     }
   } else {
@@ -1876,28 +1878,57 @@ function toggleTripDetails(btn) {
   }
 }
 
-async function fetchTripDetailsOnDemand(entry, el) {
+async function loadFullDetails(linkEl, cardIdx) {
+  linkEl.textContent = "Loading…";
+  var entry = expandedResults[parseInt(cardIdx)];
+  if (!entry || !entry.item) { linkEl.textContent = "No details available"; return; }
+  var item = entry.item;
+  var availId = item.ID || "";
+  if (!availId) { linkEl.textContent = "No details available"; return; }
   try {
-    var item = entry.item;
-    var availId = item.ID || item.AvailabilityID || "";
-    if (!availId) { el.innerHTML = '<div style="font-size:12px;color:var(--grey-light);">No details available</div>'; return; }
-    var res = await fetch(WORKER + "/availability?id=" + availId + "&include_trips=true");
-    if (!res.ok) { el.innerHTML = '<div style="font-size:12px;color:var(--grey-light);">Could not load details</div>'; return; }
+    var res = await fetch(WORKER + "/trips?id=" + availId);
+    if (!res.ok) { linkEl.textContent = "Could not load details"; return; }
     var data = await res.json();
-    var trips = (data.availability||data.data||[])[0]?.AvailabilityTrips || [];
-    if (trips.length) {
-      entry.item.AvailabilityTrips = trips;
-      // Re-render the detail section
-      var origin = (item.Route&&item.Route.OriginAirport)||item.OriginAirport||"";
-      var dest = (item.Route&&item.Route.DestinationAirport)||item.DestinationAirport||"";
-      el.innerHTML = renderTripDetailHtml(entry, origin, dest);
+    var trips = data.data || data.trips || [];
+    if (!trips.length) { linkEl.textContent = "No trip details found"; return; }
+    var trip = trips[0];
+    var origin = (item.Route&&item.Route.OriginAirport)||item.OriginAirport||"";
+    var dest = (item.Route&&item.Route.DestinationAirport)||item.DestinationAirport||"";
+    var flightArr=(trip.FlightNumbers||"").split(",").map(function(f){return f.trim()});
+    var carrierArr=(trip.Carriers||"").split(",").map(function(c){return c.trim()});
+    var aircraftArr=trip.Aircraft||[];
+    var connections=trip.Connections||[];
+    var dep=trip.DepartsAt?formatTime12(trip.DepartsAt):"";
+    var arr=trip.ArrivesAt?formatTime12(trip.ArrivesAt):"";
+    var dur=trip.TotalDuration?Math.floor(trip.TotalDuration/60)+"h "+(trip.TotalDuration%60)+"m":"";
+    var html='';
+    if(dep&&arr) html+='<div class="detail-row"><span class="detail-label">Time</span><span class="detail-value">'+dep+' → '+arr+' '+(dur?'('+dur+')':'')+'</span></div>';
+    if(flightArr.length<=1){
+      html+='<div class="detail-row"><span class="detail-label">Flight</span><span class="detail-value">'+(flightArr[0]||"")+(aircraftArr[0]?' · '+aircraftArr[0]:'')+'</span></div>';
+      html+='<div class="detail-row"><span class="detail-label">Carrier</span><span class="detail-value">'+expandAirlines(carrierArr[0]||'')+'</span></div>';
     } else {
-      el.innerHTML = '<div style="font-size:12px;color:var(--grey-light);">No trip details found</div>';
+      html+='<div style="margin-top:4px;">';
+      for(var s=0;s<flightArr.length;s++){
+        var segOrigin=s===0?origin:(connections[s-1]||'?');
+        var segDest=s===flightArr.length-1?dest:(connections[s]||'?');
+        html+='<div style="background:var(--surface2);border-radius:6px;padding:8px 10px;margin-bottom:4px;">'+
+          '<div style="font-size:12px;font-weight:700;">'+flightArr[s]+'</div>'+
+          '<div style="font-size:12px;color:var(--grey-text);">'+segOrigin+' → '+segDest+'</div>'+
+          (aircraftArr[s]?'<div style="font-size:11px;color:var(--grey-light);">'+aircraftArr[s]+' · '+expandAirlines(carrierArr[s]||carrierArr[0]||'')+'</div>':'')+
+        '</div>';
+        if(s<connections.length) html+='<div style="text-align:center;font-size:11px;color:var(--grey-light);padding:2px 0;">Connection at '+connections[s]+'</div>';
+      }
+      html+='</div>';
     }
+    // Replace the link with full details
+    var fdEl = document.getElementById("fd-"+cardIdx);
+    if(fdEl) fdEl.outerHTML = html;
   } catch(e) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--grey-light);">Error loading details</div>';
+    linkEl.textContent = "Error loading details";
   }
 }
+
+async function fetchTripDetailsOnDemand(entry, el) {}
 
 function toggleAlt(altId, btn) {
   var el = document.getElementById(altId);
