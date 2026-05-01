@@ -1311,8 +1311,8 @@ async function runRouteSearch(){
 
 // ── Region search ──
 async function runRegionSearch(){
-  var startDate=document.getElementById("startDateRegion").value,endDate=document.getElementById("endDateRegion").value;
-  if(startDate&&endDate){var diff=(new Date(endDate)-new Date(startDate))/(1000*60*60*24);if(diff>60){alert("Date range cannot exceed 60 days.");return}}
+  var regionStart=document.getElementById("startDateRegion").value,regionEnd=document.getElementById("endDateRegion").value;
+  if(regionStart&&regionEnd){var diff=(new Date(regionEnd)-new Date(regionStart))/(1000*60*60*24);if(diff>60){alert("Date range cannot exceed 60 days.");return}}
   var programs=Array.from(selectedProgramsReg);
   var originAirports=getCountryAirports(selectedOriginCountries);
   var destAirports=getCountryAirports(selectedDestCountries);
@@ -1323,10 +1323,10 @@ async function runRegionSearch(){
     window._searchAbort = abortController;
     // API returns ~5 days per page. Calculate pages needed.
     var daysInRange = 7;
-    if(startDate&&endDate){
-      daysInRange = Math.max(1,Math.ceil((new Date(endDate+"T12:00:00")-new Date(startDate+"T12:00:00"))/(1000*60*60*24))+1);
+    if(regionStart&&regionEnd){
+      daysInRange = Math.max(1,Math.ceil((new Date(regionEnd+"T12:00:00")-new Date(regionStart+"T12:00:00"))/(1000*60*60*24))+1);
     }
-    var pagesNeeded = Math.min(3, Math.ceil(daysInRange/5)+1);
+    var pagesNeeded = Math.min(20, Math.ceil(daysInRange/4)+2);
     for(var i=0;i<programs.length;i++){
       if(searchCancelled)break;
       var cabinArrR=selectedCabinsRegion&&selectedCabinsRegion.size>0?Array.from(selectedCabinsRegion):[];
@@ -1337,8 +1337,8 @@ async function runRegionSearch(){
         else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
         if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
         if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
-        if(startDate)params.set("start_date",startDate);
-        if(endDate)params.set("end_date",endDate);
+        if(regionStart)params.set("start_date",regionStart);
+        if(regionEnd)params.set("end_date",regionEnd);
         if(cursor)params.set("cursor",cursor);
         var res;
         try{res=await fetch(WORKER+"/availability?"+params,{signal:abortController.signal});}
@@ -1364,6 +1364,15 @@ async function runRegionSearch(){
         cursor=data.cursor||0;
         pageCount++;
         if(!hasMore||!cursor)break;
+        // Stop if latest date in this page is past our end date
+        if(regionEnd){
+          var allUnfiltered=data.availability||data.data||[];
+          var maxDate=allUnfiltered.reduce(function(max,r){
+            var d=(r.Date||r.DepartsAt||"").substring(0,10);
+            return d>max?d:max;
+          },"");
+          if(maxDate&&maxDate>=regionEnd)break;
+        }
       }
     }
     buildProgramFilter(allResults);clearFilters();renderResults(allResults);
