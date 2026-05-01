@@ -1329,7 +1329,7 @@ async function runRegionSearch(){
       var chunkEnd = regionEnd ? new Date(regionEnd+"T12:00:00") : new Date(chunkStart.getTime()+7*86400000);
       var fmt=function(d){return d.toISOString().split("T")[0]};
       var currentChunk = new Date(chunkStart);
-      var maxChunks = 8; var chunkCount = 0;
+      var maxChunks = 20; var chunkCount = 0;
       while(!searchCancelled && currentChunk <= chunkEnd && chunkCount < maxChunks) {
         var chunkEndDate = new Date(currentChunk);
         chunkEndDate.setDate(chunkEndDate.getDate()+2);
@@ -1748,8 +1748,10 @@ function renderCalendarView() {
 
   // Find date range from actual results
   var dates = Object.keys(byDate).sort();
-  var firstDate = new Date(dates[0] + "T12:00:00");
-  var lastDate = new Date(dates[dates.length-1] + "T12:00:00");
+  // Parse dates safely without timezone shift
+  var parseDate = function(s){ var p=s.split('-'); return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])); };
+  var firstDate = parseDate(dates[0]);
+  var lastDate = parseDate(dates[dates.length-1]);
 
   // Build month grids
   var html = '<div style="font-size:11px;color:var(--grey-light);margin-bottom:8px;">Tap a day to filter results</div>';
