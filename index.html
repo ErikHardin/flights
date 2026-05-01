@@ -449,7 +449,7 @@
       </div>
       <div class="filter-clear" onclick="clearFilters()">Clear all filters</div>
     </div>
-    <div class="results-header"><span>Results</span><div style="display:flex;align-items:center;gap:8px;"><button onclick="toggleCalendarView()" id="calViewBtn" style="font-size:11px;font-weight:600;background:var(--surface2);color:var(--grey-text);border:1.5px solid var(--border);border-radius:20px;padding:3px 10px;cursor:pointer;">📅 Calendar</button><button onclick="exportResultsCSV()" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button><button id="cancelSearchBtn" onclick="searchCancelled=true;" style="display:none;font-size:11px;font-weight:600;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:20px;padding:3px 10px;cursor:pointer;">✕ Stop</button><span class="results-count" id="resultsCount">0</span></div></div>
+    <div class="results-header"><span>Results</span><div style="display:flex;align-items:center;gap:8px;"><button onclick="toggleCalendarView()" id="calViewBtn" style="font-size:11px;font-weight:600;background:var(--surface2);color:var(--grey-text);border:1.5px solid var(--border);border-radius:20px;padding:3px 10px;cursor:pointer;">📅 Calendar</button><button onclick="exportResultsCSV()" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button><button id="cancelSearchBtn" onclick="searchCancelled=true;if(window._searchAbort){window._searchAbort.abort();}" style="display:none;font-size:11px;font-weight:600;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:20px;padding:3px 10px;cursor:pointer;">✕ Stop</button><span class="results-count" id="resultsCount">0</span></div></div>
     <div id="calendarView" style="display:none;margin-bottom:12px;"></div>
     <div id="resultsList"></div>
   </div>
@@ -1319,10 +1319,13 @@ async function runRegionSearch(){
   setLoading(true,"searchBtnRegion","Explore Region");
   try{
     allResults=[];expandedCards.clear();
+    var abortController = new AbortController();
+    window._searchAbort = abortController;
     for(var i=0;i<programs.length;i++){
+      if(searchCancelled)break;
       var cabinArrR=selectedCabinsRegion&&selectedCabinsRegion.size>0?Array.from(selectedCabinsRegion):[];
-      var cursor=0;var hasMore=true;var pageCount=0;
-      while(!searchCancelled&&hasMore&&pageCount<20){
+      var cursor=0;var hasMore=true;var pageCount=0;var maxPages=5;
+      while(!searchCancelled&&hasMore&&pageCount<maxPages){
         var params=new URLSearchParams({source:programs[i],include_trips:"true",take:"500"});
         if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
         else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
@@ -1331,13 +1334,14 @@ async function runRegionSearch(){
         if(startDate)params.set("start_date",startDate);
         if(endDate)params.set("end_date",endDate);
         if(cursor)params.set("cursor",cursor);
-        var res=await fetch(WORKER+"/availability?"+params);
+        var res;
+        try{res=await fetch(WORKER+"/availability?"+params,{signal:abortController.signal});}
+        catch(e){break;}
         if(!res.ok)break;
         decrementQuota();
         var data=await res.json();
         var rows=data.availability||data.data||[];
         rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
-        // Filter by airport and date range
         rows=rows.filter(function(r){
           var ro=(r.Route&&r.Route.OriginAirport)||r.OriginAirport||"";
           var rd=(r.Route&&r.Route.DestinationAirport)||r.DestinationAirport||"";
@@ -1349,23 +1353,18 @@ async function runRegionSearch(){
           return true;
         });
         allResults=allResults.concat(rows);
-        // Show progressively
         buildProgramFilter(allResults);renderResults(allResults);
         document.getElementById("resultsCount").textContent="Loading… "+allResults.length;
         hasMore=data.hasMore||false;
         cursor=data.cursor||0;
         pageCount++;
         if(!hasMore||!cursor)break;
-        // Stop if ALL unfiltered rows are past end date
+        // Stop if min date on page exceeds end date
         var allRows=data.availability||data.data||[];
         if(endDate&&allRows.length>0){
-          var minDate=allRows.reduce(function(min,r){
-            var d=(r.Date||r.DepartsAt||"").substring(0,10);
-            return d&&d<min?d:min;
-          },"9999");
+          var minDate=allRows.reduce(function(min,r){var d=(r.Date||r.DepartsAt||"").substring(0,10);return d&&d<min?d:min;},"9999");
           if(minDate>endDate)break;
         }
-        if(rows.length===0)break;
       }
     }
     buildProgramFilter(allResults);clearFilters();renderResults(allResults);
@@ -2681,7 +2680,7 @@ function setLoading(on,btnId,offLabel){
     if(cancelBtn)cancelBtn.style.display="inline-block";
   }else{
     btn.disabled=false;btn.textContent=offLabel;
-    if(cancelBtn)cancelBtn.style.display="none";
+    if(cancelBtn)cancelBtn.style.display="none";window._searchAbort=null;
   }
 }
 function showError(msg){document.getElementById("resultsList").innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div>'+msg+'</div>';document.getElementById("resultsArea").style.display="block"}
