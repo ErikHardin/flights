@@ -1321,60 +1321,34 @@ async function runRegionSearch(){
     allResults=[];expandedCards.clear();
     var abortController = new AbortController();
     window._searchAbort = abortController;
-    // API returns ~5 days per page. Calculate pages needed.
-    var daysInRange = 7;
-    if(regionStart&&regionEnd){
-      daysInRange = Math.max(1,Math.ceil((new Date(regionEnd+"T12:00:00")-new Date(regionStart+"T12:00:00"))/(1000*60*60*24))+1);
-    }
-    var pagesNeeded = Math.min(20, Math.ceil(daysInRange/4)+2);
     for(var i=0;i<programs.length;i++){
       if(searchCancelled)break;
       var cabinArrR=selectedCabinsRegion&&selectedCabinsRegion.size>0?Array.from(selectedCabinsRegion):[];
-      var cursor=0;var hasMore=true;var pageCount=0;
-      while(!searchCancelled&&hasMore&&pageCount<pagesNeeded){
-        var params=new URLSearchParams({source:programs[i]});
-        if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
-        else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
-        if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
-        if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
-        if(regionStart)params.set("start_date",regionStart);
-        if(regionEnd)params.set("end_date",regionEnd);
-        if(cursor)params.set("cursor",cursor);
-        var res;
-        try{res=await fetch(WORKER+"/availability?"+params,{signal:abortController.signal});}
-        catch(e){break;}
-        if(!res.ok)break;
-        decrementQuota();
-        var data=await res.json();
-        var rows=data.availability||data.data||[];
-        rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
-        if(originAirports||destAirports){
-          rows=rows.filter(function(r){
-            var ro=(r.Route&&r.Route.OriginAirport)||r.OriginAirport||"";
-            var rd=(r.Route&&r.Route.DestinationAirport)||r.DestinationAirport||"";
-            if(originAirports&&!originAirports.has(ro))return false;
-            if(destAirports&&!destAirports.has(rd))return false;
-            return true;
-          });
-        }
-        allResults=allResults.concat(rows);
-        buildProgramFilter(allResults);renderResults(allResults);
-        document.getElementById("resultsCount").textContent="Loading… "+allResults.length;
-        hasMore=data.hasMore||false;
-        cursor=data.cursor||0;
-        pageCount++;
-        console.log("Page",pageCount,"rows:",rows.length,"hasMore:",hasMore,"cursor:",cursor);
-        if(!hasMore||!cursor)break;
-        // Stop if latest date in this page is past our end date
-        if(regionEnd){
-          var allUnfiltered=data.availability||data.data||[];
-          var maxDate=allUnfiltered.reduce(function(max,r){
-            var d=(r.Date||r.DepartsAt||"").substring(0,10);
-            return d>max?d:max;
-          },"");
-          if(maxDate&&maxDate>=regionEnd)break;
-        }
+      var params=new URLSearchParams({source:programs[i]});
+      if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
+      else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
+      if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
+      if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
+      if(regionStart)params.set("start_date",regionStart);
+      if(regionEnd)params.set("end_date",regionEnd);
+      var res;
+      try{res=await fetch(WORKER+"/availability?"+params,{signal:abortController.signal});}
+      catch(e){continue;}
+      if(!res.ok)continue;
+      decrementQuota();
+      var data=await res.json();
+      var rows=data.availability||data.data||[];
+      rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
+      if(originAirports||destAirports){
+        rows=rows.filter(function(r){
+          var ro=(r.Route&&r.Route.OriginAirport)||r.OriginAirport||"";
+          var rd=(r.Route&&r.Route.DestinationAirport)||r.DestinationAirport||"";
+          if(originAirports&&!originAirports.has(ro))return false;
+          if(destAirports&&!destAirports.has(rd))return false;
+          return true;
+        });
       }
+      allResults=allResults.concat(rows);
     }
     buildProgramFilter(allResults);clearFilters();renderResults(allResults);
   }catch(e){showError("Request failed.")}
