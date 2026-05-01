@@ -1337,8 +1337,17 @@ async function runRegionSearch(){
         var params=new URLSearchParams({source:programs[i]});
         if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
         else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
-        if(selectedOriginRegion&&!originAirports)params.set("origin_region",selectedOriginRegion);
-        if(selectedDestRegion&&!destAirports)params.set("destination_region",selectedDestRegion);
+        if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
+        if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
+        // If specific destination countries selected, pass airports to API
+        if(destAirports&&destAirports.size<=20){
+          params.set("destination_airport",Array.from(destAirports).join(","));
+          params.delete("destination_region");
+        }
+        if(originAirports&&originAirports.size<=20){
+          params.set("origin_airport",Array.from(originAirports).join(","));
+          params.delete("origin_region");
+        }
         params.set("start_date",fmt(currentChunk));
         params.set("end_date",fmt(chunkEndDate));
         var res;
