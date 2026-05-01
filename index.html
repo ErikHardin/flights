@@ -1232,17 +1232,24 @@ async function runRouteSearch(){
   try{
     allResults=[];expandedCards.clear();
     for(var i=0;i<programs.length;i++){
-      // Use /availability so trip IDs are valid for flight details
-      var params=new URLSearchParams({origin_airport:origin,destination_airport:dest,source:programs[i],include_trips:"true"});
       var cabinArr=selectedCabins&&selectedCabins.size>0?Array.from(selectedCabins):[];
-      if(cabinArr.length===1)params.set("cabin",cabinArr[0]);
-      else if(cabinArr.length>1)params.set("cabins",cabinArr.join(","));
-      if(startDate)params.set("start_date",startDate);if(endDate)params.set("end_date",endDate);
-      var res=await fetch(WORKER+"/availability?"+params);if(res.ok){
+      var cursor=0;var hasMore=true;
+      while(hasMore){
+        var params=new URLSearchParams({origin_airport:origin,destination_airport:dest,source:programs[i],include_trips:"true"});
+        if(cabinArr.length===1)params.set("cabin",cabinArr[0]);
+        else if(cabinArr.length>1)params.set("cabins",cabinArr.join(","));
+        if(startDate)params.set("start_date",startDate);
+        if(endDate)params.set("end_date",endDate);
+        if(cursor)params.set("cursor",cursor);
+        var res=await fetch(WORKER+"/availability?"+params);
+        if(!res.ok){hasMore=false;break;}
         var data=await res.json();
         var rows=data.availability||data.data||[];
         rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
         allResults=allResults.concat(rows);
+        hasMore=data.hasMore||false;
+        cursor=data.cursor||0;
+        if(!hasMore||!cursor)break;
       }
     }
     buildProgramFilter(allResults);clearFilters();renderResults(allResults);
@@ -1260,17 +1267,21 @@ async function runRegionSearch(){
   try{
     allResults=[];expandedCards.clear();
     for(var i=0;i<programs.length;i++){
-      var params=new URLSearchParams({source:programs[i],take:"200",include_trips:"true"});
       var cabinArrR=selectedCabinsRegion&&selectedCabinsRegion.size>0?Array.from(selectedCabinsRegion):[];
-      if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
-      else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
-      if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
-      if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
-      if(startDate)params.set("start_date",startDate);if(endDate)params.set("end_date",endDate);
-      var res=await fetch(WORKER+"/availability?"+params);if(res.ok){
+      var cursor=0;var hasMore=true;
+      while(hasMore){
+        var params=new URLSearchParams({source:programs[i],include_trips:"true"});
+        if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
+        else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
+        if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
+        if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
+        if(startDate)params.set("start_date",startDate);
+        if(endDate)params.set("end_date",endDate);
+        if(cursor)params.set("cursor",cursor);
+        var res=await fetch(WORKER+"/availability?"+params);
+        if(!res.ok){hasMore=false;break;}
         var data=await res.json();var rows=data.availability||data.data||[];
         rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
-        // Filter by country airport codes
         if(originAirports||destAirports){
           rows=rows.filter(function(r){
             var ro=(r.Route&&r.Route.OriginAirport)||r.OriginAirport||"";
@@ -1281,6 +1292,9 @@ async function runRegionSearch(){
           });
         }
         allResults=allResults.concat(rows);
+        hasMore=data.hasMore||false;
+        cursor=data.cursor||0;
+        if(!hasMore||!cursor)break;
       }
     }
     buildProgramFilter(allResults);clearFilters();renderResults(allResults);
