@@ -1321,48 +1321,45 @@ async function runRegionSearch(){
     allResults=[];expandedCards.clear();
     for(var i=0;i<programs.length;i++){
       var cabinArrR=selectedCabinsRegion&&selectedCabinsRegion.size>0?Array.from(selectedCabinsRegion):[];
-      // First call to get initial results and cursor
-      var params=new URLSearchParams({source:programs[i],include_trips:"true",take:"500"});
-      if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
-      else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
-      if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
-      if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
-      if(startDate)params.set("start_date",startDate);
-      if(endDate)params.set("end_date",endDate);
-      var res=await fetch(WORKER+"/availability?"+params);
-      if(!res.ok)continue;
-      decrementQuota();
-      var data=await res.json();
-      var rows=data.availability||data.data||[];
-      rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
-
-      // Queue up all remaining pages in parallel
-      var fetchPromises=[];
-      var cursor=data.cursor||0;
-      var hasMore=data.hasMore||false;
-      var pageCount=0;
-      while(hasMore&&cursor&&pageCount<10){
-        (function(c){
-          var p2=new URLSearchParams(params);
-          p2.set("cursor",c);
-          fetchPromises.push(fetch(WORKER+"/availability?"+p2).then(function(r2){return r2.ok?r2.json():null}));
-        })(cursor);
-        // We don't know next cursor until response, so just queue one more level
-        // after first batch resolves
-        break; // will handle below
-      }
-
-      // Resolve first page results
-      if(originAirports||destAirports){
+      var cursor=0;var hasMore=true;var pageCount=0;
+      while(!searchCancelled&&hasMore&&pageCount<20){
+        var params=new URLSearchParams({source:programs[i],include_trips:"true",take:"500"});
+        if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
+        else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
+        if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
+        if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
+        if(startDate)params.set("start_date",startDate);
+        if(endDate)params.set("end_date",endDate);
+        if(cursor)params.set("cursor",cursor);
+        var res=await fetch(WORKER+"/availability?"+params);
+        if(!res.ok)break;
+        decrementQuota();
+        var data=await res.json();
+        var rows=data.availability||data.data||[];
+        rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
+        // Filter by airport and date range
         rows=rows.filter(function(r){
           var ro=(r.Route&&r.Route.OriginAirport)||r.OriginAirport||"";
           var rd=(r.Route&&r.Route.DestinationAirport)||r.DestinationAirport||"";
           if(originAirports&&!originAirports.has(ro))return false;
           if(destAirports&&!destAirports.has(rd))return false;
+          var d=(r.Date||r.DepartsAt||"").substring(0,10);
+          if(startDate&&d<startDate)return false;
+          if(endDate&&d>endDate)return false;
           return true;
         });
+        allResults=allResults.concat(rows);
+        // Show progressively
+        buildProgramFilter(allResults);renderResults(allResults);
+        document.getElementById("resultsCount").textContent="Loading… "+allResults.length;
+        hasMore=data.hasMore||false;
+        cursor=data.cursor||0;
+        pageCount++;
+        // Stop if no more or cursor gone
+        if(!hasMore||!cursor)break;
+        // Stop if all rows were filtered out (past end date)
+        if(rows.length===0)break;
       }
-      allResults=allResults.concat(rows);
     }
     buildProgramFilter(allResults);clearFilters();renderResults(allResults);
   }catch(e){showError("Request failed.")}
