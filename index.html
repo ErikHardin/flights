@@ -448,7 +448,7 @@
       </div>
       <div class="filter-clear" onclick="clearFilters()">Clear all filters</div>
     </div>
-    <div class="results-header"><span>Results</span><div style="display:flex;align-items:center;gap:8px;"><button onclick="toggleCalendarView()" id="calViewBtn" style="font-size:11px;font-weight:600;background:var(--surface2);color:var(--grey-text);border:1.5px solid var(--border);border-radius:20px;padding:3px 10px;cursor:pointer;">📅 Calendar</button><button onclick="exportResultsCSV()" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button><span class="results-count" id="resultsCount">0</span></div></div>
+    <div class="results-header"><span>Results</span><div style="display:flex;align-items:center;gap:8px;"><button onclick="toggleCalendarView()" id="calViewBtn" style="font-size:11px;font-weight:600;background:var(--surface2);color:var(--grey-text);border:1.5px solid var(--border);border-radius:20px;padding:3px 10px;cursor:pointer;">📅 Calendar</button><button onclick="exportResultsCSV()" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button><button id="cancelSearchBtn" onclick="searchCancelled=true;" style="display:none;font-size:11px;font-weight:600;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:20px;padding:3px 10px;cursor:pointer;">✕ Stop</button><span class="results-count" id="resultsCount">0</span></div></div>
     <div id="calendarView" style="display:none;margin-bottom:12px;"></div>
     <div id="resultsList"></div>
   </div>
@@ -1050,6 +1050,20 @@ function buildCountryGrid(gridId,sectionId,region,selectedSet,toggleFn){
   }).join("");
 }
 
+function enforceMaxDateRange(startId, endId) {
+  var start = document.getElementById(startId);
+  var end = document.getElementById(endId);
+  if (!start || !end || !start.value) return;
+  var startD = new Date(start.value + "T12:00:00");
+  var maxEnd = new Date(startD);
+  maxEnd.setDate(maxEnd.getDate() + 60);
+  var maxStr = maxEnd.toISOString().split("T")[0];
+  end.max = maxStr;
+  if (end.value && end.value > maxStr) {
+    end.value = maxStr;
+  }
+}
+
 function setDefaultDates(){
   var today=new Date(),later=new Date();later.setDate(today.getDate()+90);
   var fmt=function(d){return d.toISOString().split("T")[0]};
@@ -1065,12 +1079,18 @@ function syncEndDate(startId,endId){
   if(!startVal)return;
   var startDate=new Date(startVal+"T00:00:00");
   var minEnd=new Date(startDate);
-  minEnd.setDate(minEnd.getDate()+30);
+  minEnd.setDate(minEnd.getDate()+1);
+  var maxEnd=new Date(startDate);
+  maxEnd.setDate(maxEnd.getDate()+60);
   var fmt=function(d){return d.toISOString().split("T")[0]};
+  document.getElementById(endId).min=startVal;
+  document.getElementById(endId).max=fmt(maxEnd);
   if(!endVal||new Date(endVal+"T00:00:00")<=startDate){
     document.getElementById(endId).value=fmt(minEnd);
   }
-  document.getElementById(endId).min=startVal;
+  if(endVal&&new Date(endVal+"T00:00:00")>maxEnd){
+    document.getElementById(endId).value=fmt(maxEnd);
+  }
 }
 
 // ── Mode ──
@@ -1312,7 +1332,7 @@ async function runRegionSearch(){
 
       // Now paginate sequentially but fast - show results after each page
       cursor=data.cursor||0;hasMore=data.hasMore||false;pageCount=0;
-      while(hasMore&&cursor&&pageCount<20&&allResults.length<2000){
+      while(!searchCancelled&&hasMore&&cursor&&pageCount<20&&allResults.length<2000){
         var p2=new URLSearchParams(params);p2.set("cursor",cursor);
         var r2=await fetch(WORKER+"/availability?"+p2);
         if(!r2.ok)break;
@@ -1598,6 +1618,7 @@ function buildTripCard(entry, i) {
 }
 
 var expandedResults = [];
+var searchCancelled = false;
 
 function shareTripCard(i) {
   var entry = expandedResults[i];
@@ -1657,7 +1678,7 @@ function toggleCalendarView() {
     btn.style.borderColor = "var(--blue-primary)";
     calDiv.style.display = "block";
     listDiv.style.display = "none";
-    renderCalendarView();
+    renderCalendarView(); // always re-render with current allResults
   } else {
     btn.textContent = "📅 Calendar";
     btn.style.background = "var(--surface2)";
@@ -2636,7 +2657,21 @@ function formatDate(str){
 }
 function formatPoints(val){var n=parseInt(val,10);return isNaN(n)?val:n.toLocaleString()+" pts"}
 function updateQuota(res){}
-function setLoading(on,btnId,offLabel){var btn=document.getElementById(btnId);if(on){btn.disabled=true;btn.textContent="Searching…";document.getElementById("resultsArea").style.display="block";document.getElementById("resultsList").innerHTML='<div class="loading"><div class="spinner"></div>Fetching availability…</div>';document.getElementById("resultsCount").textContent="…"}else{btn.disabled=false;btn.textContent=offLabel}}
+function setLoading(on,btnId,offLabel){
+  var btn=document.getElementById(btnId);
+  var cancelBtn=document.getElementById("cancelSearchBtn");
+  if(on){
+    searchCancelled=false;
+    btn.disabled=true;btn.textContent="Searching…";
+    document.getElementById("resultsArea").style.display="block";
+    document.getElementById("resultsList").innerHTML='<div class="loading"><div class="spinner"></div>Fetching availability…</div>';
+    document.getElementById("resultsCount").textContent="…";
+    if(cancelBtn)cancelBtn.style.display="inline-block";
+  }else{
+    btn.disabled=false;btn.textContent=offLabel;
+    if(cancelBtn)cancelBtn.style.display="none";
+  }
+}
 function showError(msg){document.getElementById("resultsList").innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div>'+msg+'</div>';document.getElementById("resultsArea").style.display="block"}
 
 ["origin","destination","filterAirport","filterAirline","upgradeFilterAirport"].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener("input",function(){this.value=this.value.toUpperCase()})});
