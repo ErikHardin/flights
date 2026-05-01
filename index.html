@@ -1337,8 +1337,8 @@ async function runRegionSearch(){
         var params=new URLSearchParams({source:programs[i]});
         if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
         else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
-        if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
-        if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
+        if(selectedOriginRegion&&!originAirports)params.set("origin_region",selectedOriginRegion);
+        if(selectedDestRegion&&!destAirports)params.set("destination_region",selectedDestRegion);
         params.set("start_date",fmt(currentChunk));
         params.set("end_date",fmt(chunkEndDate));
         var res;
