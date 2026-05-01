@@ -1376,8 +1376,15 @@ async function runRegionSearch(){
         var data=await res.json();
         var rows=data.data||data.availability||[];
         rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
+        rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
+        // Filter by origin countries if selected (to exclude Canada from North America etc)
+        if(originAirports&&originAirports.size>0){
+          rows=rows.filter(function(r){
+            var ro=(r.Route&&r.Route.OriginAirport)||r.OriginAirport||"";
+            return originAirports.has(ro);
+          });
+        }
         allResults=allResults.concat(rows);
-        buildProgramFilter(allResults);renderResults(allResults);
         document.getElementById("resultsCount").textContent="Loading... "+allResults.length;
       }
     }
