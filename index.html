@@ -1363,46 +1363,6 @@ async function runRegionSearch(){
         });
       }
       allResults=allResults.concat(rows);
-
-      // Now paginate sequentially but fast - show results after each page
-      cursor=data.cursor||0;hasMore=data.hasMore||false;pageCount=0;
-      while(!searchCancelled&&hasMore&&cursor&&pageCount<20&&allResults.length<2000){
-        var p2=new URLSearchParams(params);p2.set("cursor",cursor);
-        var r2=await fetch(WORKER+"/availability?"+p2);
-        if(!r2.ok)break;
-        var d2=await r2.json();
-        var rows2=d2.availability||d2.data||[];
-        rows2.forEach(function(r){if(!r.Source)r.Source=programs[i]});
-        if(originAirports||destAirports){
-          rows2=rows2.filter(function(r){
-            var ro=(r.Route&&r.Route.OriginAirport)||r.OriginAirport||"";
-            var rd=(r.Route&&r.Route.DestinationAirport)||r.DestinationAirport||"";
-            if(originAirports&&!originAirports.has(ro))return false;
-            if(destAirports&&!destAirports.has(rd))return false;
-            return true;
-          });
-        }
-        // Filter to date range
-        if(startDate||endDate){
-          rows2=rows2.filter(function(r){
-            var d=(r.Date||r.DepartsAt||"").substring(0,10);
-            if(startDate&&d<startDate)return false;
-            if(endDate&&d>endDate)return false;
-            return true;
-          });
-        }
-        allResults=allResults.concat(rows2);
-        // Show results progressively
-        buildProgramFilter(allResults);renderResults(allResults);
-        document.getElementById("resultsCount").textContent="Loading… "+allResults.length;
-        cursor=d2.cursor||0;hasMore=d2.hasMore||false;pageCount++;
-        // Stop if last result is past our end date
-        if(endDate&&rows2.length>0){
-          var lastDate=(rows2[rows2.length-1].Date||rows2[rows2.length-1].DepartsAt||"").substring(0,10);
-          if(lastDate>endDate)break;
-        }
-        if(!hasMore||!cursor)break;
-      }
     }
     buildProgramFilter(allResults);clearFilters();renderResults(allResults);
   }catch(e){showError("Request failed.")}
