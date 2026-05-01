@@ -1324,54 +1324,52 @@ async function runRegionSearch(){
     for(var i=0;i<programs.length;i++){
       if(searchCancelled)break;
       var cabinArrR=selectedCabinsRegion&&selectedCabinsRegion.size>0?Array.from(selectedCabinsRegion):[];
-      // Split date range into 3-day chunks to get full coverage
-      var chunkStart = regionStart ? new Date(regionStart+"T12:00:00") : new Date();
-      var chunkEnd = regionEnd ? new Date(regionEnd+"T12:00:00") : new Date(chunkStart.getTime()+7*86400000);
-      var fmt=function(d){return d.toISOString().split("T")[0]};
-      var currentChunk = new Date(chunkStart);
-      var maxChunks = 20; var chunkCount = 0;
-      while(!searchCancelled && currentChunk <= chunkEnd && chunkCount < maxChunks) {
-        var chunkEndDate = new Date(currentChunk);
-        chunkEndDate.setDate(chunkEndDate.getDate()+2);
-        if(chunkEndDate > chunkEnd) chunkEndDate = new Date(chunkEnd);
-        var params=new URLSearchParams({source:programs[i]});
-        if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
-        else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
-        if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
-        if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
-        // If specific destination countries selected, pass airports to API
-        if(destAirports&&destAirports.size<=20){
-          params.set("destination_airport",Array.from(destAirports).join(","));
-          params.delete("destination_region");
-        }
-        if(originAirports&&originAirports.size<=20){
-          params.set("origin_airport",Array.from(originAirports).join(","));
-          params.delete("origin_region");
-        }
-        params.set("start_date",fmt(currentChunk));
-        params.set("end_date",fmt(chunkEndDate));
+      var baseParams=new URLSearchParams({source:programs[i]});
+      if(cabinArrR.length===1)baseParams.set("cabin",cabinArrR[0]);
+      else if(cabinArrR.length>1)baseParams.set("cabins",cabinArrR.join(","));
+      if(regionStart)baseParams.set("start_date",regionStart);
+      if(regionEnd)baseParams.set("end_date",regionEnd);
+
+      // Build list of search targets - per airport if countries selected, else per region
+      var searchTargets=[];
+      if(destAirports&&destAirports.size>0){
+        // One call per destination airport
+        destAirports.forEach(function(ap){
+          var p=new URLSearchParams(baseParams);
+          if(selectedOriginRegion)p.set("origin_region",selectedOriginRegion);
+          else if(originAirports)originAirports.forEach(function(oa){p.set("origin_airport",oa)});
+          p.set("destination_airport",ap);
+          searchTargets.push(p);
+        });
+      } else if(originAirports&&originAirports.size>0){
+        // One call per origin airport
+        originAirports.forEach(function(ap){
+          var p=new URLSearchParams(baseParams);
+          p.set("origin_airport",ap);
+          if(selectedDestRegion)p.set("destination_region",selectedDestRegion);
+          searchTargets.push(p);
+        });
+      } else {
+        // Region-only call
+        var p=new URLSearchParams(baseParams);
+        if(selectedOriginRegion)p.set("origin_region",selectedOriginRegion);
+        if(selectedDestRegion)p.set("destination_region",selectedDestRegion);
+        searchTargets.push(p);
+      }
+
+      for(var t=0;t<searchTargets.length;t++){
+        if(searchCancelled)break;
         var res;
-        try{res=await fetch(WORKER+"/availability?"+params,{signal:abortController.signal});}
+        try{res=await fetch(WORKER+"/availability?"+searchTargets[t],{signal:abortController.signal});}
         catch(e){break;}
-        if(!res.ok)break;
+        if(!res.ok)continue;
         decrementQuota();
         var data=await res.json();
         var rows=data.data||data.availability||[];
         rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
-        if(originAirports||destAirports){
-          rows=rows.filter(function(r){
-            var ro=(r.Route&&r.Route.OriginAirport)||r.OriginAirport||"";
-            var rd=(r.Route&&r.Route.DestinationAirport)||r.DestinationAirport||"";
-            if(originAirports&&!originAirports.has(ro))return false;
-            if(destAirports&&!destAirports.has(rd))return false;
-            return true;
-          });
-        }
         allResults=allResults.concat(rows);
         buildProgramFilter(allResults);renderResults(allResults);
         document.getElementById("resultsCount").textContent="Loading... "+allResults.length;
-        currentChunk.setDate(currentChunk.getDate()+3);
-        chunkCount++;
       }
     }
     buildProgramFilter(allResults);clearFilters();renderResults(allResults);
