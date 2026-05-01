@@ -1322,50 +1322,32 @@ async function runRegionSearch(){
     var abortController = new AbortController();
     window._searchAbort = abortController;
     for(var i=0;i<programs.length;i++){
-      if(searchCancelled)break;
       var cabinArrR=selectedCabinsRegion&&selectedCabinsRegion.size>0?Array.from(selectedCabinsRegion):[];
-      var cursor=0;var hasMore=true;var pageCount=0;var maxPages=5;
-      while(!searchCancelled&&hasMore&&pageCount<maxPages){
-        var params=new URLSearchParams({source:programs[i],include_trips:"true",take:"500"});
-        if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
-        else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
-        if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
-        if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
-        if(startDate)params.set("start_date",startDate);
-        if(endDate)params.set("end_date",endDate);
-        if(cursor)params.set("cursor",cursor);
-        var res;
-        try{res=await fetch(WORKER+"/availability?"+params,{signal:abortController.signal});}
-        catch(e){break;}
-        if(!res.ok)break;
-        decrementQuota();
-        var data=await res.json();
-        var rows=data.availability||data.data||[];
-        rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
+      var params=new URLSearchParams({source:programs[i],include_trips:"true"});
+      if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
+      else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
+      if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
+      if(selectedDestRegion)params.set("destination_region",selectedDestRegion);
+      if(startDate)params.set("start_date",startDate);
+      if(endDate)params.set("end_date",endDate);
+      var res;
+      try{res=await fetch(WORKER+"/availability?"+params,{signal:abortController.signal});}
+      catch(e){break;}
+      if(!res.ok)continue;
+      decrementQuota();
+      var data=await res.json();
+      var rows=data.availability||data.data||[];
+      rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
+      if(originAirports||destAirports){
         rows=rows.filter(function(r){
           var ro=(r.Route&&r.Route.OriginAirport)||r.OriginAirport||"";
           var rd=(r.Route&&r.Route.DestinationAirport)||r.DestinationAirport||"";
           if(originAirports&&!originAirports.has(ro))return false;
           if(destAirports&&!destAirports.has(rd))return false;
-          var d=(r.Date||r.DepartsAt||"").substring(0,10);
-          if(startDate&&d<startDate)return false;
-          if(endDate&&d>endDate)return false;
           return true;
         });
-        allResults=allResults.concat(rows);
-        buildProgramFilter(allResults);renderResults(allResults);
-        document.getElementById("resultsCount").textContent="Loading… "+allResults.length;
-        hasMore=data.hasMore||false;
-        cursor=data.cursor||0;
-        pageCount++;
-        if(!hasMore||!cursor)break;
-        // Stop if min date on page exceeds end date
-        var allRows=data.availability||data.data||[];
-        if(endDate&&allRows.length>0){
-          var minDate=allRows.reduce(function(min,r){var d=(r.Date||r.DepartsAt||"").substring(0,10);return d&&d<min?d:min;},"9999");
-          if(minDate>endDate)break;
-        }
       }
+      allResults=allResults.concat(rows);
     }
     buildProgramFilter(allResults);clearFilters();renderResults(allResults);
   }catch(e){showError("Request failed.")}
