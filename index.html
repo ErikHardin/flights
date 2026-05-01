@@ -1363,6 +1363,7 @@ async function runRegionSearch(){
         hasMore=data.hasMore||false;
         cursor=data.cursor||0;
         pageCount++;
+        console.log("Page",pageCount,"rows:",rows.length,"hasMore:",hasMore,"cursor:",cursor);
         if(!hasMore||!cursor)break;
         // Stop if latest date in this page is past our end date
         if(regionEnd){
