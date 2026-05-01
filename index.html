@@ -1382,11 +1382,25 @@ async function runRegionSearch(){
             return true;
           });
         }
+        // Filter to date range
+        if(startDate||endDate){
+          rows2=rows2.filter(function(r){
+            var d=(r.Date||r.DepartsAt||"").substring(0,10);
+            if(startDate&&d<startDate)return false;
+            if(endDate&&d>endDate)return false;
+            return true;
+          });
+        }
         allResults=allResults.concat(rows2);
         // Show results progressively
         buildProgramFilter(allResults);renderResults(allResults);
         document.getElementById("resultsCount").textContent="Loading… "+allResults.length;
         cursor=d2.cursor||0;hasMore=d2.hasMore||false;pageCount++;
+        // Stop if last result is past our end date
+        if(endDate&&rows2.length>0){
+          var lastDate=(rows2[rows2.length-1].Date||rows2[rows2.length-1].DepartsAt||"").substring(0,10);
+          if(lastDate>endDate)break;
+        }
         if(!hasMore||!cursor)break;
       }
     }
