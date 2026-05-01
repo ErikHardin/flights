@@ -1368,10 +1368,14 @@ async function runRegionSearch(){
 
       for(var t=0;t<searchTargets.length;t++){
         if(searchCancelled)break;
+        if(t>0) await new Promise(function(r){setTimeout(r,500)}); // avoid rate limiting
         var res;
         try{res=await fetch(WORKER+"/availability?"+searchTargets[t],{signal:abortController.signal});}
         catch(e){break;}
-        if(!res.ok)continue;
+        if(!res.ok){
+          if(res.status===429){showError("Rate limit reached. Please wait a moment and try again.");break;}
+          continue;
+        }
         decrementQuota();
         var data=await res.json();
         var rows=data.data||data.availability||[];
