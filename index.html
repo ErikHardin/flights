@@ -312,7 +312,7 @@
   <div class="header-top">
     <div class="app-title">✈ Flight Seat Search</div>
     <div class="header-right" style="display:flex;align-items:center;gap:8px;">
-      <span class="quota-badge" id="quotaBadge" style="display:none;"></span>
+      <span class="quota-badge" id="quotaBadge">1000</span>
       <button onclick="toggleDarkMode()" id="darkModeBtn" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">🌙</button>
       <button onclick="showChangePin()" style="background:none;border:none;font-size:12px;color:var(--grey-light);cursor:pointer;padding:4px 8px;">Change PIN</button>
     </div>
@@ -1065,6 +1065,33 @@ function enforceMaxDateRange(startId, endId) {
   }
 }
 
+// Init quota from localStorage
+(function(){
+  var saved = localStorage.getItem("afss_quota");
+  var qb = document.getElementById("quotaBadge");
+  if (qb) {
+    // Reset to 1000 at midnight UTC
+    var today = new Date().toISOString().split("T")[0];
+    var savedDate = localStorage.getItem("afss_quota_date");
+    if (savedDate !== today) {
+      localStorage.setItem("afss_quota", "1000");
+      localStorage.setItem("afss_quota_date", today);
+      qb.textContent = "1000";
+    } else if (saved) {
+      qb.textContent = saved;
+    }
+  }
+})();
+
+function decrementQuota() {
+  var qb = document.getElementById("quotaBadge");
+  if (!qb) return;
+  var cur = parseInt(qb.textContent) || 0;
+  var newVal = Math.max(0, cur - 1);
+  qb.textContent = newVal;
+  localStorage.setItem("afss_quota", String(newVal));
+}
+
 function setDefaultDates(){
   var today=new Date();
   var fmt=function(d){return d.toISOString().split("T")[0]};
@@ -1249,6 +1276,7 @@ async function runRouteSearch(){
   var dest=document.getElementById("destination").value.trim().toUpperCase();
   if(!origin||!dest){alert("Enter origin and destination airport codes.");return}
   var startDate=document.getElementById("startDate").value,endDate=document.getElementById("endDate").value;
+  if(startDate&&endDate){var diff=(new Date(endDate)-new Date(startDate))/(1000*60*60*24);if(diff>60){alert("Date range cannot exceed 60 days.");return}}
   var programs=Array.from(selectedPrograms);
   setLoading(true,"searchBtn","Search Availability");
   try{
@@ -1266,8 +1294,7 @@ async function runRouteSearch(){
         var res=await fetch(WORKER+"/availability?"+params);
         if(!res.ok){hasMore=false;break;}
         var quota=res.headers.get("x-ratelimit-remaining");
-        var quota=res.headers.get("x-ratelimit-remaining");
-        if(quota){var qb=document.getElementById("quotaBadge");if(qb){qb.textContent=Number(quota).toLocaleString();qb.style.display="inline-block";}}
+        decrementQuota();
         var data=await res.json();
         var rows=data.availability||data.data||[];
         rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
@@ -1285,6 +1312,7 @@ async function runRouteSearch(){
 // ── Region search ──
 async function runRegionSearch(){
   var startDate=document.getElementById("startDateRegion").value,endDate=document.getElementById("endDateRegion").value;
+  if(startDate&&endDate){var diff=(new Date(endDate)-new Date(startDate))/(1000*60*60*24);if(diff>60){alert("Date range cannot exceed 60 days.");return}}
   var programs=Array.from(selectedProgramsReg);
   var originAirports=getCountryAirports(selectedOriginCountries);
   var destAirports=getCountryAirports(selectedDestCountries);
@@ -1303,8 +1331,7 @@ async function runRegionSearch(){
       if(endDate)params.set("end_date",endDate);
       var res=await fetch(WORKER+"/availability?"+params);
       if(!res.ok)continue;
-      var quota=res.headers.get("x-ratelimit-remaining");
-      if(quota){var qb=document.getElementById("quotaBadge");if(qb){qb.textContent=Number(quota).toLocaleString();qb.style.display="inline-block";}}
+      decrementQuota();
       var data=await res.json();
       var rows=data.availability||data.data||[];
       rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
