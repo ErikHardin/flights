@@ -1326,13 +1326,13 @@ async function runRegionSearch(){
     if(startDate&&endDate){
       daysInRange = Math.max(1,Math.ceil((new Date(endDate+"T12:00:00")-new Date(startDate+"T12:00:00"))/(1000*60*60*24))+1);
     }
-    var pagesNeeded = Math.min(12, Math.ceil(daysInRange/5)+1);
+    var pagesNeeded = Math.min(3, Math.ceil(daysInRange/5)+1);
     for(var i=0;i<programs.length;i++){
       if(searchCancelled)break;
       var cabinArrR=selectedCabinsRegion&&selectedCabinsRegion.size>0?Array.from(selectedCabinsRegion):[];
       var cursor=0;var hasMore=true;var pageCount=0;
       while(!searchCancelled&&hasMore&&pageCount<pagesNeeded){
-        var params=new URLSearchParams({source:programs[i],include_trips:"true"});
+        var params=new URLSearchParams({source:programs[i]});
         if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
         else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
         if(selectedOriginRegion)params.set("origin_region",selectedOriginRegion);
@@ -1586,7 +1586,7 @@ function buildTripCard(entry, i) {
         (dep&&arr?'<div style="font-size:12px;color:var(--grey-text);">'+dep+' → '+arr+nextDay+(dur?' ('+dur+')':'')+' · '+flights+'</div>':'')+
         '<div style="font-size:11px;color:var(--grey-light);margin-top:3px;">'+carrierNames+(taxStr?' · '+taxStr:'')+'</div>'+
       '</div>'+
-      '<div onclick="toggleTripDetails(this)" data-detail="td-'+id+'" style="text-align:center;font-size:11px;font-weight:600;color:var(--grey-light);cursor:pointer;padding:6px 0 2px;margin-top:4px;" id="tdlabel-'+id+'">&#9660; Details</div>'+
+      '<div onclick="toggleTripDetails(this)" data-detail="td-'+id+'" data-idx="'+i+'" style="text-align:center;font-size:11px;font-weight:600;color:var(--grey-light);cursor:pointer;padding:6px 0 2px;margin-top:4px;">&#9660; Details</div>'+
       '<div id="td-'+id+'" style="display:none;border-top:1px solid var(--border);margin-top:6px;padding-top:10px;">'+
         (dep&&arr?'<div class="detail-row"><span class="detail-label">Time</span><span class="detail-value">'+dep+' → '+arr+(nextDay?' +1':'')+' '+(dur?'('+dur+')':'')+'</span></div>':'')+
         (function(){
@@ -1828,9 +1828,41 @@ function toggleTripDetails(btn) {
   if (el.style.display === "none") {
     el.style.display = "block";
     btn.innerHTML = "&#9650; Hide";
+    // If no trip data pre-loaded, fetch on demand
+    if (el.innerHTML.trim() === "" || el.innerHTML.includes("Loading")) {
+      var cardIdx = btn.dataset.idx;
+      var entry = expandedResults[cardIdx];
+      if (entry && entry.item && !entry.trip) {
+        el.innerHTML = '<div style="font-size:12px;color:var(--grey-light);padding:8px 0;">Loading details…</div>';
+        fetchTripDetailsOnDemand(entry, el);
+      }
+    }
   } else {
     el.style.display = "none";
     btn.innerHTML = "&#9660; Details";
+  }
+}
+
+async function fetchTripDetailsOnDemand(entry, el) {
+  try {
+    var item = entry.item;
+    var availId = item.ID || item.AvailabilityID || "";
+    if (!availId) { el.innerHTML = '<div style="font-size:12px;color:var(--grey-light);">No details available</div>'; return; }
+    var res = await fetch(WORKER + "/availability?id=" + availId + "&include_trips=true");
+    if (!res.ok) { el.innerHTML = '<div style="font-size:12px;color:var(--grey-light);">Could not load details</div>'; return; }
+    var data = await res.json();
+    var trips = (data.availability||data.data||[])[0]?.AvailabilityTrips || [];
+    if (trips.length) {
+      entry.item.AvailabilityTrips = trips;
+      // Re-render the detail section
+      var origin = (item.Route&&item.Route.OriginAirport)||item.OriginAirport||"";
+      var dest = (item.Route&&item.Route.DestinationAirport)||item.DestinationAirport||"";
+      el.innerHTML = renderTripDetailHtml(entry, origin, dest);
+    } else {
+      el.innerHTML = '<div style="font-size:12px;color:var(--grey-light);">No trip details found</div>';
+    }
+  } catch(e) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--grey-light);">Error loading details</div>';
   }
 }
 
