@@ -1268,6 +1268,7 @@ async function runRegionSearch(){
     allResults=[];expandedCards.clear();
     for(var i=0;i<programs.length;i++){
       var cabinArrR=selectedCabinsRegion&&selectedCabinsRegion.size>0?Array.from(selectedCabinsRegion):[];
+      // First call to get initial results and cursor
       var params=new URLSearchParams({source:programs[i],include_trips:"true",take:"500"});
       if(cabinArrR.length===1)params.set("cabin",cabinArrR[0]);
       else if(cabinArrR.length>1)params.set("cabins",cabinArrR.join(","));
@@ -1276,11 +1277,50 @@ async function runRegionSearch(){
       if(startDate)params.set("start_date",startDate);
       if(endDate)params.set("end_date",endDate);
       var res=await fetch(WORKER+"/availability?"+params);
-      if(res.ok){
-        var data=await res.json();var rows=data.availability||data.data||[];
-        rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
+      if(!res.ok)continue;
+      var data=await res.json();
+      var rows=data.availability||data.data||[];
+      rows.forEach(function(r){if(!r.Source)r.Source=programs[i]});
+
+      // Queue up all remaining pages in parallel
+      var fetchPromises=[];
+      var cursor=data.cursor||0;
+      var hasMore=data.hasMore||false;
+      var pageCount=0;
+      while(hasMore&&cursor&&pageCount<10){
+        (function(c){
+          var p2=new URLSearchParams(params);
+          p2.set("cursor",c);
+          fetchPromises.push(fetch(WORKER+"/availability?"+p2).then(function(r2){return r2.ok?r2.json():null}));
+        })(cursor);
+        // We don't know next cursor until response, so just queue one more level
+        // after first batch resolves
+        break; // will handle below
+      }
+
+      // Resolve first page results
+      if(originAirports||destAirports){
+        rows=rows.filter(function(r){
+          var ro=(r.Route&&r.Route.OriginAirport)||r.OriginAirport||"";
+          var rd=(r.Route&&r.Route.DestinationAirport)||r.DestinationAirport||"";
+          if(originAirports&&!originAirports.has(ro))return false;
+          if(destAirports&&!destAirports.has(rd))return false;
+          return true;
+        });
+      }
+      allResults=allResults.concat(rows);
+
+      // Now paginate sequentially but fast - show results after each page
+      cursor=data.cursor||0;hasMore=data.hasMore||false;pageCount=0;
+      while(hasMore&&cursor&&pageCount<20&&allResults.length<2000){
+        var p2=new URLSearchParams(params);p2.set("cursor",cursor);
+        var r2=await fetch(WORKER+"/availability?"+p2);
+        if(!r2.ok)break;
+        var d2=await r2.json();
+        var rows2=d2.availability||d2.data||[];
+        rows2.forEach(function(r){if(!r.Source)r.Source=programs[i]});
         if(originAirports||destAirports){
-          rows=rows.filter(function(r){
+          rows2=rows2.filter(function(r){
             var ro=(r.Route&&r.Route.OriginAirport)||r.OriginAirport||"";
             var rd=(r.Route&&r.Route.DestinationAirport)||r.DestinationAirport||"";
             if(originAirports&&!originAirports.has(ro))return false;
@@ -1288,7 +1328,12 @@ async function runRegionSearch(){
             return true;
           });
         }
-        allResults=allResults.concat(rows);
+        allResults=allResults.concat(rows2);
+        // Show results progressively
+        buildProgramFilter(allResults);renderResults(allResults);
+        document.getElementById("resultsCount").textContent="Loading… "+allResults.length;
+        cursor=d2.cursor||0;hasMore=d2.hasMore||false;pageCount++;
+        if(!hasMore||!cursor)break;
       }
     }
     buildProgramFilter(allResults);clearFilters();renderResults(allResults);
