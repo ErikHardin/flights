@@ -448,7 +448,8 @@
       </div>
       <div class="filter-clear" onclick="clearFilters()">Clear all filters</div>
     </div>
-    <div class="results-header"><span>Results</span><div style="display:flex;align-items:center;gap:8px;"><button onclick="exportResultsCSV()" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button><span class="results-count" id="resultsCount">0</span></div></div>
+    <div class="results-header"><span>Results</span><div style="display:flex;align-items:center;gap:8px;"><button onclick="toggleCalendarView()" id="calViewBtn" style="font-size:11px;font-weight:600;background:var(--surface2);color:var(--grey-text);border:1.5px solid var(--border);border-radius:20px;padding:3px 10px;cursor:pointer;">📅 Calendar</button><button onclick="exportResultsCSV()" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button><span class="results-count" id="resultsCount">0</span></div></div>
+    <div id="calendarView" style="display:none;margin-bottom:12px;"></div>
     <div id="resultsList"></div>
   </div>
 </div>
@@ -1586,6 +1587,154 @@ function shareTripCard(i) {
   text+="\n\nFound via Advanced Flight Seat Search";
   if(navigator.share){navigator.share({text:text}).catch(function(){});}
   else{navigator.clipboard.writeText(text).then(function(){alert("Copied!");}).catch(function(){alert(text);});}
+}
+
+// ── Calendar View ──
+var calendarViewActive = false;
+
+function toggleCalendarView() {
+  calendarViewActive = !calendarViewActive;
+  var btn = document.getElementById("calViewBtn");
+  var calDiv = document.getElementById("calendarView");
+  var listDiv = document.getElementById("resultsList");
+  if (calendarViewActive) {
+    btn.textContent = "☰ List";
+    btn.style.background = "var(--blue-pale)";
+    btn.style.color = "var(--blue-dark)";
+    btn.style.borderColor = "var(--blue-primary)";
+    calDiv.style.display = "block";
+    listDiv.style.display = "none";
+    renderCalendarView();
+  } else {
+    btn.textContent = "📅 Calendar";
+    btn.style.background = "var(--surface2)";
+    btn.style.color = "var(--grey-text)";
+    btn.style.borderColor = "var(--border)";
+    calDiv.style.display = "none";
+    listDiv.style.display = "block";
+  }
+}
+
+function renderCalendarView() {
+  var calDiv = document.getElementById("calendarView");
+  if (!allResults.length) { calDiv.innerHTML = '<div class="empty-state">No results to display</div>'; return; }
+
+  // Get cabin filter
+  var cabinFilter = currentMode === "route" ? selectedCabins : selectedCabinsRegion;
+  var cabinKeyMap = {"economy":"Y","premium economy":"W","premium":"W","business":"J","first":"F"};
+  var activeCabinKeys = [];
+  if (cabinFilter && cabinFilter.size > 0) {
+    cabinFilter.forEach(function(c){ if(cabinKeyMap[c]) activeCabinKeys.push(cabinKeyMap[c]); });
+  }
+  if (!activeCabinKeys.length) activeCabinKeys = ["Y","W","J","F"];
+
+  // Group results by date, get min points per date
+  var byDate = {};
+  allResults.forEach(function(item) {
+    var date = (item.Date || item.DepartsAt || "").substring(0,10);
+    if (!date) return;
+    var minPts = Infinity;
+    activeCabinKeys.forEach(function(k) {
+      if (item[k+"Available"]) {
+        var pts = parseInt(item[k+"MileageCost"]) || Infinity;
+        if (pts < minPts) minPts = pts;
+      }
+    });
+    if (minPts === Infinity) return;
+    if (!byDate[date] || minPts < byDate[date].pts) {
+      byDate[date] = { pts: minPts, count: (byDate[date]||{}).count ? byDate[date].count+1 : 1 };
+    } else {
+      byDate[date].count = (byDate[date].count||1) + 1;
+    }
+  });
+
+  if (!Object.keys(byDate).length) { calDiv.innerHTML = '<div class="empty-state">No data for calendar</div>'; return; }
+
+  // Get all points values for color scaling
+  var allPts = Object.values(byDate).map(function(d){ return d.pts; });
+  var minPts = Math.min.apply(null, allPts);
+  var maxPts = Math.max.apply(null, allPts);
+
+  function getColor(pts) {
+    if (minPts === maxPts) return "#22c55e";
+    var ratio = (pts - minPts) / (maxPts - minPts);
+    if (ratio < 0.33) return "#22c55e"; // green
+    if (ratio < 0.66) return "#f59e0b"; // yellow
+    return "#ef4444"; // red
+  }
+
+  // Find date range
+  var dates = Object.keys(byDate).sort();
+  var startDate = new Date(dates[0]);
+  var endDate = new Date(dates[dates.length-1]);
+
+  // Build month grids
+  var html = '<div style="font-size:11px;color:var(--grey-light);margin-bottom:8px;">Tap a day to filter results</div>';
+  var cur = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+
+  while (cur <= endDate) {
+    var year = cur.getFullYear();
+    var month = cur.getMonth();
+    var monthName = cur.toLocaleDateString("en-US", {month:"long",year:"numeric"});
+    var daysInMonth = new Date(year, month+1, 0).getDate();
+    var firstDay = new Date(year, month, 1).getDay();
+
+    html += '<div style="margin-bottom:16px;">';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;">'+monthName+'</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;">';
+    // Day headers
+    ["S","M","T","W","T","F","S"].forEach(function(d){
+      html += '<div style="text-align:center;font-size:10px;font-weight:600;color:var(--grey-light);padding:2px;">'+d+'</div>';
+    });
+    // Empty cells before first day
+    for (var e=0; e<firstDay; e++) {
+      html += '<div></div>';
+    }
+    // Days
+    for (var d=1; d<=daysInMonth; d++) {
+      var dateStr = year+"-"+String(month+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+      var dayData = byDate[dateStr];
+      if (dayData) {
+        var color = getColor(dayData.pts);
+        var pts = dayData.pts >= 1000 ? Math.round(dayData.pts/1000)+"k" : dayData.pts;
+        html += '<div data-date="'+dateStr+'" onclick="filterByDate(this.dataset.date)" style="text-align:center;cursor:pointer;border-radius:6px;padding:3px 1px;background:'+color+'22;border:1.5px solid '+color+';">'+
+          '<div style="font-size:10px;font-weight:600;color:var(--text);">'+d+'</div>'+
+          '<div style="font-size:9px;font-weight:700;color:'+color+';">'+pts+'</div>'+
+        '</div>';
+      } else {
+        html += '<div style="text-align:center;padding:3px 1px;border-radius:6px;">'+
+          '<div style="font-size:10px;color:var(--grey-light);">'+d+'</div>'+
+        '</div>';
+      }
+    }
+    html += '</div></div>';
+    cur = new Date(year, month+1, 1);
+  }
+
+  // Legend
+  html += '<div style="display:flex;gap:12px;align-items:center;margin-top:4px;font-size:10px;color:var(--grey-light);">'+
+    '<span style="color:#22c55e;">● Cheapest</span>'+
+    '<span style="color:#f59e0b;">● Mid</span>'+
+    '<span style="color:#ef4444;">● Priciest</span>'+
+  '</div>';
+
+  calDiv.innerHTML = html;
+}
+
+function filterByDate(dateStr) {
+  calendarViewActive = true;
+  toggleCalendarView(); // this will switch to list
+  var formatted = formatDate(dateStr);
+  // Find and set date filter if exists, otherwise just scroll to matching cards
+  var cards = document.querySelectorAll(".result-card");
+  var found = false;
+  cards.forEach(function(card) {
+    if (card.textContent.includes(formatted)) {
+      if (!found) { card.scrollIntoView({behavior:"smooth",block:"start"}); found = true; }
+      card.style.outline = "2px solid var(--blue-primary)";
+      setTimeout(function(){ card.style.outline = ""; }, 2000);
+    }
+  });
 }
 
 function toggleTripDetails(btn) {
