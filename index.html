@@ -1935,10 +1935,19 @@ async function loadFullDetails(linkEl, cardIdx) {
     var trip = trips[0];
     var segs = trip.AvailabilitySegments || [];
     segs.sort(function(a,b){return a.Order-b.Order;});
+    // Time formatter
+    function fmtTime(iso){
+      if(!iso)return "";
+      var t=iso.substring(11,16);
+      var p=t.split(":");
+      var h=parseInt(p[0]),m=p[1],ampm=h>=12?"PM":"AM";
+      h=h%12||12;
+      return h+":"+m+" "+ampm;
+    }
     var html = '';
     // Overall time
-    var dep = trip.DepartsAt ? formatTime12(trip.DepartsAt) : "";
-    var arr = trip.ArrivesAt ? formatTime12(trip.ArrivesAt) : "";
+    var dep = trip.DepartsAt ? fmtTime(trip.DepartsAt) : "";
+    var arr = trip.ArrivesAt ? fmtTime(trip.ArrivesAt) : "";
     var dur = trip.TotalDuration ? Math.floor(trip.TotalDuration/60)+"h "+(trip.TotalDuration%60)+"m" : "";
     if(dep&&arr) html += '<div class="detail-row"><span class="detail-label">Total</span><span class="detail-value">'+dep+' → '+arr+(dur?' ('+dur+')':'')+'</span></div>';
     // Per-segment breakdown
@@ -1946,8 +1955,8 @@ async function loadFullDetails(linkEl, cardIdx) {
       html += '<div style="margin-top:6px;">';
       for(var s=0;s<segs.length;s++){
         var seg = segs[s];
-        var segDep = seg.DepartsAt ? formatTime12(seg.DepartsAt) : "";
-        var segArr = seg.ArrivesAt ? formatTime12(seg.ArrivesAt) : "";
+        var segDep = seg.DepartsAt ? fmtTime(seg.DepartsAt) : "";
+        var segArr = seg.ArrivesAt ? fmtTime(seg.ArrivesAt) : "";
         var segDur = seg.Duration ? Math.floor(seg.Duration/60)+"h "+(seg.Duration%60)+"m" : "";
         html += '<div style="background:var(--surface2);border-radius:6px;padding:8px 10px;margin-bottom:4px;">'+
           '<div style="font-size:12px;font-weight:700;color:var(--text);">'+seg.FlightNumber+'</div>'+
