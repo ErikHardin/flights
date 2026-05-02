@@ -2470,11 +2470,12 @@ function buildCSVPanel() {
 }
 
 function runCSVSearch() {
-  if (!csvData || !csvData.length) {
-    alert("No CSV data loaded. Please load the upgrade CSV first.");
+function runCSVSearch() {
     return;
   }
   // Results shown after Search button tapped
+  renderCSVResults();
+
 }
 
 function getFlightTimes(flightNum) {
