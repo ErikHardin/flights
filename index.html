@@ -1563,8 +1563,43 @@ function buildTripCard(entry, i) {
   var rawDate=(item.Date||"").split("T")[0];
 
   if(!trip){
-    // No trip data - fall back to original card
-    return buildResultCard(item, i);
+    // No trip data - build card from item data directly
+    var cabin=entry.cabin||"";
+    var key=entry.key||"J";
+    var pts=formatPoints(item[key+"MileageCost"]||"");
+    var seats=item[key+"RemainingSeats"]||"";
+    var taxes=item[key+"TotalTaxes"]||0;
+    var taxStr=taxes>0?"$"+(taxes/100).toFixed(0)+" taxes":"";
+    var isDirect=item[key+"Direct"]||false;
+    var stopBadge=isDirect?'<span style="font-size:10px;font-weight:700;color:#059669;background:#d1fae5;padding:2px 6px;border-radius:10px;margin-left:4px;">Nonstop</span>':'<span style="font-size:10px;font-weight:700;color:#d97706;background:#fef3c7;padding:2px 6px;border-radius:10px;margin-left:4px;">Connecting</span>';
+    var airlines=expandAirlines(item[key+"Airlines"]||item[key+"AirlinesRaw"]||"");
+    var dateStr=formatDate(item.Date||"");
+    var bookUrl="https://www.united.com/en/us/fsr/choose-flights?f="+origin+"&t="+dest+"&d="+rawDate+"&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True";
+    return '<div class="result-card" style="animation-delay:'+(i*.01)+'s" id="'+id+'">'+
+      '<div style="padding:14px;">'+
+        '<div class="result-route">'+
+          '<div>'+
+            '<div class="result-airports"><span>'+origin+'</span><span class="result-arrow">→</span><span>'+dest+'</span></div>'+
+            (originCity||destCity?'<div style="font-size:11px;color:var(--grey-light);margin-top:1px;">'+(originCity||origin)+' → '+(destCity||dest)+'</div>':'')+
+            '<div class="result-date">'+dateStr+'</div>'+
+          '</div>'+
+          '<div class="result-right"><div class="source-badge">'+source.toUpperCase()+'</div></div>'+
+        '</div>'+
+        '<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;margin-top:8px;">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'+
+            '<span style="font-size:13px;font-weight:600;color:var(--grey-text);">'+cabin.charAt(0).toUpperCase()+cabin.slice(1)+(seats?' <span style="font-size:11px;color:var(--grey-light);">('+seats+' left)</span>':'')+' '+stopBadge+'</span>'+
+            '<span style="font-family:DM Mono,monospace;font-size:13px;font-weight:600;color:var(--blue-dark);">'+pts+'</span>'+
+          '</div>'+
+          '<div style="font-size:11px;color:var(--grey-light);">'+airlines+(taxStr?' · '+taxStr:'')+'</div>'+
+        '</div>'+
+        '<div onclick="toggleTripDetails(this)" data-detail="td-'+id+'" data-idx="'+i+'" style="text-align:center;font-size:11px;font-weight:600;color:var(--grey-light);cursor:pointer;padding:6px 0 2px;margin-top:4px;">&#9660; Details</div>'+
+        '<div id="td-'+id+'" style="display:none;border-top:1px solid var(--border);margin-top:6px;padding-top:10px;"></div>'+
+        '<div style="display:flex;gap:6px;margin-top:8px;">'+
+          '<a href="'+bookUrl+'" target="_blank" class="book-link" style="flex:1;margin:0;">Book →</a>'+
+          '<button onclick="shareTripCard('+i+')" style="flex:0 0 auto;padding:9px 14px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;color:var(--grey-text);cursor:pointer;">&#128228;</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
   }
 
   var cabin=entry.cabin||trip.Cabin||"";
