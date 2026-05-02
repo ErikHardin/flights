@@ -1686,7 +1686,7 @@ function buildTripCard(entry, i) {
                 (aircraftArr[s]?'<div style="font-size:11px;color:var(--grey-light);">'+aircraftArr[s]+' · '+expandAirlines(carrierArr[s]||carrierArr[0]||'')+'</div>':'')+
               '</div>';
               if(s<connections.length){
-                html+='<div style="text-align:center;font-size:11px;color:var(--grey-light);padding:2px 0;">Connection at '+connections[s]+'</div>';
+                html+='<div data-conn="'+s+'" style="text-align:center;font-size:11px;color:var(--grey-light);padding:2px 0;">Connection at '+connections[s]+'</div>';
               }
             }
             html+='</div>';
@@ -1914,7 +1914,7 @@ function toggleTripDetails(btn) {
       var entry = expandedResults[parseInt(cardIdx)];
       if (entry && entry.trip && entry.trip.Stops > 0 && entry.item.ID) {
         ctEl.dataset.loaded = "1";
-        loadConnectionTimes(ctEl, entry.item.ID, "ct-"+cardId);
+        loadConnectionTimes(ctEl, entry.item.ID, "ct-"+cardId, entry.trip.ID);
       }
     }
     // If no trip data pre-loaded, show basic info and offer full details
@@ -1938,26 +1938,30 @@ function toggleTripDetails(btn) {
   }
 }
 
-async function loadConnectionTimes(linkEl, tripId, elId) {
-  console.log("loadConnectionTimes called with tripId:", tripId);
+async function loadConnectionTimes(linkEl, availId, elId, tripId) {
   linkEl.textContent = "Loading…";
   try {
-    var res = await fetch(WORKER + "/trips/" + tripId);
+    var res = await fetch(WORKER + "/trips/" + availId);
     if (!res.ok) { linkEl.textContent = ""; return; }
     var data = await res.json();
-    var segs = (data.data||[])[0]?.AvailabilitySegments||[];
+    var allTrips = data.data || [];
+    var trip = tripId ? allTrips.find(function(t){ return t.ID === tripId; }) : allTrips[0];
+    if (!trip) trip = allTrips[0];
+    var segs = trip ? (trip.AvailabilitySegments || []) : [];
     segs.sort(function(a,b){return a.Order-b.Order;});
-    if (!segs.length) { linkEl.textContent = ""; return; }
-    var html = '';
-    for (var s=0; s<segs.length-1; s++) {
-      var connMin = Math.round((new Date(segs[s+1].DepartsAt)-new Date(segs[s].ArrivesAt))/60000);
-      html += '<div style="text-align:center;font-size:11px;color:var(--grey-light);padding:2px 0;font-weight:600;">'+
-        (connMin>0 ? 'Layover: '+Math.floor(connMin/60)+'h '+(connMin%60)+'m at '+segs[s].DestinationAirport : 'Connection at '+segs[s].DestinationAirport)+
-      '</div>';
-    }
-    linkEl.outerHTML = html;
+    if (!segs.length) { linkEl.outerHTML = ''; return; }
+    // Find and replace each "Connection at X" placeholder with actual layover time
+    var detailEl = linkEl.parentElement;
+    var connDivs = detailEl.querySelectorAll('[data-conn]');
+    connDivs.forEach(function(div, idx) {
+      if (segs[idx] && segs[idx+1]) {
+        var connMin = Math.round((new Date(segs[idx+1].DepartsAt)-new Date(segs[idx].ArrivesAt))/60000);
+        div.textContent = connMin>0 ? 'Layover: '+Math.floor(connMin/60)+'h '+(connMin%60)+'m at '+segs[idx].DestinationAirport : 'Connection at '+segs[idx].DestinationAirport;
+      }
+    });
+    linkEl.outerHTML = '';
   } catch(e) {
-    linkEl.textContent = "";
+    linkEl.outerHTML = '';
   }
 }
 
