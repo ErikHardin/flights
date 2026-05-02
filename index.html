@@ -1928,38 +1928,45 @@ async function loadFullDetails(linkEl, cardIdx) {
     var res = await fetch(WORKER + "/trips/" + availId);
     if (!res.ok) { linkEl.textContent = "Could not load details"; return; }
     var data = await res.json();
+    console.log("trips response:", JSON.stringify(data).substring(0,200));
     var trips = data.data || data.trips || (Array.isArray(data) ? data : [data]);
     if (!trips.length) { linkEl.textContent = "No trip details found"; return; }
     var trip = trips[0];
-    var origin = (item.Route&&item.Route.OriginAirport)||item.OriginAirport||"";
-    var dest = (item.Route&&item.Route.DestinationAirport)||item.DestinationAirport||"";
-    var flightArr=(trip.FlightNumbers||"").split(",").map(function(f){return f.trim()});
-    var carrierArr=(trip.Carriers||"").split(",").map(function(c){return c.trim()});
-    var aircraftArr=trip.Aircraft||[];
-    var connections=trip.Connections||[];
-    var dep=trip.DepartsAt?formatTime12(trip.DepartsAt):"";
-    var arr=trip.ArrivesAt?formatTime12(trip.ArrivesAt):"";
-    var dur=trip.TotalDuration?Math.floor(trip.TotalDuration/60)+"h "+(trip.TotalDuration%60)+"m":"";
-    var html='';
-    if(dep&&arr) html+='<div class="detail-row"><span class="detail-label">Time</span><span class="detail-value">'+dep+' → '+arr+' '+(dur?'('+dur+')':'')+'</span></div>';
-    if(flightArr.length<=1){
-      html+='<div class="detail-row"><span class="detail-label">Flight</span><span class="detail-value">'+(flightArr[0]||"")+(aircraftArr[0]?' · '+aircraftArr[0]:'')+'</span></div>';
-      html+='<div class="detail-row"><span class="detail-label">Carrier</span><span class="detail-value">'+expandAirlines(carrierArr[0]||'')+'</span></div>';
-    } else {
-      html+='<div style="margin-top:4px;">';
-      for(var s=0;s<flightArr.length;s++){
-        var segOrigin=s===0?origin:(connections[s-1]||'?');
-        var segDest=s===flightArr.length-1?dest:(connections[s]||'?');
-        html+='<div style="background:var(--surface2);border-radius:6px;padding:8px 10px;margin-bottom:4px;">'+
-          '<div style="font-size:12px;font-weight:700;">'+flightArr[s]+'</div>'+
-          '<div style="font-size:12px;color:var(--grey-text);">'+segOrigin+' → '+segDest+'</div>'+
-          (aircraftArr[s]?'<div style="font-size:11px;color:var(--grey-light);">'+aircraftArr[s]+' · '+expandAirlines(carrierArr[s]||carrierArr[0]||'')+'</div>':'')+
+    var segs = trip.AvailabilitySegments || [];
+    segs.sort(function(a,b){return a.Order-b.Order;});
+    var html = '';
+    // Overall time
+    var dep = trip.DepartsAt ? formatTime12(trip.DepartsAt) : "";
+    var arr = trip.ArrivesAt ? formatTime12(trip.ArrivesAt) : "";
+    var dur = trip.TotalDuration ? Math.floor(trip.TotalDuration/60)+"h "+(trip.TotalDuration%60)+"m" : "";
+    if(dep&&arr) html += '<div class="detail-row"><span class="detail-label">Total</span><span class="detail-value">'+dep+' → '+arr+(dur?' ('+dur+')':'')+'</span></div>';
+    // Per-segment breakdown
+    if(segs.length > 0) {
+      html += '<div style="margin-top:6px;">';
+      for(var s=0;s<segs.length;s++){
+        var seg = segs[s];
+        var segDep = seg.DepartsAt ? formatTime12(seg.DepartsAt) : "";
+        var segArr = seg.ArrivesAt ? formatTime12(seg.ArrivesAt) : "";
+        var segDur = seg.Duration ? Math.floor(seg.Duration/60)+"h "+(seg.Duration%60)+"m" : "";
+        html += '<div style="background:var(--surface2);border-radius:6px;padding:8px 10px;margin-bottom:4px;">'+
+          '<div style="font-size:12px;font-weight:700;color:var(--text);">'+seg.FlightNumber+'</div>'+
+          '<div style="font-size:12px;color:var(--grey-text);">'+seg.OriginAirport+' → '+seg.DestinationAirport+(segDep?' · '+segDep+' → '+segArr:'')+'</div>'+
+          '<div style="font-size:11px;color:var(--grey-light);">'+seg.AircraftName+(segDur?' · '+segDur:'')+'</div>'+
         '</div>';
-        if(s<connections.length) html+='<div style="text-align:center;font-size:11px;color:var(--grey-light);padding:2px 0;">Connection at '+connections[s]+'</div>';
+        if(s < segs.length-1){
+          // Connection time
+          var connMin = 0;
+          if(seg.ArrivesAt && segs[s+1].DepartsAt){
+            connMin = Math.round((new Date(segs[s+1].DepartsAt)-new Date(seg.ArrivesAt))/60000);
+          }
+          html += '<div style="text-align:center;font-size:11px;color:var(--grey-light);padding:2px 0;">'+
+            (connMin>0?'Connection: '+Math.floor(connMin/60)+'h '+(connMin%60)+'m at '+seg.DestinationAirport:'Connection at '+seg.DestinationAirport)+
+          '</div>';
+        }
       }
-      html+='</div>';
+      html += '</div>';
     }
-    // Replace the link with full details
+    // Replace link with details
     var fdEl = document.getElementById("fd-"+cardIdx);
     if(fdEl) fdEl.outerHTML = html;
   } catch(e) {
