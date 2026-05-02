@@ -1912,6 +1912,7 @@ function toggleTripDetails(btn) {
     if (ctEl && ctEl.textContent.includes("Loading")) {
       var cardIdx = btn.dataset.idx;
       var entry = expandedResults[parseInt(cardIdx)];
+      console.log("cardIdx:", cardIdx, "entry.item.ID:", entry?.item?.ID, "trip.Stops:", entry?.trip?.Stops);
       if (entry && entry.trip && entry.trip.Stops > 0 && entry.item.ID) {
         loadConnectionTimes(ctEl, entry.item.ID, "ct-"+cardId);
       }
