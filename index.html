@@ -1925,6 +1925,7 @@ async function loadFullDetails(linkEl, cardIdx) {
   var availId = item.ID || "";
   if (!availId) { linkEl.textContent = "No details available"; return; }
   try {
+    console.log("Fetching trips:", WORKER + "/trips/" + availId);
     var res = await fetch(WORKER + "/trips/" + availId);
     if (!res.ok) { linkEl.textContent = "Could not load details"; return; }
     var data = await res.json();
