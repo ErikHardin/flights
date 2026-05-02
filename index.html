@@ -955,6 +955,7 @@ async function verifyPin(){
       sessionStorage.setItem("afss_unlocked","1");
       sessionStorage.setItem("afss_pin",pinEntry);
       document.getElementById("lockScreen").style.display="none";
+      fetchQuotaOnLogin();
       return;
     }
     // Check Firebase approved_users
@@ -964,6 +965,7 @@ async function verifyPin(){
       sessionStorage.setItem("afss_unlocked","1");
       sessionStorage.setItem("afss_pin",pinEntry);
       document.getElementById("lockScreen").style.display="none";
+      fetchQuotaOnLogin();
       return;
     }
     // Invalid PIN
@@ -1082,6 +1084,13 @@ function enforceMaxDateRange(startId, endId) {
     }
   }
 })();
+
+function fetchQuotaOnLogin() {
+  // Make a minimal API call just to get the current quota
+  fetch(WORKER + "/availability?source=united&start_date=2099-01-01&end_date=2099-01-01")
+    .then(function(r) { updateQuota(r); })
+    .catch(function(){});
+}
 
 function updateQuota(res) {
   var quota = res.headers.get("x-ratelimit-remaining");
