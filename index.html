@@ -458,6 +458,27 @@
 <script>
 var WORKER       = "https://seats-proxy.erikchardin.workers.dev";
 
+// United flight schedule - loaded from GitHub
+var UA_SCHEDULE = {};
+
+function loadFlightSchedule() {
+  var cached = localStorage.getItem("ua_schedule");
+  var cachedDate = localStorage.getItem("ua_schedule_date");
+  var today = new Date().toISOString().split("T")[0].substring(0,7); // YYYY-MM
+  if (cached && cachedDate === today) {
+    UA_SCHEDULE = JSON.parse(cached);
+    return;
+  }
+  fetch("https://raw.githubusercontent.com/ErikHardin/flights/main/ua_schedule.json")
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      UA_SCHEDULE = data;
+      localStorage.setItem("ua_schedule", JSON.stringify(data));
+      localStorage.setItem("ua_schedule_date", today);
+    })
+    .catch(function(){});
+}
+
 // Firebase config
 var FIREBASE_API_KEY = "AIzaSyD9lN9LHSsofgb7iyanon6DIJ06L898Ews";
 var FIREBASE_PROJECT = "afss-df164";
@@ -2303,7 +2324,7 @@ function syncCsvDateTo() {
       }
     }
   }
-  renderCSVResults();
+  // renderCSVResults called manually via Search button
 }
 
 function getUpgradeCSV() {
@@ -2364,7 +2385,7 @@ function showCSVUpgradeResults() {
   var panel = document.getElementById("csvUpgradePanel");
   panel.style.display = "block";
   panel.innerHTML = buildCSVPanel();
-  renderCSVResults();
+  // Results shown after Search button tapped
 
   // Show count immediately
   var loadedAt = new Date();
@@ -2394,24 +2415,24 @@ function buildCSVPanel() {
     }).join('');
   return '<div class="controls-bar" style="margin-bottom:10px;">'+
     '<div class="controls-row">'+
-      '<div class="control-wrap"><label>Origin Airport</label><input type="text" class="filter-input" id="csvFilterOrigin" placeholder="e.g. ORD" maxlength="3" oninput="renderCSVResults()" /></div>'+
-      '<div class="control-wrap"><label>Dest Airport</label><input type="text" class="filter-input" id="csvFilterDest" placeholder="e.g. LHR" maxlength="3" oninput="renderCSVResults()" /></div>'+
+      '<div class="control-wrap"><label>Origin Airport</label><input type="text" class="filter-input" id="csvFilterOrigin" placeholder="e.g. ORD" maxlength="3" oninput="" /></div>'+
+      '<div class="control-wrap"><label>Dest Airport</label><input type="text" class="filter-input" id="csvFilterDest" placeholder="e.g. LHR" maxlength="3" oninput="" /></div>'+
     '</div>'+
     '<div class="controls-row">'+
-      '<div class="control-wrap"><label>Origin Region</label><select class="control-select" id="csvFilterOriginRegion" onchange="renderCSVResults()">'+regionOpts+'</select></div>'+
-      '<div class="control-wrap"><label>Dest Region</label><select class="control-select" id="csvFilterDestRegion" onchange="renderCSVResults()">'+regionOpts+'</select></div>'+
+      '<div class="control-wrap"><label>Origin Region</label><select class="control-select" id="csvFilterOriginRegion" onchange="">'+regionOpts+'</select></div>'+
+      '<div class="control-wrap"><label>Dest Region</label><select class="control-select" id="csvFilterDestRegion" onchange="">'+regionOpts+'</select></div>'+
     '</div>'+
     '<div class="controls-row">'+
       '<div class="input-wrap"><label>Date From</label><input type="date" id="csvFilterDateFrom" onchange="syncCsvDateTo()" /></div>'+
-      '<div class="input-wrap"><label>Date To</label><input type="date" id="csvFilterDateTo" onchange="renderCSVResults()" /></div>'+
+      '<div class="input-wrap"><label>Date To</label><input type="date" id="csvFilterDateTo" onchange="" /></div>'+
     '</div>'+
     '<div class="controls-row">'+
-      '<div class="control-wrap"><label>Flight #</label><input type="text" class="filter-input" id="csvFilterFlight" placeholder="e.g. UA123" oninput="renderCSVResults()" style="text-transform:none" /></div>'+
-      '<div class="control-wrap"><label>Aircraft</label><input type="text" class="filter-input" id="csvFilterAircraft" placeholder="e.g. 777" oninput="renderCSVResults()" style="text-transform:none" /></div>'+
+      '<div class="control-wrap"><label>Flight #</label><input type="text" class="filter-input" id="csvFilterFlight" placeholder="e.g. UA123" oninput="" style="text-transform:none" /></div>'+
+      '<div class="control-wrap"><label>Aircraft</label><input type="text" class="filter-input" id="csvFilterAircraft" placeholder="e.g. 777" oninput="" style="text-transform:none" /></div>'+
     '</div>'+
     '<div class="controls-row">'+
       '<div class="control-wrap"><label>Min Inventory</label>'+
-        '<select class="control-select" id="csvFilterInv" onchange="renderCSVResults()">'+
+        '<select class="control-select" id="csvFilterInv" onchange="">'+
           '<option value="0">Any (PZ1+)</option>'+
           '<option value="2">PZ2+</option>'+
           '<option value="3">PZ3+</option>'+
@@ -2421,7 +2442,7 @@ function buildCSVPanel() {
         '</select>'+
       '</div>'+
       '<div class="control-wrap"><label>Sort By</label>'+
-        '<select class="control-select" id="csvSortBy" onchange="renderCSVResults()">'+
+        '<select class="control-select" id="csvSortBy" onchange="">'+
           '<option value="date">Date</option>'+
           '<option value="inv_desc">Inventory (high→low)</option>'+
           '<option value="origin">Origin</option>'+
@@ -2431,6 +2452,7 @@ function buildCSVPanel() {
     '</div>'+
     '<div class="filter-clear" onclick="clearCSVFilters()">Clear all filters</div>'+
   '</div>'+
+  '<button onclick="runCSVSearch()" style="width:100%;padding:14px;background:var(--blue-dark);color:white;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px;">Search Upgrades</button>'+
   '<div style="font-size:11px;color:var(--grey-light);margin-bottom:4px;" id="csvGitHubDateTop">Checking last update…</div>'+
   '<button onclick="requestDataUpdate(this)" id="requestDataBtn" style="width:100%;margin-bottom:12px;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--grey-text);cursor:pointer;">📡 Request Updated Data</button>'+
   '<div class="results-header"><span>Upgrade Availability</span>'+
@@ -2443,8 +2465,34 @@ function buildCSVPanel() {
       '<span class="results-count" id="csvResultCount" onclick="handleCountTap()" style="cursor:pointer;">0</span>'+
     '</div>'+
   '</div>'+
-  '<div id="csvResultsList"></div>'+
+  '<div id="csvResultsList"><div class="empty-state" style="padding:40px 0;">Enter your search criteria above and tap Search</div></div>'+
   '<div style="text-align:center;font-size:11px;color:var(--grey-light);margin-top:12px;" id="csvGitHubDate"></div>';
+}
+
+function runCSVSearch() {
+  if (!csvData || !csvData.length) {
+    alert("No CSV data loaded. Please load the upgrade CSV first.");
+    return;
+  }
+  // Results shown after Search button tapped
+}
+
+function getFlightTimes(flightNum) {
+  if (!flightNum) return null;
+  var key = flightNum.replace(/\s+/g,'').toUpperCase();
+  var val = UA_SCHEDULE[key];
+  if (!val) return null;
+  var parts = val.split('/');
+  return { dep: parts[0], arr: parts[1] };
+}
+
+function fmt12(t) {
+  if (!t) return '';
+  var parts = t.split(':');
+  var h = parseInt(parts[0]), m = parts[1];
+  var ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return h + ':' + m + ' ' + ampm;
 }
 
 function renderCSVResults() {
@@ -2502,6 +2550,7 @@ function renderCSVResults() {
     var originCity = AIRPORT_CITIES[row.origin_airport]||"";
     var destCity   = AIRPORT_CITIES[row.destination_airport]||"";
     var bookUrl    = row.deeplink || ("https://www.united.com/en/us/fsr/choose-flights?f="+row.origin_airport+"&t="+row.destination_airport+"&d="+row.departure_date+"&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True");
+    var times = getFlightTimes(row.flight_number);
     return '<div class="upgrade-card" style="animation-delay:'+(i*.01)+'s">'+
       '<div class="upgrade-route">'+
         '<div>'+
@@ -2510,6 +2559,7 @@ function renderCSVResults() {
           '</div>'+
           (originCity||destCity ? '<div style="font-size:11px;color:var(--grey-light);margin-top:1px;">'+(originCity||row.origin_airport)+' → '+(destCity||row.destination_airport)+'</div>' : '')+
           '<div class="upgrade-date">'+formatDate(row.departure_date)+' · '+row.flight_number+'</div>'+
+          (times ? '<div style="font-size:12px;font-weight:600;color:var(--text);margin-top:2px;">'+fmt12(times.dep)+' → '+fmt12(times.arr)+'</div>' : '')+
           '<div style="font-size:11px;color:var(--grey-light);margin-top:2px;">'+row.aircraft+'</div>'+
         '</div>'+
         '<div style="text-align:right;">'+
@@ -2531,7 +2581,7 @@ function clearCSVFilters() {
   ["csvFilterInv","csvFilterOriginRegion","csvFilterDestRegion","csvSortBy"].forEach(function(id){
     var el=document.getElementById(id);if(el)el.value=id==="csvFilterInv"?"0":id==="csvSortBy"?"date":"";
   });
-  renderCSVResults();
+  // Results shown after Search button tapped
 }
 
 function exportFilteredCSV() {
@@ -2893,7 +2943,7 @@ function showError(msg){document.getElementById("resultsList").innerHTML='<div c
 
 ["origin","destination","filterAirport","filterAirline","upgradeFilterAirport"].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener("input",function(){this.value=this.value.toUpperCase()})});
 
-try { init(); } catch(e) { console.error('Init error:', e.message, e.stack); alert('Init error: ' + e.message); }
+try { loadFlightSchedule(); init(); } catch(e) { console.error('Init error:', e.message, e.stack); alert('Init error: ' + e.message); }
 </script>
 </body>
 </html>
