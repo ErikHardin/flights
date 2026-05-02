@@ -1912,8 +1912,8 @@ function toggleTripDetails(btn) {
     if (ctEl && ctEl.textContent.includes("Loading")) {
       var cardIdx = btn.dataset.idx;
       var entry = expandedResults[parseInt(cardIdx)];
-      if (entry && entry.trip && entry.trip.Stops > 0 && entry.trip.ID) {
-        loadConnectionTimes(ctEl, entry.trip.ID, "ct-"+cardId);
+      if (entry && entry.trip && entry.trip.Stops > 0 && entry.item.ID) {
+        loadConnectionTimes(ctEl, entry.item.ID, "ct-"+cardId);
       }
     }
     // If no trip data pre-loaded, show basic info and offer full details
