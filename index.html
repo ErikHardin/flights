@@ -1573,6 +1573,7 @@ function buildTripCard(entry, i) {
     var isDirect=item[key+"Direct"]||false;
     var stopBadge=isDirect?'<span style="font-size:10px;font-weight:700;color:#059669;background:#d1fae5;padding:2px 6px;border-radius:10px;margin-left:4px;">Nonstop</span>':'<span style="font-size:10px;font-weight:700;color:#d97706;background:#fef3c7;padding:2px 6px;border-radius:10px;margin-left:4px;">Connecting</span>';
     var airlines=expandAirlines(item[key+"Airlines"]||item[key+"AirlinesRaw"]||"");
+    var dur=item[key+"Duration"]?Math.floor(item[key+"Duration"]/60)+"h "+(item[key+"Duration"]%60)+"m":"";
     var dateStr=formatDate(item.Date||"");
     var bookUrl="https://www.united.com/en/us/fsr/choose-flights?f="+origin+"&t="+dest+"&d="+rawDate+"&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True";
     return '<div class="result-card" style="animation-delay:'+(i*.01)+'s" id="'+id+'">'+
@@ -1590,7 +1591,7 @@ function buildTripCard(entry, i) {
             '<span style="font-size:13px;font-weight:600;color:var(--grey-text);">'+cabin.charAt(0).toUpperCase()+cabin.slice(1)+(seats?' <span style="font-size:11px;color:var(--grey-light);">('+seats+' left)</span>':'')+' '+stopBadge+'</span>'+
             '<span style="font-family:DM Mono,monospace;font-size:13px;font-weight:600;color:var(--blue-dark);">'+pts+'</span>'+
           '</div>'+
-          '<div style="font-size:11px;color:var(--grey-light);">'+airlines+(taxStr?' · '+taxStr:'')+'</div>'+
+          '<div style="font-size:11px;color:var(--grey-light);">'+airlines+(dur?' · '+dur:'')+(taxStr?' · '+taxStr:'')+'</div>'+
         '</div>'+
         '<div onclick="toggleTripDetails(this)" data-detail="td-'+id+'" data-idx="'+i+'" style="text-align:center;font-size:11px;font-weight:600;color:var(--grey-light);cursor:pointer;padding:6px 0 2px;margin-top:4px;">&#9660; Details</div>'+
         '<div id="td-'+id+'" style="display:none;border-top:1px solid var(--border);margin-top:6px;padding-top:10px;"></div>'+
