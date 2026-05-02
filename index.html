@@ -1302,7 +1302,7 @@ async function runRouteSearch(){
         if(cursor)params.set("cursor",cursor);
         var res=await fetch(WORKER+"/availability?"+params);
         if(!res.ok){hasMore=false;break;}
-        var quota=res.headers.get("x-ratelimit-remaining");
+        updateQuota(res);
         decrementQuota();
         var data=await res.json();
         var rows=data.data||data.availability||[];
@@ -2825,7 +2825,7 @@ function formatDate(str){
   }catch(e){return str}
 }
 function formatPoints(val){var n=parseInt(val,10);return isNaN(n)?val:n.toLocaleString()+" pts"}
-function updateQuota(res){}
+
 function setLoading(on,btnId,offLabel){
   var btn=document.getElementById(btnId);
   var cancelBtn=document.getElementById("cancelSearchBtn");
