@@ -265,6 +265,41 @@
   </div>
 </div>
 
+<!-- Info Modal -->
+<div id="infoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:20px;overflow-y:auto;">
+  <div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:100%;max-width:420px;box-shadow:var(--shadow);margin:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:20px;font-weight:700;">&#9992; About This App</div>
+      <button onclick="hideInfoModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--grey-light);line-height:1;">&times;</button>
+    </div>
+    <p style="font-size:14px;color:var(--text);line-height:1.6;margin-bottom:12px;">
+      <strong>Advanced Flight Seat Search</strong> helps you find award travel availability and upgrade opportunities across major airline loyalty programs.
+    </p>
+    <div style="font-size:13px;font-weight:700;color:var(--blue-dark);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Region Search</div>
+    <p style="font-size:13px;color:var(--grey-text);line-height:1.6;margin-bottom:16px;">
+      Search award availability across entire regions — for example, all flights from North America to Europe. Filter by program, cabin class, and specific countries. Tap a card to see flight details.
+    </p>
+    <div style="font-size:13px;font-weight:700;color:var(--blue-dark);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Route Search</div>
+    <p style="font-size:13px;color:var(--grey-text);line-height:1.6;margin-bottom:16px;">
+      Search a specific origin and destination airport pair over a date range. Shows all available award space across programs with full flight details and pricing.
+    </p>
+    <div style="font-size:13px;font-weight:700;color:var(--blue-dark);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">United Upgrades</div>
+    <p style="font-size:13px;color:var(--grey-text);line-height:1.6;margin-bottom:16px;">
+      Find PlusPoints upgrade availability on United flights. Search by origin, destination, date range, and aircraft type. Shows departure and arrival times for each flight.
+    </p>
+    <div style="font-size:13px;font-weight:700;color:var(--blue-dark);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Tips</div>
+    <ul style="font-size:13px;color:var(--grey-text);line-height:1.8;margin-bottom:20px;padding-left:18px;">
+      <li>Tap &#9660; Details on any card to see full flight breakdown</li>
+      <li>Use the &#128197; Calendar view to spot the cheapest days</li>
+      <li>Tap &#11015; CSV to export results to a spreadsheet</li>
+      <li>Use the &#128228; Share button to send a great find</li>
+      <li>Tap &#10005; Stop to cancel a long search</li>
+      <li>Change your PIN anytime from the header</li>
+    </ul>
+    <button onclick="hideInfoModal()" style="width:100%;padding:12px;background:var(--blue-dark);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;color:white;">Got it</button>
+  </div>
+</div>
+
 <div id="registerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:100%;max-width:360px;box-shadow:var(--shadow);">
     <div style="font-size:18px;font-weight:700;margin-bottom:4px;">Request Access</div>
@@ -314,6 +349,7 @@
     <div class="header-right" style="display:flex;align-items:center;gap:8px;">
       <span class="quota-badge" id="quotaBadge">1000</span>
       <button onclick="toggleDarkMode()" id="darkModeBtn" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">🌙</button>
+      <button onclick="showInfoModal()" style="background:none;border:none;font-size:16px;cursor:pointer;padding:4px;color:var(--grey-light);">ℹ️</button>
       <button onclick="showChangePin()" style="background:none;border:none;font-size:12px;color:var(--grey-light);cursor:pointer;padding:4px 8px;">Change PIN</button>
     </div>
   </div>
@@ -2787,6 +2823,13 @@ function shareUpgrade(origin, dest, date, flight, aircraft, inventory) {
 
 // ── User Management ──
 var currentUserPin = "";
+
+function showInfoModal() {
+  document.getElementById("infoModal").style.display = "flex";
+}
+function hideInfoModal() {
+  document.getElementById("infoModal").style.display = "none";
+}
 
 function showRegisterForm() {
   document.getElementById("registerModal").style.display = "flex";
