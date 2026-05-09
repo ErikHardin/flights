@@ -1,0 +1,43 @@
+name: Update Upgrade CSV
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-csv:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download CSV from Seat Aero
+        env:
+          SEAT_AERO_SESSION: ${{ secrets.SEAT_AERO_SESSION }}
+        run: |
+          curl -sf \
+            -H "Cookie: __Host-session=${SEAT_AERO_SESSION}" \
+            "https://seats.aero/_api/pnpz?fare_class=PZ&origin_region=Anywhere&destination_region=Anywhere&csv=true" \
+            -o PNPZ_Data_PZ.csv
+
+          ROWS=$(wc -l < PNPZ_Data_PZ.csv)
+          echo "Downloaded $ROWS rows"
+          if [ "$ROWS" -lt 100 ]; then
+            echo "Too few rows — session may have expired. Update SEAT_AERO_SESSION secret."
+            exit 1
+          fi
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add PNPZ_Data_PZ.csv
+          if git diff --staged --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Update PNPZ data $(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+            git push
+          fi
