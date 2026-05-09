@@ -18,17 +18,24 @@ jobs:
         env:
           SEAT_AERO_SESSION: ${{ secrets.SEAT_AERO_SESSION }}
         run: |
-          curl -sf \
+          curl -s -w "\nHTTP_STATUS:%{http_code}" \
             -H "Cookie: __Host-session=${SEAT_AERO_SESSION}" \
             "https://seats.aero/_api/pnpz?fare_class=PZ&origin_region=Anywhere&destination_region=Anywhere&csv=true" \
-            -o PNPZ_Data_PZ.csv
+            -o response.txt
 
-          ROWS=$(wc -l < PNPZ_Data_PZ.csv)
-          echo "Downloaded $ROWS rows"
-          if [ "$ROWS" -lt 100 ]; then
-            echo "Too few rows — session may have expired. Update SEAT_AERO_SESSION secret."
+          echo "--- HTTP status and first 500 chars of response ---"
+          tail -1 response.txt
+          head -c 500 response.txt
+
+          HTTP_CODE=$(tail -1 response.txt | grep -o '[0-9]*$')
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Request failed with HTTP $HTTP_CODE — see response above"
             exit 1
           fi
+
+          cp response.txt PNPZ_Data_PZ.csv
+          ROWS=$(wc -l < PNPZ_Data_PZ.csv)
+          echo "Downloaded $ROWS rows"
 
       - name: Commit if changed
         run: |
