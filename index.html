@@ -266,6 +266,9 @@
   <div style="text-align:center;margin-top:10px;">
     <button onclick="showInfoModal()" style="background:none;border:none;font-size:13px;color:var(--grey-light);cursor:pointer;text-decoration:underline;">About the App</button>
   </div>
+  <div style="text-align:center;margin-top:12px;">
+    <button id="lockDarkModeBtn" onclick="toggleDarkMode()" style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px;line-height:1;">🌙</button>
+  </div>
 </div>
 
 <!-- Info Modal -->
@@ -2329,9 +2332,14 @@ function handleCountTap() {
 
 function toggleDarkMode() {
   var isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  document.documentElement.setAttribute("data-theme", isDark ? "light" : "dark");
-  document.getElementById("darkModeBtn").textContent = isDark ? "🌙" : "☀️";
-  localStorage.setItem("afss_theme", isDark ? "light" : "dark");
+  var newTheme = isDark ? "light" : "dark";
+  var newIcon = isDark ? "🌙" : "☀️";
+  document.documentElement.setAttribute("data-theme", newTheme);
+  var btn = document.getElementById("darkModeBtn");
+  if (btn) btn.textContent = newIcon;
+  var lockBtn = document.getElementById("lockDarkModeBtn");
+  if (lockBtn) lockBtn.textContent = newIcon;
+  localStorage.setItem("afss_theme", newTheme);
 }
 
 // Apply saved theme on load
@@ -2339,10 +2347,11 @@ function toggleDarkMode() {
   var saved = localStorage.getItem("afss_theme");
   if (saved === "dark") {
     document.documentElement.setAttribute("data-theme", "dark");
-    // Button will be updated after DOM loads
     window.addEventListener("DOMContentLoaded", function(){
       var btn = document.getElementById("darkModeBtn");
       if (btn) btn.textContent = "☀️";
+      var lockBtn = document.getElementById("lockDarkModeBtn");
+      if (lockBtn) lockBtn.textContent = "☀️";
     });
   }
 })();
