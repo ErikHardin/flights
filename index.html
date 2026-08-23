@@ -568,6 +568,7 @@
       </div>
       <input type="text" class="filter-input" id="xferFilter" style="text-transform:none;margin-top:10px"
              placeholder="Airline, code or program — e.g. Turkish, TK, Avios" oninput="renderTransfers()" />
+      <button class="reset-btn" id="xferReset" onclick="resetTransfers()">Reset</button>
     </div>
     <div id="xferList"></div>
   </div>
@@ -3012,6 +3013,17 @@ function setTransferView(v){
 function toggleTransferSection(id){
   transferCollapsed[id] = !transferCollapsed[id];
   renderTransfers();
+}
+
+// Same dead end as the Alliances filter: back to the default view — no filter,
+// By Card, every issuer expanded. setTransferView re-renders, so no extra call.
+function resetTransfers(){
+  var input = document.getElementById("xferFilter");
+  if(input) input.value = "";
+  transferCollapsed = {};
+  setTransferView("card");
+  var panel = document.getElementById("mode-transfers");
+  if(panel && panel.scrollIntoView) panel.scrollIntoView({block:"start"});
 }
 
 function partnerMatches(p, q){
