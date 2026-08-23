@@ -527,6 +527,7 @@
       <div class="card-label">Find an Airline</div>
       <input type="text" class="filter-input" id="allianceFilter" style="text-transform:none"
              placeholder="Airline, code or program — e.g. Finnair, AY, Avios" oninput="renderAllianceList()" />
+      <button class="reset-btn" id="allianceReset" onclick="resetAllianceList()">Reset</button>
     </div>
     <div id="allianceList"></div>
   </div>
@@ -2771,6 +2772,17 @@ function filterByProgram(ev, label){
   ev.stopPropagation();
   var input = document.getElementById("allianceFilter");
   if(input){ input.value = label; renderAllianceList(); }
+}
+
+// Tapping a shared-program chip filters the list, and clearing the box by hand was
+// the only way back. This restores the default view: no filter, every section open.
+function resetAllianceList(){
+  var input = document.getElementById("allianceFilter");
+  if(input) input.value = "";
+  allianceCollapsed = {};
+  renderAllianceList();
+  var panel = document.getElementById("mode-alliances");
+  if(panel && panel.scrollIntoView) panel.scrollIntoView({block:"start"});
 }
 
 // Every currency used by more than one alliance carrier, largest group first.
