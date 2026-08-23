@@ -240,7 +240,37 @@
     .alliance-chev{font-size:11px;color:var(--grey-light);transition:transform .15s}
     .alliance-chev.open{transform:rotate(90deg)}
     .alliance-members{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:10px}
-    .alliance-member{display:flex;align-items:baseline;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 8px;min-width:0}
+    .alliance-member{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 8px;min-width:0}
+    .alliance-member-top{display:flex;align-items:baseline;gap:7px;min-width:0}
+    .alliance-prog{display:inline-block;margin-top:3px;font-size:9px;color:var(--grey-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+    .alliance-prog.shared{color:var(--blue-dark);background:var(--blue-pale);border-radius:4px;padding:1px 5px;font-weight:600;cursor:pointer}
+    .alliance-plus{margin-left:4px;opacity:.75;font-weight:700}
+    .shared-note{font-size:11px;color:var(--grey-light);line-height:1.5;margin:8px 0 10px}
+    .shared-group{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--border)}
+    .shared-prog{flex:1;font-size:11px;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .shared-codes{display:flex;flex-wrap:wrap;gap:3px;justify-content:flex-end}
+    .shared-code{font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:var(--blue-dark);background:var(--blue-pale);border-radius:4px;padding:1px 4px}
+
+    /* Transfers */
+    .xfer-rows{margin-top:10px}
+    .xfer-row{display:flex;align-items:baseline;gap:7px;padding:5px 0;border-top:1px solid var(--border);min-width:0}
+    .xfer-row:first-child{border-top:none}
+    .xfer-name{flex:1;font-size:12px;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .xfer-alli{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--blue-dark);background:var(--blue-pale);border-radius:4px;padding:1px 5px;flex-shrink:0}
+    .xfer-ratio{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--grey-light);flex-shrink:0;min-width:38px;text-align:right}
+    .xfer-ratio.off{color:var(--blue-dark)}
+    .xfer-hotel-icon{font-size:11px;flex-shrink:0}
+    .xfer-sub{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--grey-light);margin:10px 0 2px;padding-top:8px;border-top:1px solid var(--border)}
+    .xfer-group{padding:8px 0;border-top:1px solid var(--border)}
+    .xfer-group:first-of-type{border-top:none}
+    .xfer-cards{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+    .xfer-chip{display:inline-flex;align-items:baseline;gap:4px;font-size:10px;font-weight:600;color:var(--grey-text);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px}
+    .xfer-chip.off{color:var(--blue-dark);background:var(--blue-pale);border-color:var(--blue-primary)}
+    .xfer-chip-ratio{font-family:'DM Mono',monospace;font-weight:500;opacity:.8}
+
+    /* Secondary button */
+    .reset-btn{width:100%;margin-top:10px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:9px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--grey-text);cursor:pointer;transition:all .15s}
+    .reset-btn:active{transform:scale(.98)}
     .alliance-code{font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--blue-dark);flex-shrink:0}
     .alliance-airline{font-size:11px;color:var(--grey-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .alliance-note{font-size:9px;color:var(--grey-light);font-style:italic;flex-shrink:0}
@@ -399,6 +429,7 @@
     <button class="mode-tab"        onclick="setMode('upgrades')"  id="tab-upgrades">UA Upgrades</button>
     <button class="mode-tab"        onclick="setMode('alliances')" id="tab-alliances">Alliances</button>
     <button class="mode-tab"        onclick="setMode('points')"    id="tab-points">Points</button>
+    <button class="mode-tab"        onclick="setMode('transfers')" id="tab-transfers">Transfers</button>
   </div>
 
   <!-- ROUTE -->
@@ -497,7 +528,7 @@
     <div class="card">
       <div class="card-label">Find an Airline</div>
       <input type="text" class="filter-input" id="allianceFilter" style="text-transform:none"
-             placeholder="Airline name or code — e.g. Finnair, AY" oninput="renderAllianceList()" />
+             placeholder="Airline, code or program — e.g. Finnair, AY, Avios" oninput="renderAllianceList()" />
     </div>
     <div id="allianceList"></div>
   </div>
@@ -523,8 +554,23 @@
           <input type="text" inputmode="decimal" class="filter-input" id="ptTaxes"
                  placeholder="0" oninput="calcPoints()" /></div>
       </div>
+      <button class="reset-btn" id="ptReset" onclick="resetPointsCalc()">Reset</button>
     </div>
     <div id="ptResult"></div>
+  </div>
+
+  <!-- TRANSFERS -->
+  <div id="mode-transfers" style="display:none">
+    <div class="card">
+      <div class="card-label">Transfer Partners</div>
+      <div class="toggle-row" id="xferView">
+        <button class="toggle-btn active" onclick="setTransferView('card')">By Card</button>
+        <button class="toggle-btn"        onclick="setTransferView('airline')">By Airline</button>
+      </div>
+      <input type="text" class="filter-input" id="xferFilter" style="text-transform:none;margin-top:10px"
+             placeholder="Airline, program or hotel — e.g. Turkish, Hyatt" oninput="renderTransfers()" />
+    </div>
+    <div id="xferList"></div>
   </div>
 
 
@@ -1102,14 +1148,109 @@ var POINT_VALUE_DEFAULT = 1.2;
 
 // code → {alliance, member}, built once so lookups are O(1)
 var AIRLINE_ALLIANCE = {};
+// program key → [airline codes sharing that currency]. Several alliance carriers
+// pool into one program (Miles & More, Avios, Flying Blue), which matters because
+// miles earned on one are spendable on the others.
+var PROGRAM_MEMBERS = {};
 ALLIANCES.forEach(function(a){
-  a.members.forEach(function(m){ AIRLINE_ALLIANCE[m.code] = {alliance:a, member:m}; });
+  a.members.forEach(function(m){
+    AIRLINE_ALLIANCE[m.code] = {alliance:a, member:m};
+    if(!PROGRAM_MEMBERS[m.program]) PROGRAM_MEMBERS[m.program] = [];
+    PROGRAM_MEMBERS[m.program].push(m.code);
+  });
 });
 
 function allianceAirlineName(code){ return AIRLINE_NAMES[code] || code; }
 function pointValueFor(programKey){
   var p = POINT_VALUES[programKey];
   return p ? p : {label:"this program", cents:POINT_VALUE_DEFAULT};
+}
+function sharedWith(code){
+  var e = AIRLINE_ALLIANCE[code];
+  if(!e) return [];
+  return (PROGRAM_MEMBERS[e.member.program]||[]).filter(function(c){ return c !== code; });
+}
+
+// ── Credit card transfer partners ──
+// Ratios verified against issuer and award-travel references, August 2026.
+// Partners are keyed by airline IATA code so alliance badges and program names come
+// from the data above for free; `label` overrides where a partner isn't one airline
+// (Air France-KLM is one program, Virgin Red feeds Flying Club).
+// Amex dropped Etihad Guest on 30 June 2026; Citi's non-premium cards transfer at
+// 10:7, so the ratios here are the premium-card ratios.
+var TRANSFER_HOTELS = {
+  hilton:"Hilton Honors", marriott:"Marriott Bonvoy", hyatt:"World of Hyatt",
+  ihg:"IHG One Rewards", wyndham:"Wyndham Rewards", choice:"Choice Privileges",
+  accor:"ALL Accor Live Limitless", iprefer:"I Prefer Hotel Rewards",
+  lhw:"Leading Hotels of the World",
+};
+var TRANSFER_CURRENCIES = [
+  {id:"amex", name:"Amex Membership Rewards", short:"Amex", partners:[
+    {code:"EI",ratio:"1:1"},  {code:"AM",ratio:"1:1.6"}, {code:"AC",ratio:"1:1"},
+    {code:"AF",ratio:"1:1",label:"Air France-KLM Flying Blue"}, {code:"NH",ratio:"1:1"},
+    {code:"AV",ratio:"1:1"},  {code:"BA",ratio:"1:1"},   {code:"CX",ratio:"5:4"},
+    {code:"DL",ratio:"1:1"},  {code:"EK",ratio:"5:4"},   {code:"IB",ratio:"1:1"},
+    {code:"B6",ratio:"1:0.8"},{code:"QF",ratio:"1:1"},   {code:"QR",ratio:"1:1"},
+    {code:"SQ",ratio:"1:1"},  {code:"VS",ratio:"1:1"},
+    {hotel:"choice",ratio:"1:1"}, {hotel:"hilton",ratio:"1:2"},
+    {hotel:"lhw",ratio:"4:1"},    {hotel:"marriott",ratio:"1:1"},
+  ]},
+  {id:"chase", name:"Chase Ultimate Rewards", short:"Chase", partners:[
+    {code:"EI",ratio:"1:1"},  {code:"AC",ratio:"1:1"},
+    {code:"AF",ratio:"1:1",label:"Air France-KLM Flying Blue"}, {code:"BA",ratio:"1:1"},
+    {code:"IB",ratio:"1:1"},  {code:"B6",ratio:"1:1"},   {code:"SQ",ratio:"1:1"},
+    {code:"WN",ratio:"1:1"},  {code:"UA",ratio:"1:1"},   {code:"VS",ratio:"1:1"},
+    {hotel:"hyatt",ratio:"1:1",note:"4:3 on Preferred/Ink"}, {hotel:"ihg",ratio:"1:1"},
+    {hotel:"marriott",ratio:"1:1"}, {hotel:"wyndham",ratio:"1:1"},
+  ]},
+  {id:"capone", name:"Capital One Miles", short:"Cap One", partners:[
+    {code:"AM",ratio:"1:1"},  {code:"AC",ratio:"1:1"},
+    {code:"AF",ratio:"1:1",label:"Air France-KLM Flying Blue"}, {code:"AV",ratio:"1:1"},
+    {code:"BA",ratio:"1:1"},  {code:"CX",ratio:"1:1"},   {code:"EK",ratio:"1:1"},
+    {code:"EY",ratio:"1:1"},  {code:"BR",ratio:"4:3"},   {code:"AY",ratio:"1:1"},
+    {code:"JL",ratio:"4:3"},  {code:"B6",ratio:"5:3"},   {code:"QF",ratio:"1:1"},
+    {code:"QR",ratio:"1:1"},  {code:"SQ",ratio:"1:1"},   {code:"TP",ratio:"1:1"},
+    // Capital One's partner is branded Virgin Red, but Flying Club sits inside Virgin Red,
+    // so miles land in the same account as the other issuers' Virgin Atlantic transfers.
+    {code:"TK",ratio:"1:1"},  {code:"VS",ratio:"1:1",note:"via Virgin Red"},
+    {hotel:"accor",ratio:"2:1"},  {hotel:"choice",ratio:"1:1"},
+    {hotel:"iprefer",ratio:"1:2"},{hotel:"wyndham",ratio:"1:1"},
+  ]},
+  {id:"citi", name:"Citi ThankYou Rewards", short:"Citi", partners:[
+    {code:"AM",ratio:"1:1"},
+    {code:"AF",ratio:"1:1",label:"Air France-KLM Flying Blue"}, {code:"AA",ratio:"1:1"},
+    {code:"AV",ratio:"1:1"},  {code:"CX",ratio:"1:1"},   {code:"EK",ratio:"1:0.8"},
+    {code:"EY",ratio:"1:1"},  {code:"BR",ratio:"1:1"},   {code:"B6",ratio:"1:1"},
+    {code:"QF",ratio:"1:1"},  {code:"QR",ratio:"1:1"},   {code:"SQ",ratio:"1:1"},
+    {code:"TG",ratio:"1:1"},  {code:"TK",ratio:"1:1"},   {code:"VS",ratio:"1:1"},
+    {hotel:"accor",ratio:"2:1"},  {hotel:"choice",ratio:"1:1.5"},
+    {hotel:"lhw",ratio:"5:1"},    {hotel:"iprefer",ratio:"1:2"},
+    {hotel:"wyndham",ratio:"1:1"},
+  ]},
+  {id:"bilt", name:"Bilt Rewards", short:"Bilt", partners:[
+    {code:"EI",ratio:"1:1"},  {code:"AC",ratio:"1:1"},
+    {code:"AF",ratio:"1:1",label:"Air France-KLM Flying Blue"}, {code:"AS",ratio:"1:1"},
+    {code:"AA",ratio:"1:1"},  {code:"AV",ratio:"1:1"},   {code:"BA",ratio:"1:1"},
+    {code:"CX",ratio:"1:1"},  {code:"EK",ratio:"1:1"},   {code:"EY",ratio:"1:1"},
+    {code:"IB",ratio:"1:1"},  {code:"JL",ratio:"1:1"},   {code:"QR",ratio:"1:1"},
+    {code:"WN",ratio:"1:1"},  {code:"NK",ratio:"1:1"},   {code:"TP",ratio:"1:1"},
+    {code:"TK",ratio:"1:1"},  {code:"UA",ratio:"1:1"},   {code:"VS",ratio:"1:1"},
+    {hotel:"accor",ratio:"3:2"},  {hotel:"hilton",ratio:"1:1"},
+    {hotel:"hyatt",ratio:"1:1"},  {hotel:"ihg",ratio:"1:1"},
+    {hotel:"marriott",ratio:"1:1"}, {hotel:"iprefer",ratio:"1:2"},
+  ]},
+  {id:"wf", name:"Wells Fargo Rewards", short:"Wells Fargo", partners:[
+    {code:"EI",ratio:"1:1"},
+    {code:"AF",ratio:"1:1",label:"Air France-KLM Flying Blue"}, {code:"AV",ratio:"1:1"},
+    {code:"BA",ratio:"1:1"},  {code:"CX",ratio:"1:1"},   {code:"IB",ratio:"1:1"},
+    {code:"B6",ratio:"1:1"},  {code:"VS",ratio:"1:1"},
+    {hotel:"choice",ratio:"1:2"}, {hotel:"wyndham",ratio:"1:2"},
+  ]},
+];
+
+function transferPartnerLabel(p){
+  if(p.hotel) return TRANSFER_HOTELS[p.hotel] || p.hotel;
+  return p.label || allianceAirlineName(p.code);
 }
 
 var AIRPORT_CITIES = {
@@ -1367,7 +1508,7 @@ function syncEndDate(startId,endId){
 // ── Mode ──
 function setMode(mode){
   currentMode=mode;
-  ["route","region","upgrades","alliances","points"].forEach(function(m){
+  ["route","region","upgrades","alliances","points","transfers"].forEach(function(m){
     document.getElementById("mode-"+m).style.display=m===mode?"block":"none";
     document.getElementById("tab-"+m).classList.toggle("active",m===mode);
   });
@@ -1376,6 +1517,7 @@ function setMode(mode){
   if(mode==="upgrades")fetchUpgradeCSV();
   if(mode==="alliances")renderAllianceList();
   if(mode==="points")renderPointsCalc();
+  if(mode==="transfers")renderTransfers();
 }
 
 // ── Programs ──
@@ -2628,11 +2770,63 @@ function toggleAllianceSection(id){
 }
 
 function allianceMemberHTML(m, showBadge, alliance){
+  var prog   = pointValueFor(m.program);
+  var shared = sharedWith(m.code);
+  // The program chip doubles as a shortcut: tapping a shared currency filters the
+  // list down to every carrier that uses it.
+  var progHTML = shared.length
+    ? '<span class="alliance-prog shared" onclick="filterByProgram(event,\''+
+        prog.label.replace(/'/g,"\\'")+'\')">'+prog.label+
+        '<span class="alliance-plus">+'+shared.length+'</span></span>'
+    : '<span class="alliance-prog">'+prog.label+'</span>';
   return '<div class="alliance-member">'+
-    '<span class="alliance-code">'+m.code+'</span>'+
-    '<span class="alliance-airline">'+allianceAirlineName(m.code)+'</span>'+
-    (m.note?'<span class="alliance-note">'+m.note+'</span>':'')+
-    (showBadge?'<span class="alliance-badge">'+alliance.name+'</span>':'')+
+    '<div class="alliance-member-top">'+
+      '<span class="alliance-code">'+m.code+'</span>'+
+      '<span class="alliance-airline">'+allianceAirlineName(m.code)+'</span>'+
+      (m.note?'<span class="alliance-note">'+m.note+'</span>':'')+
+      (showBadge?'<span class="alliance-badge">'+alliance.name+'</span>':'')+
+    '</div>'+
+    progHTML+
+  '</div>';
+}
+
+function filterByProgram(ev, label){
+  ev.stopPropagation();
+  var input = document.getElementById("allianceFilter");
+  if(input){ input.value = label; renderAllianceList(); }
+}
+
+// Every currency used by more than one alliance carrier, largest group first.
+function sharedProgramGroups(){
+  var out = [];
+  for(var key in PROGRAM_MEMBERS){
+    if(PROGRAM_MEMBERS[key].length > 1)
+      out.push({key:key, label:pointValueFor(key).label, codes:PROGRAM_MEMBERS[key]});
+  }
+  out.sort(function(a,b){ return b.codes.length - a.codes.length || a.label.localeCompare(b.label); });
+  return out;
+}
+
+function sharedProgramsHTML(){
+  var groups = sharedProgramGroups();
+  var open = !allianceCollapsed.shared;
+  return '<div class="card">'+
+    '<div class="alliance-head" onclick="toggleAllianceSection(\'shared\')">'+
+      '<span class="alliance-icon">⇄</span>'+
+      '<span class="alliance-name">Shared Mileage Programs</span>'+
+      '<span class="alliance-count">'+groups.length+' SHARED</span>'+
+      '<span class="alliance-chev'+(open?' open':'')+'">▶</span>'+
+    '</div>'+
+    (open?'<div class="shared-note">These carriers pool into one currency — miles earned '+
+      'on any of them sit in the same account.</div>'+
+      groups.map(function(g){
+        return '<div class="shared-group">'+
+          '<div class="shared-prog">'+g.label+'</div>'+
+          '<div class="shared-codes">'+g.codes.map(function(c){
+            return '<span class="shared-code" title="'+allianceAirlineName(c)+'">'+c+'</span>';
+          }).join("")+'</div>'+
+        '</div>';
+      }).join(""):'')+
   '</div>';
 }
 
@@ -2649,17 +2843,20 @@ function renderAllianceList(){
     ALLIANCES.forEach(function(a){
       a.members.forEach(function(m){
         var code = m.code.toLowerCase(), name = allianceAirlineName(m.code).toLowerCase();
+        var prog = pointValueFor(m.program).label.toLowerCase();
         // Rank so a typed code wins outright: "AY" should lead with Finnair, not with
         // the several carriers whose names merely contain "ay" (Cathay, Airways, Malaysia).
+        // Program names match too, so "avios" pulls up every carrier sharing that currency.
         var rank = code === q ? 0 : name.indexOf(q) === 0 ? 1 : code.indexOf(q) === 0 ? 2
-                 : name.indexOf(q) !== -1 ? 3 : -1;
+                 : name.indexOf(q) !== -1 ? 3 : prog.indexOf(q) !== -1 ? 4 : -1;
         if(rank >= 0) hits.push({a:a,m:m,rank:rank});
       });
     });
     hits.sort(function(x,y){ return x.rank - y.rank; });
     if(!hits.length){
       box.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>'+
-        'No alliance airline matches that.<br>Try a name like "Finnair" or a code like "AY".</div>';
+        'No alliance airline matches that.<br>Try a name like "Finnair", a code like "AY", '+
+        'or a program like "Avios".</div>';
       return;
     }
     box.innerHTML = '<div class="card"><div class="card-label">'+hits.length+
@@ -2669,7 +2866,7 @@ function renderAllianceList(){
     return;
   }
 
-  box.innerHTML = ALLIANCES.map(function(a){
+  box.innerHTML = sharedProgramsHTML() + ALLIANCES.map(function(a){
     var open = !allianceCollapsed[a.id];
     return '<div class="card">'+
       '<div class="alliance-head" onclick="toggleAllianceSection(\''+a.id+'\')">'+
@@ -2715,6 +2912,15 @@ function renderPointsCalc(){
     }
   } catch(e){ /* corrupt or unavailable storage shouldn't break the tab */ }
   calcPoints();
+}
+
+function resetPointsCalc(){
+  document.getElementById("ptAirline").value = "UA";
+  document.getElementById("ptCash").value    = "";
+  document.getElementById("ptPoints").value  = "";
+  document.getElementById("ptTaxes").value   = "";
+  calcPoints();   // re-renders the empty prompt and persists the cleared state
+
 }
 
 function calcPoints(){
@@ -2800,6 +3006,131 @@ function calcPoints(){
     '</div>'+
     '<div class="pt-foot">Baselines are rough consensus estimates of what a point is worth, '+
       'not guarantees. Taxes and carrier surcharges vary a lot by route and program.</div>';
+}
+
+// ── Transfers tab ──
+var transferView = "card";
+var transferCollapsed = {};
+
+function setTransferView(v){
+  transferView = v;
+  document.querySelectorAll("#xferView .toggle-btn").forEach(function(b,i){
+    b.classList.toggle("active", i === (v === "card" ? 0 : 1));
+  });
+  renderTransfers();
+}
+
+function toggleTransferSection(id){
+  transferCollapsed[id] = !transferCollapsed[id];
+  renderTransfers();
+}
+
+function partnerMatches(p, q){
+  if(!q) return true;
+  if(transferPartnerLabel(p).toLowerCase().indexOf(q) !== -1) return true;
+  if(p.code){
+    if(p.code.toLowerCase() === q) return true;
+    // Match the underlying currency too ("avios" finds BA, Iberia and Qatar), but only
+    // for carriers we actually have a program for — never via the generic fallback label.
+    var entry = AIRLINE_ALLIANCE[p.code];
+    if(entry && POINT_VALUES[entry.member.program] &&
+       POINT_VALUES[entry.member.program].label.toLowerCase().indexOf(q) !== -1) return true;
+  }
+  return false;
+}
+
+// A partner row: name, alliance badge where the carrier is in one, and the ratio.
+// Anything other than 1:1 is called out, since that's what changes the math.
+function transferPartnerHTML(p){
+  var entry = p.code ? AIRLINE_ALLIANCE[p.code] : null;
+  return '<div class="xfer-row">'+
+    (p.code?'<span class="alliance-code">'+p.code+'</span>':'<span class="xfer-hotel-icon">🏨</span>')+
+    '<span class="xfer-name">'+transferPartnerLabel(p)+'</span>'+
+    (entry?'<span class="xfer-alli">'+entry.alliance.name+'</span>':'')+
+    (p.note?'<span class="alliance-note">'+p.note+'</span>':'')+
+    '<span class="xfer-ratio'+(p.ratio!=="1:1"?' off':'')+'">'+p.ratio+'</span>'+
+  '</div>';
+}
+
+function renderTransfersByCard(q){
+  var cards = TRANSFER_CURRENCIES.map(function(c){
+    var hits = c.partners.filter(function(p){ return partnerMatches(p, q); });
+    if(!hits.length) return "";
+    // A search collapses to just the matches; browsing keeps the collapsible grouping.
+    var open = q ? true : !transferCollapsed[c.id];
+    var air = hits.filter(function(p){ return !p.hotel; });
+    var hot = hits.filter(function(p){ return  p.hotel; });
+    return '<div class="card">'+
+      '<div class="alliance-head"'+(q?'':' onclick="toggleTransferSection(\''+c.id+'\')"')+'>'+
+        '<span class="alliance-icon">💳</span>'+
+        '<span class="alliance-name">'+c.name+'</span>'+
+        '<span class="alliance-count">'+air.length+' AIRLINE'+(air.length===1?'':'S')+'</span>'+
+        (q?'':'<span class="alliance-chev'+(open?' open':'')+'">▶</span>')+
+      '</div>'+
+      (open?'<div class="xfer-rows">'+
+        air.map(transferPartnerHTML).join("")+
+        (hot.length?'<div class="xfer-sub">Hotels</div>'+hot.map(transferPartnerHTML).join(""):'')+
+      '</div>':'')+
+    '</div>';
+  }).join("");
+  return cards;
+}
+
+function renderTransfersByAirline(q){
+  // Invert the data: for each partner, which cards feed it. This is the question you
+  // actually have when you're staring at an award on a specific carrier.
+  var byPartner = {};
+  TRANSFER_CURRENCIES.forEach(function(c){
+    c.partners.forEach(function(p){
+      var key = p.hotel ? "H:"+p.hotel : "A:"+p.code+":"+(p.label||"");
+      if(!byPartner[key]) byPartner[key] = {p:p, cards:[]};
+      byPartner[key].cards.push({name:c.short, ratio:p.ratio});
+    });
+  });
+  var rows = [];
+  for(var k in byPartner) if(partnerMatches(byPartner[k].p, q)) rows.push(byPartner[k]);
+  if(!rows.length) return "";
+  rows.sort(function(a,b){
+    if(!!a.p.hotel !== !!b.p.hotel) return a.p.hotel ? 1 : -1;      // airlines first
+    return b.cards.length - a.cards.length ||
+           transferPartnerLabel(a.p).localeCompare(transferPartnerLabel(b.p));
+  });
+  return '<div class="card">'+
+    '<div class="card-label">'+rows.length+' Partner'+(rows.length===1?'':'s')+'</div>'+
+    rows.map(function(r){
+      var entry = r.p.code ? AIRLINE_ALLIANCE[r.p.code] : null;
+      return '<div class="xfer-group">'+
+        '<div class="xfer-row" style="padding-bottom:2px">'+
+          (r.p.code?'<span class="alliance-code">'+r.p.code+'</span>':'<span class="xfer-hotel-icon">🏨</span>')+
+          '<span class="xfer-name">'+transferPartnerLabel(r.p)+'</span>'+
+          (entry?'<span class="xfer-alli">'+entry.alliance.name+'</span>':'')+
+        '</div>'+
+        '<div class="xfer-cards">'+r.cards.map(function(c){
+          return '<span class="xfer-chip'+(c.ratio!=="1:1"?' off':'')+'">'+c.name+
+                 '<span class="xfer-chip-ratio">'+c.ratio+'</span></span>';
+        }).join("")+'</div>'+
+      '</div>';
+    }).join("")+
+  '</div>';
+}
+
+function renderTransfers(){
+  var box = document.getElementById("xferList");
+  if(!box) return;
+  var input = document.getElementById("xferFilter");
+  var q = input ? input.value.trim().toLowerCase() : "";
+
+  var html = transferView === "card" ? renderTransfersByCard(q) : renderTransfersByAirline(q);
+  if(!html){
+    box.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>'+
+      'No transfer partner matches that.<br>Try "Turkish", "Avios", "TK" or "Hyatt".</div>';
+    return;
+  }
+  box.innerHTML = html +
+    '<div class="pt-foot">Ratios are the standard/premium-card rates as of August 2026 and '+
+    'change often — Citi\'s no-annual-fee cards transfer at 10:7, and issuers run periodic '+
+    'transfer bonuses. Confirm in your account before moving points; transfers are '+
+    'one-way and cannot be reversed.</div>';
 }
 
 function buildCSVPanel() {
