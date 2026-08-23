@@ -84,8 +84,8 @@
     .main{padding:14px 14px calc(36px + var(--safe-bottom));max-width:480px;margin:0 auto}
 
     /* Tabs */
-    .mode-tabs{display:flex;background:var(--surface2);border-radius:var(--radius-sm);padding:3px;margin-bottom:14px}
-    .mode-tab{flex:1;padding:8px 4px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;color:var(--grey-text);border:none;background:none;border-radius:6px;cursor:pointer;transition:all .15s;text-align:center}
+    .mode-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;background:var(--surface2);border-radius:var(--radius-sm);padding:3px;margin-bottom:14px}
+    .mode-tab{padding:8px 4px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;color:var(--grey-text);border:none;background:none;border-radius:6px;cursor:pointer;transition:all .15s;text-align:center}
     .mode-tab.active{background:var(--surface);color:var(--blue-primary);font-weight:600;box-shadow:var(--shadow)}
 
     /* Cards */
@@ -231,6 +231,37 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     .empty-state{text-align:center;padding:32px 20px;color:var(--grey-light);font-size:14px;line-height:1.6}
     .empty-icon{font-size:36px;margin-bottom:10px}
+
+    /* Alliances */
+    .alliance-head{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+    .alliance-head .alliance-name{flex:1;font-size:13px;font-weight:600;color:var(--text);letter-spacing:.02em}
+    .alliance-head .alliance-icon{font-size:15px;color:var(--blue-primary)}
+    .alliance-count{font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--grey-light)}
+    .alliance-chev{font-size:11px;color:var(--grey-light);transition:transform .15s}
+    .alliance-chev.open{transform:rotate(90deg)}
+    .alliance-members{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:10px}
+    .alliance-member{display:flex;align-items:baseline;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 8px;min-width:0}
+    .alliance-code{font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--blue-dark);flex-shrink:0}
+    .alliance-airline{font-size:11px;color:var(--grey-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .alliance-note{font-size:9px;color:var(--grey-light);font-style:italic;flex-shrink:0}
+    .alliance-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--blue-dark);background:var(--blue-pale);border-radius:4px;padding:2px 5px;margin-left:auto;flex-shrink:0}
+
+    /* Points calculator */
+    .pt-verdict{border-radius:var(--radius);border:1.5px solid var(--border);padding:16px;margin-bottom:12px;text-align:center;background:var(--surface)}
+    .pt-verdict.good{background:var(--green-pale);border-color:var(--green-border)}
+    .pt-verdict.good .pt-headline{color:var(--green)}
+    .pt-verdict.mid{background:var(--blue-pale);border-color:var(--blue-primary)}
+    .pt-verdict.mid .pt-headline{color:var(--blue-dark)}
+    .pt-verdict.bad{background:var(--surface2);border-color:var(--border)}
+    .pt-verdict.bad .pt-headline{color:var(--grey-text)}
+    .pt-headline{font-size:17px;font-weight:700;letter-spacing:.01em;margin-bottom:4px}
+    .pt-cpp{font-family:'DM Mono',monospace;font-size:28px;font-weight:600;color:var(--text);margin-bottom:2px}
+    .pt-reason{font-size:12px;color:var(--grey-text);line-height:1.5}
+    .pt-rows{margin-top:12px;border-top:1px solid var(--border);padding-top:10px}
+    .pt-row{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;padding:4px 0}
+    .pt-row .pt-k{color:var(--grey-light)}
+    .pt-row .pt-v{font-family:'DM Mono',monospace;font-weight:500;color:var(--text)}
+    .pt-foot{font-size:10px;color:var(--grey-light);line-height:1.5;text-align:center;padding:0 4px}
   </style>
 </head>
 <body>
@@ -363,10 +394,11 @@
 
 <div class="main">
   <div class="mode-tabs">
-    <button class="mode-tab active" onclick="setMode('region')"   id="tab-region">Region</button>
-    <button class="mode-tab"        onclick="setMode('route')"    id="tab-route">Route</button>
-    <button class="mode-tab"        onclick="setMode('upgrades')" id="tab-upgrades">United Upgrades</button>
-
+    <button class="mode-tab active" onclick="setMode('region')"    id="tab-region">Region</button>
+    <button class="mode-tab"        onclick="setMode('route')"     id="tab-route">Route</button>
+    <button class="mode-tab"        onclick="setMode('upgrades')"  id="tab-upgrades">UA Upgrades</button>
+    <button class="mode-tab"        onclick="setMode('alliances')" id="tab-alliances">Alliances</button>
+    <button class="mode-tab"        onclick="setMode('points')"    id="tab-points">Points</button>
   </div>
 
   <!-- ROUTE -->
@@ -458,6 +490,41 @@
     </div>
     <div id="csvUpgradeError" style="display:none" class="empty-state"><div class="empty-icon">⚠️</div>Could not load upgrade data.</div>
     <div id="csvUpgradePanel" style="display:none"></div>
+  </div>
+
+  <!-- ALLIANCES -->
+  <div id="mode-alliances" style="display:none">
+    <div class="card">
+      <div class="card-label">Find an Airline</div>
+      <input type="text" class="filter-input" id="allianceFilter" style="text-transform:none"
+             placeholder="Airline name or code — e.g. Finnair, AY" oninput="renderAllianceList()" />
+    </div>
+    <div id="allianceList"></div>
+  </div>
+
+  <!-- POINTS -->
+  <div id="mode-points" style="display:none">
+    <div class="card">
+      <div class="card-label">Cash vs. Points</div>
+      <div class="control-wrap" style="margin-bottom:10px">
+        <label>Airline</label>
+        <select class="control-select" id="ptAirline" onchange="calcPoints()"></select>
+      </div>
+      <div class="controls-row">
+        <div class="control-wrap"><label>Cash Price ($)</label>
+          <input type="text" inputmode="decimal" class="filter-input" id="ptCash"
+                 placeholder="840" oninput="calcPoints()" /></div>
+        <div class="control-wrap"><label>Points Required</label>
+          <input type="text" inputmode="numeric" class="filter-input" id="ptPoints"
+                 placeholder="40000" oninput="calcPoints()" /></div>
+      </div>
+      <div class="controls-row" style="grid-template-columns:1fr;margin-top:8px">
+        <div class="control-wrap"><label>Taxes &amp; Fees on Award ($)</label>
+          <input type="text" inputmode="decimal" class="filter-input" id="ptTaxes"
+                 placeholder="0" oninput="calcPoints()" /></div>
+      </div>
+    </div>
+    <div id="ptResult"></div>
   </div>
 
 
@@ -939,8 +1006,10 @@ var AIRLINE_NAMES = {
   "CA":"Air China","MU":"China Eastern","CZ":"China Southern","HX":"Hong Kong Airlines",
   "QF":"Qantas","NZ":"Air New Zealand","FJ":"Fiji Airways",
   "AV":"Avianca","CM":"Copa","LA":"LATAM","G3":"Gol","AD":"Azul","AM":"Aeromexico",
-  "AR":"Aerolineas Argentinas","4M":"LATAM Argentina",
-  "AC":"Air Canada","TS":"Air Transat","PD":"Porter"
+  "AR":"Aerolineas Argentinas","4M":"LATAM Argentina","TS":"Air Transat",
+  "A3":"Aegean","AI":"Air India","OU":"Croatia Airlines","ZH":"Shenzhen Airlines",
+  "AT":"Royal Air Maroc","RJ":"Royal Jordanian","UL":"SriLankan","WY":"Oman Air",
+  "UX":"Air Europa","ME":"Middle East Airlines","RO":"TAROM","MF":"XiamenAir","SU":"Aeroflot"
 };
 
 function expandAirlines(str) {
@@ -949,6 +1018,98 @@ function expandAirlines(str) {
     code = code.trim();
     return AIRLINE_NAMES[code] ? AIRLINE_NAMES[code] : code;
   }).join(", ");
+}
+
+// ── Alliances ──
+// Membership verified against alliance member pages, August 2026.
+// Recent moves worth remembering: SAS left Star Alliance for SkyTeam (Sept 2024);
+// ITA Airways left SkyTeam for Star Alliance (2025); Oman Air joined oneworld (June 2025);
+// Hawaiian became an Alaska affiliate rather than a full member (April 2026).
+// `program` is the loyalty currency the carrier's miles actually live in — several
+// carriers share one (Lufthansa/Swiss/Austrian/Brussels/LOT/Croatia are all Miles & More),
+// which is what makes the Points calculator's baseline lookup correct.
+var ALLIANCES = [
+  {id:"star", name:"Star Alliance", icon:"★", members:[
+    {code:"A3",program:"milesbonus"},   {code:"AC",program:"aeroplan"},
+    {code:"CA",program:"phoenixmiles"}, {code:"AI",program:"maharajaclub"},
+    {code:"NZ",program:"airpoints"},    {code:"NH",program:"anamileageclub"},
+    {code:"OZ",program:"asianaclub"},   {code:"OS",program:"milesmore"},
+    {code:"AV",program:"lifemiles"},    {code:"SN",program:"milesmore"},
+    {code:"CM",program:"connectmiles"}, {code:"OU",program:"milesmore"},
+    {code:"MS",program:"egyptairplus"}, {code:"ET",program:"shebamiles"},
+    {code:"BR",program:"infinitymileagelands"}, {code:"AZ",program:"volare"},
+    {code:"LO",program:"milesmore"},    {code:"LH",program:"milesmore"},
+    {code:"ZH",program:"phoenixmiles"}, {code:"SQ",program:"krisflyer"},
+    {code:"SA",program:"voyager"},      {code:"LX",program:"milesmore"},
+    {code:"TP",program:"milesgo"},      {code:"TG",program:"royalorchid"},
+    {code:"TK",program:"milessmiles"},  {code:"UA",program:"mileageplus"},
+  ]},
+  {id:"oneworld", name:"oneworld", icon:"⊕", members:[
+    {code:"AS",program:"mileageplan"},  {code:"AA",program:"aadvantage"},
+    {code:"BA",program:"avios"},        {code:"CX",program:"asiamiles"},
+    {code:"FJ",program:"tabuaclub"},    {code:"AY",program:"avios"},
+    {code:"IB",program:"avios"},        {code:"JL",program:"jalmileagebank"},
+    {code:"MH",program:"enrich"},       {code:"WY",program:"sindbad"},
+    {code:"QF",program:"qantasff"},     {code:"QR",program:"avios"},
+    {code:"AT",program:"safarflyer"},   {code:"RJ",program:"royalplus"},
+    {code:"UL",program:"flysmiles"},
+    {code:"HA",program:"mileageplan",note:"Alaska affiliate"},
+  ]},
+  {id:"skyteam", name:"SkyTeam", icon:"◆", members:[
+    {code:"SU",program:"aeroflotbonus",note:"suspended"},
+    {code:"AR",program:"aerolineasplus"}, {code:"AM",program:"aeromexicorewards"},
+    {code:"UX",program:"suma"},         {code:"AF",program:"flyingblue"},
+    {code:"CI",program:"dynasty"},      {code:"MU",program:"easternmiles"},
+    {code:"DL",program:"skymiles"},     {code:"GA",program:"garudamiles"},
+    {code:"KQ",program:"asantirewards"},{code:"KL",program:"flyingblue"},
+    {code:"KE",program:"skypass"},      {code:"ME",program:"cedarmiles"},
+    {code:"SV",program:"alfursan"},     {code:"SK",program:"eurobonus"},
+    {code:"RO",program:"flyingblue"},   {code:"VN",program:"lotusmiles"},
+    {code:"VS",program:"virginpoints"}, {code:"MF",program:"xiamenelite"},
+  ]},
+];
+
+// Baseline value of one point, in US cents. These are opinions, not facts —
+// rough consensus valuations meant to be edited freely as programs devalue.
+var POINT_VALUES = {
+  aadvantage:{label:"AAdvantage",cents:1.5},        mileageplan:{label:"Alaska Mileage Plan",cents:1.5},
+  aeroplan:{label:"Aeroplan",cents:1.5},            skypass:{label:"Korean SKYPASS",cents:1.5},
+  anamileageclub:{label:"ANA Mileage Club",cents:1.4}, jalmileagebank:{label:"JAL Mileage Bank",cents:1.4},
+  lifemiles:{label:"LifeMiles",cents:1.4},          krisflyer:{label:"KrisFlyer",cents:1.3},
+  mileageplus:{label:"United MileagePlus",cents:1.3}, avios:{label:"Avios",cents:1.3},
+  milessmiles:{label:"Miles&Smiles",cents:1.3},     qantasff:{label:"Qantas Frequent Flyer",cents:1.3},
+  virginpoints:{label:"Virgin Points",cents:1.3},   asiamiles:{label:"Asia Miles",cents:1.2},
+  flyingblue:{label:"Flying Blue",cents:1.2},       eurobonus:{label:"SAS EuroBonus",cents:1.2},
+  milesbonus:{label:"Aegean Miles+Bonus",cents:1.2}, connectmiles:{label:"ConnectMiles",cents:1.2},
+  infinitymileagelands:{label:"Infinity MileageLands",cents:1.2}, milesgo:{label:"TAP Miles&Go",cents:1.2},
+  asianaclub:{label:"Asiana Club",cents:1.2},       milesmore:{label:"Miles & More",cents:1.1},
+  suma:{label:"Air Europa SUMA",cents:1.1},         skymiles:{label:"Delta SkyMiles",cents:1.1},
+  phoenixmiles:{label:"PhoenixMiles",cents:1.0},    maharajaclub:{label:"Maharaja Club",cents:1.0},
+  airpoints:{label:"Airpoints",cents:1.0},          shebamiles:{label:"ShebaMiles",cents:1.0},
+  volare:{label:"ITA Volare",cents:1.0},            royalorchid:{label:"Royal Orchid Plus",cents:1.0},
+  enrich:{label:"Enrich",cents:1.0},                sindbad:{label:"Sindbad",cents:1.0},
+  dynasty:{label:"Dynasty Flyer",cents:1.0},        easternmiles:{label:"Eastern Miles",cents:1.0},
+  alfursan:{label:"Alfursan",cents:1.0},            lotusmiles:{label:"Lotusmiles",cents:1.0},
+  aeromexicorewards:{label:"Aeromexico Rewards",cents:1.0}, tabuaclub:{label:"Tabua Club",cents:1.0},
+  garudamiles:{label:"GarudaMiles",cents:0.9},      safarflyer:{label:"Safar Flyer",cents:0.9},
+  royalplus:{label:"Royal Plus",cents:0.9},         flysmiles:{label:"FlySmiles",cents:0.9},
+  aerolineasplus:{label:"Aerolineas Plus",cents:0.9}, xiamenelite:{label:"XiamenAir Elite",cents:0.9},
+  voyager:{label:"SAA Voyager",cents:0.8},          asantirewards:{label:"Asanti Rewards",cents:0.8},
+  cedarmiles:{label:"Cedar Miles",cents:0.8},       egyptairplus:{label:"EgyptAir Plus",cents:0.8},
+  aeroflotbonus:{label:"Aeroflot Bonus",cents:0.5},
+};
+var POINT_VALUE_DEFAULT = 1.2;
+
+// code → {alliance, member}, built once so lookups are O(1)
+var AIRLINE_ALLIANCE = {};
+ALLIANCES.forEach(function(a){
+  a.members.forEach(function(m){ AIRLINE_ALLIANCE[m.code] = {alliance:a, member:m}; });
+});
+
+function allianceAirlineName(code){ return AIRLINE_NAMES[code] || code; }
+function pointValueFor(programKey){
+  var p = POINT_VALUES[programKey];
+  return p ? p : {label:"this program", cents:POINT_VALUE_DEFAULT};
 }
 
 var AIRPORT_CITIES = {
@@ -1206,13 +1367,15 @@ function syncEndDate(startId,endId){
 // ── Mode ──
 function setMode(mode){
   currentMode=mode;
-  ["route","region","upgrades"].forEach(function(m){
+  ["route","region","upgrades","alliances","points"].forEach(function(m){
     document.getElementById("mode-"+m).style.display=m===mode?"block":"none";
     document.getElementById("tab-"+m).classList.toggle("active",m===mode);
   });
   if(mode!=="route"&&mode!=="region")document.getElementById("resultsArea").style.display="none";
   if(mode==="saved")renderSaved();
   if(mode==="upgrades")fetchUpgradeCSV();
+  if(mode==="alliances")renderAllianceList();
+  if(mode==="points")renderPointsCalc();
 }
 
 // ── Programs ──
@@ -2454,6 +2617,189 @@ function showCSVUpgradeResults() {
         }
       }).catch(function(){});
   }
+}
+
+// ── Alliances tab ──
+var allianceCollapsed = {};
+
+function toggleAllianceSection(id){
+  allianceCollapsed[id] = !allianceCollapsed[id];
+  renderAllianceList();
+}
+
+function allianceMemberHTML(m, showBadge, alliance){
+  return '<div class="alliance-member">'+
+    '<span class="alliance-code">'+m.code+'</span>'+
+    '<span class="alliance-airline">'+allianceAirlineName(m.code)+'</span>'+
+    (m.note?'<span class="alliance-note">'+m.note+'</span>':'')+
+    (showBadge?'<span class="alliance-badge">'+alliance.name+'</span>':'')+
+  '</div>';
+}
+
+function renderAllianceList(){
+  var box = document.getElementById("allianceList");
+  if(!box) return;
+  var input = document.getElementById("allianceFilter");
+  var q = input ? input.value.trim().toLowerCase() : "";
+
+  // Filtering flattens the three groups into one ranked list with alliance badges,
+  // since the question being asked is "which alliance is this airline in?"
+  if(q){
+    var hits = [];
+    ALLIANCES.forEach(function(a){
+      a.members.forEach(function(m){
+        var code = m.code.toLowerCase(), name = allianceAirlineName(m.code).toLowerCase();
+        // Rank so a typed code wins outright: "AY" should lead with Finnair, not with
+        // the several carriers whose names merely contain "ay" (Cathay, Airways, Malaysia).
+        var rank = code === q ? 0 : name.indexOf(q) === 0 ? 1 : code.indexOf(q) === 0 ? 2
+                 : name.indexOf(q) !== -1 ? 3 : -1;
+        if(rank >= 0) hits.push({a:a,m:m,rank:rank});
+      });
+    });
+    hits.sort(function(x,y){ return x.rank - y.rank; });
+    if(!hits.length){
+      box.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>'+
+        'No alliance airline matches that.<br>Try a name like "Finnair" or a code like "AY".</div>';
+      return;
+    }
+    box.innerHTML = '<div class="card"><div class="card-label">'+hits.length+
+      ' Match'+(hits.length===1?'':'es')+'</div><div class="alliance-members" style="grid-template-columns:1fr">'+
+      hits.map(function(h){ return allianceMemberHTML(h.m, true, h.a); }).join("")+
+      '</div></div>';
+    return;
+  }
+
+  box.innerHTML = ALLIANCES.map(function(a){
+    var open = !allianceCollapsed[a.id];
+    return '<div class="card">'+
+      '<div class="alliance-head" onclick="toggleAllianceSection(\''+a.id+'\')">'+
+        '<span class="alliance-icon">'+a.icon+'</span>'+
+        '<span class="alliance-name">'+a.name+'</span>'+
+        '<span class="alliance-count">'+a.members.length+' AIRLINES</span>'+
+        '<span class="alliance-chev'+(open?' open':'')+'">▶</span>'+
+      '</div>'+
+      (open?'<div class="alliance-members">'+
+        a.members.map(function(m){ return allianceMemberHTML(m, false, a); }).join("")+
+      '</div>':'')+
+    '</div>';
+  }).join("");
+}
+
+// ── Points tab ──
+function parseMoney(v){
+  var n = parseFloat(String(v).replace(/[^0-9.\-]/g,""));
+  if(isNaN(n) || n < 0) return 0;   // clamp negatives rather than propagating them
+  return n;
+}
+
+function renderPointsCalc(){
+  var sel = document.getElementById("ptAirline");
+  if(!sel) return;
+  if(!sel.options.length){
+    sel.innerHTML = ALLIANCES.map(function(a){
+      return '<optgroup label="'+a.name+'">'+
+        a.members.map(function(m){
+          return '<option value="'+m.code+'">'+allianceAirlineName(m.code)+' ('+m.code+')</option>';
+        }).join("")+
+      '</optgroup>';
+    }).join("");
+    sel.value = "UA";
+  }
+  try {
+    var saved = JSON.parse(localStorage.getItem("afss_points_calc")||"null");
+    if(saved){
+      if(saved.code && AIRLINE_ALLIANCE[saved.code]) sel.value = saved.code;
+      document.getElementById("ptCash").value   = saved.cash  || "";
+      document.getElementById("ptPoints").value = saved.points|| "";
+      document.getElementById("ptTaxes").value  = saved.taxes || "";
+    }
+  } catch(e){ /* corrupt or unavailable storage shouldn't break the tab */ }
+  calcPoints();
+}
+
+function calcPoints(){
+  var out = document.getElementById("ptResult");
+  if(!out) return;
+  var code   = document.getElementById("ptAirline").value;
+  var cashIn = document.getElementById("ptCash").value;
+  var ptsIn  = document.getElementById("ptPoints").value;
+  var taxIn  = document.getElementById("ptTaxes").value;
+
+  try {
+    localStorage.setItem("afss_points_calc", JSON.stringify({code:code,cash:cashIn,points:ptsIn,taxes:taxIn}));
+  } catch(e){ /* private mode / quota — not worth failing over */ }
+
+  var entry    = AIRLINE_ALLIANCE[code];
+  var prog     = pointValueFor(entry ? entry.member.program : "");
+  var baseline = prog.cents;
+
+  var cash  = parseMoney(cashIn);
+  var pts   = Math.round(parseMoney(ptsIn));
+  var taxes = parseMoney(taxIn);
+
+  if(!cashIn.trim() || !ptsIn.trim() || pts <= 0 || cash <= 0){
+    out.innerHTML = '<div class="empty-state"><div class="empty-icon">🧮</div>'+
+      'Enter the cash price and the points required<br>to see which is the better deal.</div>';
+    return;
+  }
+
+  var netCash = cash - taxes;
+  var cls, headline, reason;
+  var cppText, pctText = "";
+
+  if(netCash <= 0){
+    // The award's own cash co-pay meets or exceeds the ticket price — points buy nothing.
+    cls = "bad"; headline = "Pay Cash"; cppText = "0.00¢";
+    reason = "The award's taxes and fees ($"+taxes.toFixed(2)+") are at least as much as the "+
+             "cash fare ($"+cash.toFixed(2)+"), so your points would buy you nothing.";
+  } else {
+    var cpp = (netCash / pts) * 100;
+    cppText = cpp.toFixed(2)+"¢";
+    var pct = Math.round((cpp / baseline - 1) * 100);
+    pctText = (pct >= 0 ? "+" : "") + pct + "% vs baseline";
+    if(cpp >= baseline * 1.15){
+      cls = "good"; headline = "Use Points";
+      reason = "You'd get "+cppText+" per point — well above the "+baseline.toFixed(2)+
+               "¢ that "+prog.label+" points are typically worth.";
+    } else if(cpp <= baseline * 0.85){
+      cls = "bad"; headline = "Pay Cash";
+      reason = "You'd only get "+cppText+" per point, below the "+baseline.toFixed(2)+
+               "¢ baseline for "+prog.label+". Save the points for a better redemption.";
+    } else {
+      cls = "mid"; headline = "Toss-Up";
+      reason = "At "+cppText+" per point you're close to the "+baseline.toFixed(2)+
+               "¢ baseline for "+prog.label+" — close enough that other factors decide.";
+    }
+  }
+
+  var allianceName = entry ? entry.alliance.name : "";
+  out.innerHTML =
+    '<div class="pt-verdict '+cls+'">'+
+      '<div class="pt-cpp">'+cppText+'</div>'+
+      '<div class="pt-headline">'+headline+'</div>'+
+      '<div class="pt-reason">'+reason+'</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-label">Breakdown</div>'+
+      '<div class="pt-row"><span class="pt-k">Airline</span><span class="pt-v">'+
+        allianceAirlineName(code)+' · '+allianceName+'</span></div>'+
+      '<div class="pt-row"><span class="pt-k">Program</span><span class="pt-v">'+prog.label+'</span></div>'+
+      '<div class="pt-row"><span class="pt-k">Cash fare</span><span class="pt-v">$'+cash.toFixed(2)+'</span></div>'+
+      '<div class="pt-row"><span class="pt-k">Less award taxes</span><span class="pt-v">−$'+taxes.toFixed(2)+'</span></div>'+
+      '<div class="pt-row"><span class="pt-k">Value bought by points</span><span class="pt-v">$'+
+        Math.max(0,netCash).toFixed(2)+'</span></div>'+
+      '<div class="pt-row"><span class="pt-k">Points required</span><span class="pt-v">'+
+        pts.toLocaleString()+'</span></div>'+
+      '<div class="pt-rows">'+
+        '<div class="pt-row"><span class="pt-k">Your value per point</span><span class="pt-v">'+cppText+'</span></div>'+
+        '<div class="pt-row"><span class="pt-k">'+prog.label+' baseline</span><span class="pt-v">'+
+          baseline.toFixed(2)+'¢</span></div>'+
+        (pctText?'<div class="pt-row"><span class="pt-k">Difference</span><span class="pt-v">'+
+          pctText+'</span></div>':'')+
+      '</div>'+
+    '</div>'+
+    '<div class="pt-foot">Baselines are rough consensus estimates of what a point is worth, '+
+      'not guarantees. Taxes and carrier surcharges vary a lot by route and program.</div>';
 }
 
 function buildCSVPanel() {
