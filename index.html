@@ -266,6 +266,25 @@
     .xfer-chip.off{color:var(--blue-dark);background:var(--blue-pale);border-color:var(--blue-primary)}
     .xfer-chip-ratio{font-family:'DM Mono',monospace;font-weight:500;opacity:.8}
 
+    /* Transfer bonuses */
+    .xfer-ratio.boosted{color:var(--green)}
+    .xfer-ratio-was{font-family:'DM Mono',monospace;font-size:10px;color:var(--grey-light);text-decoration:line-through;flex-shrink:0}
+    .xfer-bonus{font-size:9px;font-weight:700;letter-spacing:.03em;color:var(--green);background:var(--green-pale);border:1px solid var(--green-border);border-radius:4px;padding:1px 4px;flex-shrink:0}
+    .xfer-chip.bonus{color:var(--green);background:var(--green-pale);border-color:var(--green-border)}
+    .xfer-chip-bonus{font-weight:700;font-size:9px}
+    .xfer-banner{font-size:11px;font-weight:600;color:var(--green);background:var(--green-pale);border:1px solid var(--green-border);border-radius:var(--radius-sm);padding:7px 10px;margin-bottom:10px}
+    .xfer-admin{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+    .xfer-admin-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+    .xfer-admin-grid select,.xfer-admin-grid input{flex:1 1 140px;min-width:0;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;background:var(--surface2);color:var(--text);box-sizing:border-box}
+    .xfer-admin-list{margin-top:8px}
+    .xfer-admin-row{display:flex;align-items:center;gap:6px;font-size:11px;padding:4px 0;border-top:1px solid var(--border)}
+    .xfer-admin-row.expired{opacity:.55}
+    .xfer-admin-row .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .xfer-admin-del{background:none;border:none;color:var(--grey-light);font-size:14px;cursor:pointer;padding:0 4px;flex-shrink:0}
+    .xfer-admin-msg{font-size:11px;margin-top:6px;min-height:14px}
+    .xfer-admin-msg.err{color:#c0392b}
+    .xfer-admin-msg.ok{color:var(--green)}
+
     /* Secondary button */
     .reset-btn{width:100%;margin-top:10px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:9px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--grey-text);cursor:pointer;transition:all .15s}
     .reset-btn:active{transform:scale(.98)}
@@ -569,6 +588,25 @@
       <input type="text" class="filter-input" id="xferFilter" style="text-transform:none;margin-top:10px"
              placeholder="Airline, code or program — e.g. Turkish, TK, Avios" oninput="renderTransfers()" />
       <button class="reset-btn" id="xferReset" onclick="resetTransfers()">Reset</button>
+
+      <!-- Admin only: post a transfer bonus for everyone -->
+      <div class="xfer-admin" id="xferAdmin" style="display:none">
+        <div class="card-label">Post a Transfer Bonus</div>
+        <div class="xfer-admin-grid">
+          <select id="xbCard" onchange="fillBonusPartners()"></select>
+          <select id="xbPartner"></select>
+        </div>
+        <div class="xfer-admin-grid">
+          <input type="number" id="xbPct" min="1" max="200" step="1" placeholder="Bonus % (e.g. 30)" />
+          <input type="date" id="xbUntil" />
+        </div>
+        <div class="xfer-admin-grid">
+          <input type="text" id="xbNote" maxlength="40" placeholder="Note (optional) — e.g. targeted" style="text-transform:none" />
+        </div>
+        <button class="reset-btn" style="margin-top:0" onclick="saveTransferBonus()">Save Bonus</button>
+        <div class="xfer-admin-msg" id="xbMsg"></div>
+        <div class="xfer-admin-list" id="xbList"></div>
+      </div>
     </div>
     <div id="xferList"></div>
   </div>
@@ -639,10 +677,22 @@ var FIREBASE_API_KEY = "AIzaSyD9lN9LHSsofgb7iyanon6DIJ06L898Ews";
 var FIREBASE_PROJECT = "afss-df164";
 var FB_BASE = "https://firestore.googleapis.com/v1/projects/" + FIREBASE_PROJECT + "/databases/(default)/documents";
 
-async function fbGet(path) {
-  var res = await fetch(FB_BASE + path + "?key=" + FIREBASE_API_KEY);
+async function fbGet(path, params) {
+  // `params` is an optional query string ("pageSize=100") — collection listings need it,
+  // since Firestore's documents.list pages at 20 by default and would silently truncate.
+  var res = await fetch(FB_BASE + path + "?key=" + FIREBASE_API_KEY + (params ? "&" + params : ""));
   if (!res.ok) return null;
   return await res.json();
+}
+
+// Firestore wraps every value in a type tag; unwrap the three types fbSet writes.
+function fbDecodeDoc(doc) {
+  var out = { _id: doc.name.split("/").pop() };
+  Object.keys(doc.fields || {}).forEach(function(k) {
+    var f = doc.fields[k];
+    out[k] = f.stringValue !== undefined ? f.stringValue : (f.integerValue !== undefined ? parseInt(f.integerValue) : f.booleanValue);
+  });
+  return out;
 }
 
 async function fbSet(path, data) {
@@ -678,13 +728,7 @@ async function fbQuery(collection, field, value) {
   });
   var data = await res.json();
   return data.filter(function(d) { return d.document; }).map(function(d) {
-    var doc = d.document;
-    var out = { _id: doc.name.split("/").pop() };
-    Object.keys(doc.fields || {}).forEach(function(k) {
-      var f = doc.fields[k];
-      out[k] = f.stringValue !== undefined ? f.stringValue : (f.integerValue !== undefined ? parseInt(f.integerValue) : f.booleanValue);
-    });
-    return out;
+    return fbDecodeDoc(d.document);
   });
 }
 
@@ -1232,6 +1276,115 @@ var TRANSFER_CURRENCIES = [
 
 function transferPartnerLabel(p){ return p.label || allianceAirlineName(p.code); }
 
+// ── Transfer bonuses ──
+// Issuers run periodic bonuses ("transfer to Virgin at +30% through Sep 30"). The base
+// ratios above are hand-maintained, but bonuses come and go too fast for that, so they
+// live in Firestore: an admin posts one and every user's Transfers tab picks it up.
+// Keyed "<card>:<code>" — one live bonus per issuer/partner pair.
+var TRANSFER_BONUSES = {};
+var bonusesLoaded = false;      // fetch once per session unless an admin writes
+var bonusesUpdated = "";        // newest `updated` stamp, for the footer
+var isAdmin = false;            // set by verifyPin when the admin passcode is used
+
+function bonusKey(cardId, code){ return cardId + ":" + code; }
+function todayISO(){
+  // Local date, not UTC — a bonus ending "today" shouldn't vanish an evening early.
+  var d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+// A bonus is live until the end of its `until` day; no `until` means open-ended.
+function bonusExpired(b){ return !!(b && b.until && b.until < todayISO()); }
+
+function transferBonusFor(cardId, code){
+  var b = TRANSFER_BONUSES[bonusKey(cardId, code)];
+  if(!b || !(b.bonus > 0) || bonusExpired(b)) return null;
+  return b;
+}
+
+// "5:4" -> 0.8 — miles received per point transferred. null when we can't read it,
+// which keeps an unexpected ratio string rendering as-is instead of breaking the tab.
+function parseRatio(s){
+  var m = /^\s*([0-9]*\.?[0-9]+)\s*:\s*([0-9]*\.?[0-9]+)\s*$/.exec(String(s||""));
+  if(!m) return null;
+  var from = parseFloat(m[1]), to = parseFloat(m[2]);
+  if(!(from > 0) || !(to >= 0)) return null;
+  return to / from;
+}
+
+// Back to display form, always normalized to 1:x. A bonused 5:4 becomes 1:1.04 rather
+// than some invented fraction — the shape changes, but the number is the readable one.
+function formatRatio(mult){
+  var s = mult.toFixed(2).replace(/0+$/,"").replace(/\.$/,"");
+  return "1:" + s;
+}
+
+// What a partner row should show: the base ratio, plus the boosted one when a bonus
+// applies and the base is parseable.
+function effectiveRatio(p, cardId){
+  var base = p.ratio;
+  var b = cardId ? transferBonusFor(cardId, p.code) : null;
+  if(!b) return {text:base, base:base, bonus:0};
+  var mult = parseRatio(base);
+  if(mult === null) return {text:base, base:base, bonus:0};
+  return {
+    text:  formatRatio(mult * (1 + b.bonus/100)),
+    base:  base,
+    bonus: b.bonus,
+    until: b.until || "",
+    note:  b.note || ""
+  };
+}
+
+// "2026-09-30" -> "Sep 30". Parsed by hand: new Date("2026-09-30") is UTC midnight and
+// renders as the 29th west of Greenwich.
+var MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function formatBonusDate(iso){
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||"");
+  if(!m) return iso || "";
+  return MONTH_ABBR[parseInt(m[2],10)-1] + " " + parseInt(m[3],10);
+}
+
+function cacheTransferBonuses(){
+  try { localStorage.setItem("afss_xfer_bonuses", JSON.stringify(TRANSFER_BONUSES)); }
+  catch(e){ /* private mode / quota — the Firestore copy is the real one */ }
+}
+
+// Paint from the local mirror first so the tab isn't empty while Firestore answers.
+function hydrateTransferBonuses(){
+  try {
+    var saved = JSON.parse(localStorage.getItem("afss_xfer_bonuses")||"null");
+    if(saved && typeof saved === "object") TRANSFER_BONUSES = saved;
+  } catch(e){ /* corrupt storage shouldn't break the tab */ }
+}
+
+async function loadTransferBonuses(force){
+  if(bonusesLoaded && !force) return;
+  bonusesLoaded = true;
+  try {
+    var data = await fbGet("/transfer_bonuses", "pageSize=100");
+    if(!data){ bonusesLoaded = false; return; }   // rules deny or collection missing — retry next open
+    var next = {}, newest = "";
+    (data.documents||[]).forEach(function(doc){
+      var d = fbDecodeDoc(doc);
+      if(!d.card || !d.code) return;
+      next[bonusKey(d.card, d.code)] = {
+        bonus: Number(d.bonus)||0, until: d.until||"", note: d.note||"", updated: d.updated||""
+      };
+      if((d.updated||"") > newest) newest = d.updated || "";
+    });
+    TRANSFER_BONUSES = next;
+    bonusesUpdated = newest;
+    cacheTransferBonuses();
+    if(currentMode === "transfers") renderTransfers();
+  } catch(e){
+    // Offline or Firestore down: base ratios still render. Allow a retry next time
+    // the tab is opened rather than giving up for the whole session.
+    bonusesLoaded = false;
+    console.error("Transfer bonuses failed to load:", e);
+  }
+}
+
 var AIRPORT_CITIES = {
   // US
   "ORD":"Chicago","MDW":"Chicago","LAX":"Los Angeles","JFK":"New York","EWR":"New York","LGA":"New York",
@@ -1286,7 +1439,11 @@ var BOOKING_URLS = {
 };
 
 // ── Lock screen ──
-function checkUnlocked(){if(sessionStorage.getItem("afss_unlocked")==="1")document.getElementById("lockScreen").style.display="none"}
+function checkUnlocked(){
+  // Restore admin across a refresh — verifyPin only runs on a fresh unlock.
+  isAdmin = sessionStorage.getItem("afss_admin")==="1";
+  if(sessionStorage.getItem("afss_unlocked")==="1")document.getElementById("lockScreen").style.display="none";
+}
 function pinPress(digit){if(pinEntry.length>=4)return;pinEntry+=digit;updatePinDots(false);if(pinEntry.length===4)verifyPin()}
 function pinDelete(){pinEntry=pinEntry.slice(0,-1);updatePinDots(false);document.getElementById("lockError").textContent=""}
 function updatePinDots(error){for(var i=0;i<4;i++){var d=document.getElementById("dot"+i);d.className="pin-dot";if(error)d.classList.add("error");else if(i<pinEntry.length)d.classList.add("filled")}}
@@ -1295,6 +1452,10 @@ async function verifyPin(){
     // Check admin passcode via Worker
     var res=await fetch(WORKER+"/verify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passcode:pinEntry})});
     if(res.ok){
+      // The admin passcode — this is the only branch that unlocks bonus editing.
+      // A UI gate, not a security boundary: the Firestore key is client-side either way.
+      isAdmin=true;
+      sessionStorage.setItem("afss_admin","1");
       currentUserPin=pinEntry;
       sessionStorage.setItem("afss_unlocked","1");
       sessionStorage.setItem("afss_pin",pinEntry);
@@ -1305,6 +1466,8 @@ async function verifyPin(){
     // Check Firebase approved_users
     var users=await fbQuery("approved_users","pin",pinEntry);
     if(users.length>0){
+      isAdmin=false;
+      sessionStorage.removeItem("afss_admin");
       currentUserPin=pinEntry;
       sessionStorage.setItem("afss_unlocked","1");
       sessionStorage.setItem("afss_pin",pinEntry);
@@ -1358,6 +1521,7 @@ async function fetchUpgradeCSV() {
 
 function init(){
   checkUnlocked();
+  hydrateTransferBonuses();   // paint from the local mirror; Firestore refreshes on tab open
   buildGrid("programGrid",selectedPrograms,toggleRouteProgram);
   buildGrid("programGridRegion",selectedProgramsReg,toggleRegionProgram);
   buildRegionGrids();setDefaultDates();updateAuthUI();updateUpgradeDeepLink();
@@ -1496,7 +1660,7 @@ function setMode(mode){
   if(mode==="upgrades")fetchUpgradeCSV();
   if(mode==="alliances")renderAllianceList();
   if(mode==="points")renderPointsCalc();
-  if(mode==="transfers")renderTransfers();
+  if(mode==="transfers"){renderTransfers();loadTransferBonuses();}
 }
 
 // ── Programs ──
@@ -3039,14 +3203,25 @@ function partnerMatches(p, q){
 
 // A partner row: name, alliance badge where the carrier is in one, and the ratio.
 // Anything other than 1:1 is called out, since that's what changes the math.
-function transferPartnerHTML(p){
+// With a bonus running, the base ratio is struck through beside the boosted one.
+function transferPartnerHTML(p, cardId){
   var entry = AIRLINE_ALLIANCE[p.code];
+  var eff   = effectiveRatio(p, cardId);
+  var ratioHTML = eff.bonus
+    ? '<span class="xfer-bonus">+'+eff.bonus+'%</span>'+
+      '<span class="xfer-ratio-was">'+eff.base+'</span>'+
+      '<span class="xfer-ratio boosted">'+eff.text+'</span>'
+    : '<span class="xfer-ratio'+(p.ratio!=="1:1"?' off':'')+'">'+p.ratio+'</span>';
+  var notes = [];
+  if(p.note) notes.push(p.note);
+  if(eff.bonus && eff.note)  notes.push(eff.note);
+  if(eff.bonus && eff.until) notes.push("ends "+formatBonusDate(eff.until));
   return '<div class="xfer-row">'+
     '<span class="alliance-code">'+p.code+'</span>'+
     '<span class="xfer-name">'+transferPartnerLabel(p)+'</span>'+
     (entry?'<span class="xfer-alli">'+entry.alliance.name+'</span>':'')+
-    (p.note?'<span class="alliance-note">'+p.note+'</span>':'')+
-    '<span class="xfer-ratio'+(p.ratio!=="1:1"?' off':'')+'">'+p.ratio+'</span>'+
+    (notes.length?'<span class="alliance-note">'+notes.join(" · ")+'</span>':'')+
+    ratioHTML+
   '</div>';
 }
 
@@ -3063,7 +3238,7 @@ function renderTransfersByCard(q){
         '<span class="alliance-count">'+hits.length+' AIRLINE'+(hits.length===1?'':'S')+'</span>'+
         (q?'':'<span class="alliance-chev'+(open?' open':'')+'">▶</span>')+
       '</div>'+
-      (open?'<div class="xfer-rows">'+hits.map(transferPartnerHTML).join("")+'</div>':'')+
+      (open?'<div class="xfer-rows">'+hits.map(function(p){ return transferPartnerHTML(p, c.id); }).join("")+'</div>':'')+
     '</div>';
   }).join("");
   return cards;
@@ -3077,7 +3252,8 @@ function renderTransfersByAirline(q){
     c.partners.forEach(function(p){
       var key = p.code+":"+(p.label||"");
       if(!byPartner[key]) byPartner[key] = {p:p, cards:[]};
-      byPartner[key].cards.push({name:c.short, ratio:p.ratio});
+      var eff = effectiveRatio(p, c.id);
+      byPartner[key].cards.push({name:c.short, ratio:eff.text, bonus:eff.bonus});
     });
   });
   var rows = [];
@@ -3098,17 +3274,29 @@ function renderTransfersByAirline(q){
           (entry?'<span class="xfer-alli">'+entry.alliance.name+'</span>':'')+
         '</div>'+
         '<div class="xfer-cards">'+r.cards.map(function(c){
-          return '<span class="xfer-chip'+(c.ratio!=="1:1"?' off':'')+'">'+c.name+
-                 '<span class="xfer-chip-ratio">'+c.ratio+'</span></span>';
+          var cls = c.bonus ? ' bonus' : (c.ratio!=="1:1" ? ' off' : '');
+          return '<span class="xfer-chip'+cls+'">'+c.name+
+                 '<span class="xfer-chip-ratio">'+c.ratio+'</span>'+
+                 (c.bonus?'<span class="xfer-chip-bonus">+'+c.bonus+'%</span>':'')+'</span>';
         }).join("")+'</div>'+
       '</div>';
     }).join("")+
   '</div>';
 }
 
+// How many bonuses are live right now, ignoring any that have run out.
+function liveBonusCount(){
+  var n = 0;
+  TRANSFER_CURRENCIES.forEach(function(c){
+    c.partners.forEach(function(p){ if(transferBonusFor(c.id, p.code)) n++; });
+  });
+  return n;
+}
+
 function renderTransfers(){
   var box = document.getElementById("xferList");
   if(!box) return;
+  renderBonusAdmin();
   var input = document.getElementById("xferFilter");
   var q = input ? input.value.trim().toLowerCase() : "";
 
@@ -3118,11 +3306,123 @@ function renderTransfers(){
       'No airline transfer partner matches that.<br>Try "Turkish", "Avios" or "TK".</div>';
     return;
   }
-  box.innerHTML = html +
+  var live = liveBonusCount();
+  var banner = live
+    ? '<div class="xfer-banner">🔥 '+live+' transfer bonus'+(live===1?'':'es')+' running'+
+      (bonusesUpdated?' · updated '+formatBonusDate(bonusesUpdated.slice(0,10)):'')+'</div>'
+    : '';
+  box.innerHTML = banner + html +
     '<div class="pt-foot">Ratios are the standard/premium-card rates as of August 2026 and '+
     'change often — Citi\'s no-annual-fee cards transfer at 10:7, and issuers run periodic '+
-    'transfer bonuses. Confirm in your account before moving points; transfers are '+
-    'one-way and cannot be reversed.</div>';
+    'transfer bonuses. Bonuses shown here are the ones posted to this app, so check the '+
+    'issuer for anything newer or targeted. Confirm in your account before moving points; '+
+    'transfers are one-way and cannot be reversed.</div>';
+}
+
+// ── Transfer bonus admin ──
+// Only rendered for the admin passcode. Writes go straight to Firestore, so a bonus
+// posted here shows up for every user the next time they open the tab.
+function fillBonusPartners(){
+  var cardSel = document.getElementById("xbCard");
+  var partSel = document.getElementById("xbPartner");
+  if(!cardSel || !partSel) return;
+  var card = TRANSFER_CURRENCIES.filter(function(c){ return c.id === cardSel.value; })[0];
+  if(!card) return;
+  partSel.innerHTML = card.partners.map(function(p){
+    return '<option value="'+p.code+'">'+transferPartnerLabel(p)+' ('+p.ratio+')</option>';
+  }).join("");
+}
+
+function bonusMsg(text, cls){
+  var el = document.getElementById("xbMsg");
+  if(el){ el.textContent = text; el.className = "xfer-admin-msg" + (cls?" "+cls:""); }
+}
+
+function renderBonusAdmin(){
+  var panel = document.getElementById("xferAdmin");
+  if(!panel) return;
+  panel.style.display = isAdmin ? "block" : "none";
+  if(!isAdmin) return;
+
+  var cardSel = document.getElementById("xbCard");
+  if(cardSel && !cardSel.options.length){
+    cardSel.innerHTML = TRANSFER_CURRENCIES.map(function(c){
+      return '<option value="'+c.id+'">'+c.name+'</option>';
+    }).join("");
+    fillBonusPartners();
+  }
+
+  // Everything posted, expired included — expired rows are dimmed so they can be cleared out.
+  var rows = [];
+  TRANSFER_CURRENCIES.forEach(function(c){
+    c.partners.forEach(function(p){
+      var b = TRANSFER_BONUSES[bonusKey(c.id, p.code)];
+      if(!b) return;
+      rows.push({card:c, p:p, b:b, expired:bonusExpired(b)});
+    });
+  });
+  var list = document.getElementById("xbList");
+  if(!list) return;
+  list.innerHTML = rows.length ? rows.map(function(r){
+    return '<div class="xfer-admin-row'+(r.expired?' expired':'')+'">'+
+      '<span class="xfer-bonus">+'+r.b.bonus+'%</span>'+
+      '<span class="grow">'+r.card.short+' → '+transferPartnerLabel(r.p)+
+        (r.b.until?' · '+(r.expired?'expired ':'ends ')+formatBonusDate(r.b.until):' · no end date')+
+        (r.b.note?' · '+r.b.note:'')+'</span>'+
+      '<button class="xfer-admin-del" title="Delete" '+
+        'onclick="deleteTransferBonus(\''+r.card.id+'\',\''+r.p.code+'\')">✕</button>'+
+    '</div>';
+  }).join("") : '<div class="xfer-admin-row" style="color:var(--grey-light)">No bonuses posted.</div>';
+}
+
+async function saveTransferBonus(){
+  var card = document.getElementById("xbCard").value;
+  var code = document.getElementById("xbPartner").value;
+  var pct  = parseInt(document.getElementById("xbPct").value, 10);
+  var until= document.getElementById("xbUntil").value || "";
+  var note = document.getElementById("xbNote").value.trim();
+
+  if(!card || !code)                   return bonusMsg("Pick an issuer and a partner.", "err");
+  if(!(pct >= 1 && pct <= 200))        return bonusMsg("Bonus must be a whole number between 1 and 200.", "err");
+  if(until && until < todayISO())      return bonusMsg("That end date has already passed.", "err");
+
+  bonusMsg("Saving…");
+  try {
+    var updated = new Date().toISOString();
+    var res = await fbSet("/transfer_bonuses/" + card + "_" + code, {
+      card:card, code:code, bonus:pct, until:until, note:note, updated:updated
+    });
+    // fbSet doesn't check res.ok, so a rules rejection comes back as {error:{...}} and
+    // would otherwise read as success. Denied writes are the likely first-run failure.
+    if(res && res.error){
+      console.error("Bonus save rejected:", res.error);
+      return bonusMsg("Rejected by Firestore ("+(res.error.status||res.error.code||"error")+
+                      ") — check the transfer_bonuses rules.", "err");
+    }
+    TRANSFER_BONUSES[bonusKey(card, code)] = {bonus:pct, until:until, note:note, updated:updated};
+    bonusesUpdated = updated;
+    cacheTransferBonuses();
+    document.getElementById("xbPct").value  = "";
+    document.getElementById("xbNote").value = "";
+    bonusMsg("Saved — everyone sees this now.", "ok");
+    renderTransfers();
+  } catch(e){
+    console.error("Bonus save failed:", e);
+    bonusMsg("Save failed — check the connection and Firestore rules.", "err");
+  }
+}
+
+async function deleteTransferBonus(card, code){
+  try {
+    await fbDelete("/transfer_bonuses/" + card + "_" + code);
+    delete TRANSFER_BONUSES[bonusKey(card, code)];
+    cacheTransferBonuses();
+    bonusMsg("Deleted.", "ok");
+    renderTransfers();
+  } catch(e){
+    console.error("Bonus delete failed:", e);
+    bonusMsg("Delete failed — check the connection.", "err");
+  }
 }
 
 function buildCSVPanel() {
