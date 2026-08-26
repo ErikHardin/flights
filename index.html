@@ -580,8 +580,13 @@
   <!-- TRANSFERS -->
   <div id="mode-transfers" style="display:none">
     <div class="card">
-      <div class="card-label">Transfer Partners</div>
-      <div class="toggle-row" id="xferView">
+      <div class="alliance-head" onclick="toggleTransferControls()">
+        <span class="alliance-name">Transfer Partners</span>
+        <span class="alliance-count" id="xferCtlSummary"></span>
+        <span class="alliance-chev" id="xferCtlChev">&#9654;</span>
+      </div>
+      <div id="xferControls" style="display:none">
+      <div class="toggle-row" id="xferView" style="margin-top:10px">
         <button class="toggle-btn active" onclick="setTransferView('card')">By Card</button>
         <button class="toggle-btn"        onclick="setTransferView('airline')">By Airline</button>
       </div>
@@ -606,6 +611,7 @@
         <button class="reset-btn" style="margin-top:0" onclick="saveTransferBonus()">Save Bonus</button>
         <div class="xfer-admin-msg" id="xbMsg"></div>
         <div class="xfer-admin-list" id="xbList"></div>
+      </div>
       </div>
     </div>
     <div id="xferList"></div>
@@ -3165,6 +3171,31 @@ function calcPoints(){
 // ── Transfers tab ──
 var transferView = "card";
 var transferCollapsed = {};
+// The controls card starts closed so the tab opens straight onto the partner list.
+// Not persisted — every visit starts collapsed.
+var transferControlsOpen = false;
+
+function toggleTransferControls(){
+  transferControlsOpen = !transferControlsOpen;
+  syncTransferControls();
+}
+
+// Collapsed, the filter and view toggle are out of sight but still in effect, so the
+// header carries whatever is non-default — otherwise a filtered list looks broken.
+function syncTransferControls(){
+  var body = document.getElementById("xferControls");
+  var chev = document.getElementById("xferCtlChev");
+  var sum  = document.getElementById("xferCtlSummary");
+  if(!body || !chev || !sum) return;
+  body.style.display = transferControlsOpen ? "block" : "none";
+  chev.classList.toggle("open", transferControlsOpen);
+  var input = document.getElementById("xferFilter");
+  var q = input ? input.value.trim() : "";
+  var bits = [];
+  if(transferView === "airline") bits.push("BY AIRLINE");
+  if(q) bits.push('"'+q+'"');
+  sum.textContent = transferControlsOpen ? "" : bits.join(" · ");
+}
 
 function setTransferView(v){
   transferView = v;
@@ -3297,6 +3328,7 @@ function renderTransfers(){
   var box = document.getElementById("xferList");
   if(!box) return;
   renderBonusAdmin();
+  syncTransferControls();
   var input = document.getElementById("xferFilter");
   var q = input ? input.value.trim().toLowerCase() : "";
 
