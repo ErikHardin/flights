@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Advanced Flight Seat Search — User Guide</title>
+<style>
+  @page { size: Letter; margin: 0.62in 0.7in 0.7in 0.7in; }
+  @page :first { margin: 0; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #1a2433;
+    font-size: 10.4pt;
+    line-height: 1.52;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---------- cover ---------- */
+  .cover {
+    height: 11in;
+    background: linear-gradient(160deg, #1e4d7b 0%, #2f6ea6 55%, #4c8fc4 100%);
+    color: #fff;
+    padding: 1.1in 0.9in 0.8in 0.9in;
+    display: flex;
+    flex-direction: column;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover-plane { font-size: 46pt; line-height: 1; margin-bottom: 22px; }
+  .cover h1 { font-size: 33pt; line-height: 1.1; margin: 0 0 10px; font-weight: 700; letter-spacing: -0.5px; }
+  .cover .sub { font-size: 14pt; font-weight: 400; opacity: .93; margin-bottom: 30px; max-width: 4.6in; }
+  .cover .lede {
+    font-size: 11pt; line-height: 1.62; max-width: 4.15in; opacity: .95;
+    border-top: 2px solid rgba(255,255,255,.35); padding-top: 18px;
+  }
+  .cover-shot {
+    position: absolute; right: 0.75in; bottom: 0.7in;
+    width: 2.45in; border-radius: 16px; box-shadow: 0 18px 48px rgba(0,0,0,.35);
+    border: 5px solid rgba(255,255,255,.9);
+  }
+  .cover-foot {
+    margin-top: auto; font-size: 9.5pt; opacity: .85; letter-spacing: .3px;
+  }
+
+  /* ---------- structure ---------- */
+  h2 {
+    font-size: 16pt; margin: 0 0 3px; color: #123a5e; font-weight: 700; letter-spacing: -0.2px;
+  }
+  h2 .num {
+    display: inline-block; min-width: 26px; height: 26px; line-height: 26px;
+    background: #2f6ea6; color: #fff; border-radius: 7px; text-align: center;
+    font-size: 11pt; margin-right: 9px; vertical-align: 2px;
+  }
+  h3 { font-size: 11pt; margin: 16px 0 5px; color: #123a5e; }
+  .tagline { color: #5b6b7d; font-size: 10pt; margin: 0 0 12px 35px; font-style: italic; }
+  p { margin: 0 0 9px; }
+  section { margin-top: 22px; page-break-inside: auto; }
+  section.first { margin-top: 0; }
+  section > h2 { page-break-after: avoid; }
+  h3 { page-break-after: avoid; }
+  .tagline { page-break-after: avoid; }
+  .rule { border-top: 2px solid #dbe4ee; margin: 0 0 16px; }
+  .keep { page-break-inside: avoid; }
+
+  ul { margin: 6px 0 10px; padding-left: 17px; }
+  li { margin-bottom: 4.5px; }
+  li b { color: #123a5e; }
+
+  /* ---------- layout with screenshots ---------- */
+  .split { display: flex; gap: 20px; align-items: flex-start; page-break-inside: avoid; }
+  .split .text { flex: 1 1 auto; min-width: 0; }
+  .shot { flex: 0 0 auto; text-align: center; }
+  .shot img {
+    width: 100%; border: 1px solid #d5dde6; border-radius: 11px;
+    box-shadow: 0 4px 14px rgba(20,45,75,.13);
+  }
+  .shot.w190 { width: 1.7in; }
+  .shot.w215 { width: 1.8in; }
+  .shot.w240 { width: 2.0in; }
+  .cap { font-size: 8pt; color: #6c7c8d; margin-top: 5px; line-height: 1.35; }
+
+  .pair { display: flex; gap: 22px; margin-top: 14px; page-break-inside: avoid; justify-content: center; }
+  .pair .shot { flex: 0 0 1.9in; }
+
+  .note {
+    background: #eef4fa; border-left: 3px solid #2f6ea6; border-radius: 0 7px 7px 0;
+    padding: 9px 13px; font-size: 9.5pt; margin: 12px 0; color: #26405a;
+  }
+  .note b { color: #123a5e; }
+
+  .kv { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 9.6pt; }
+  .kv td { border-bottom: 1px solid #e3eaf1; padding: 6px 4px; vertical-align: top; }
+  .kv td:first-child { width: 1.5in; font-weight: 600; color: #123a5e; }
+  .kv tr:last-child td { border-bottom: none; }
+
+  .footer-note {
+    margin-top: 18px; padding-top: 10px; border-top: 1px solid #e3eaf1;
+    font-size: 9pt; color: #6c7c8d;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="cover-plane">✈</div>
+  <h1>Advanced<br>Flight Seat Search</h1>
+  <div class="sub">What the app does, and how to use it</div>
+  <div class="lede">
+    A pocket-sized tool for people who pay for travel with points. It finds award seats
+    across sixteen airline loyalty programs, tracks United upgrade space, and helps you
+    decide whether points or cash is the better way to buy a given ticket.
+  </div>
+  <img class="cover-shot" src="screenshots/01-lock.png">
+  <div class="cover-foot">User Guide &middot; August 2026</div>
+</div>
+
+<!-- ============ 1. OVERVIEW ============ -->
+<section class="first">
+  <h2><span class="num">1</span>What the app is for</h2>
+  <div class="tagline">Six tools behind one passcode.</div>
+
+  <div class="split">
+    <div class="text">
+      <p>
+        Award travel involves a lot of separate questions: is there a seat, on which airline,
+        for how many points, and is that a good price? This app puts the answers in one place,
+        on a screen sized for a phone.
+      </p>
+      <p>Everything lives under six tabs across the top:</p>
+      <ul>
+        <li><b>Region</b> — browse award availability across whole parts of the world at once.</li>
+        <li><b>Route</b> — check one specific airport pair over a range of dates.</li>
+        <li><b>UA Upgrades</b> — find United flights with upgrade space open.</li>
+        <li><b>Alliances</b> — look up which airlines belong where, and whose miles are interchangeable.</li>
+        <li><b>Points</b> — decide whether to pay in points or cash for a specific ticket.</li>
+        <li><b>Transfers</b> — see which credit card points move to which airline, and at what rate.</li>
+      </ul>
+      <p>
+        The app is built for a phone screen and works the same way in a desktop browser.
+        A moon icon in the header switches the whole app between light and dark; the choice
+        sticks for next time.
+      </p>
+    </div>
+    <div class="shot w215">
+      <img src="screenshots/02-about.png">
+      <div class="cap">The ℹ️ button in the header opens a quick refresher on what each tab does.</div>
+    </div>
+  </div>
+
+  <h3>Getting in</h3>
+  <div class="split">
+    <div class="text">
+      <p>
+        The app opens to a passcode pad. Tap in your four-digit PIN and it unlocks — there is
+        no username to remember, and you stay unlocked for the rest of the browsing session.
+      </p>
+      <ul>
+        <li><b>Request Access</b> — new users submit their name and email with the PIN they'd like, and get access once approved.</li>
+        <li><b>Forgot PIN</b> — enter your email address and a temporary PIN is sent to you.</li>
+        <li><b>Change PIN</b> — available any time from the header once you're inside.</li>
+      </ul>
+      <div class="note">
+        <b>The number in the header</b> is your remaining search allowance for the day. Each
+        availability search uses a little of it, and it resets daily. The Alliances, Points and
+        Transfers tabs don't consume any of it.
+      </div>
+    </div>
+    <div class="shot w190">
+      <img src="screenshots/01-lock.png">
+      <div class="cap">The passcode screen, with access requests and PIN recovery underneath.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. REGION ============ -->
+<section>
+  <div class="rule"></div>
+  <h2><span class="num">2</span>Region — explore, then narrow</h2>
+  <div class="tagline">For when you know roughly where you'd like to go, but not exactly.</div>
+
+  <div class="split">
+    <div class="text">
+      <p>
+        Region search answers the question "what can I get to Europe on, sometime in the next
+        two months?" Instead of one airport pair, you pick a part of the world to leave from
+        and a part of the world to land in, and the app sweeps everything in between.
+      </p>
+      <p>You set four things before searching:</p>
+      <ul>
+        <li><b>Mileage programs</b> — tap as many of the sixteen as you want to search at once;
+            at least one stays selected.</li>
+        <li><b>Cabin</b> — Any, Economy, Premium, Business or First. Cabins are toggles, so you
+            can look at business and first together.</li>
+        <li><b>Origin and destination regions</b> — North and South America, Europe, Africa,
+            Asia and Oceania. Choosing one opens a country list underneath, so you can narrow
+            "Europe" down to just Portugal and Spain if you'd rather.</li>
+        <li><b>Date range</b> — any window up to 60 days long.</li>
+      </ul>
+      <p>
+        Then tap <b>Explore Region</b>. Because a region sweep can take a while, a ✕ Stop
+        button appears alongside the results if you want to cut it short and work with what
+        has come back so far.
+      </p>
+    </div>
+    <div class="shot w215">
+      <img src="screenshots/03-region.png">
+      <div class="cap">The Region tab: programs, cabin, both regions and dates on one screen.</div>
+    </div>
+  </div>
+
+  <div class="pair">
+    <div class="shot">
+      <img src="screenshots/04-region-selected.png">
+      <div class="cap">Picking a region reveals its countries, so a broad search can be narrowed to specific destinations.</div>
+    </div>
+    <div class="shot">
+      <img src="screenshots/17-dark-region.png">
+      <div class="cap">The same screen in dark mode — every tab follows the setting.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. ROUTE ============ -->
+<section>
+  <div class="rule"></div>
+  <h2><span class="num">3</span>Route — one city pair, many dates</h2>
+  <div class="tagline">For when the trip is already decided and you need a seat.</div>
+
+  <div class="split">
+    <div class="text">
+      <p>
+        Route search takes an origin and a destination airport code and checks every date in
+        your window across whichever programs you've selected. The program, cabin and date
+        controls work exactly as they do on the Region tab.
+      </p>
+      <p>
+        The end date follows the start date automatically and is capped 60 days later, so you
+        can't accidentally ask for a year at a time.
+      </p>
+      <p>
+        Tap <b>Search Availability</b> and the results appear underneath — one card per
+        bookable itinerary, sorted by date, with a running count in the corner.
+      </p>
+      <div class="note">
+        Both searches share the same results area, the same filters and the same calendar
+        view, so anything you learn on one tab carries straight over to the other.
+      </div>
+    </div>
+    <div class="shot w215">
+      <img src="screenshots/05-route.png">
+      <div class="cap">A route search set up from Newark to London.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. RESULTS ============ -->
+<section>
+  <div class="rule"></div>
+  <h2><span class="num">4</span>Reading and working with results</h2>
+  <div class="tagline">What each card tells you, and the four ways to cut the list down.</div>
+
+  <div class="split">
+    <div class="text">
+      <p>Every result card carries the essentials at a glance:</p>
+      <ul>
+        <li>The airports and their city names, and the date of travel.</li>
+        <li>Which loyalty program the seat is priced in — the badge on the right.</li>
+        <li>The cabin, how many seats are left at that price, and whether the itinerary is
+            nonstop or how many stops it has.</li>
+        <li>Departure and arrival times, the flight numbers, and a <b>+1</b> marker when you
+            land the following day.</li>
+        <li>The points price and any taxes and surcharges due on top.</li>
+      </ul>
+      <p>
+        <b>▼ Details</b> expands the card to show the aircraft, the operating carrier and, on
+        connecting itineraries, the connection breakdown. <b>Book →</b> opens the airline's own
+        booking page with the route and date already filled in, and the 📤 button hands you a
+        tidy summary of the find to send to someone.
+      </p>
+      <p>
+        Results cap out at the count shown next to the heading; <b>⬇ CSV</b> exports what's
+        currently on screen to a spreadsheet.
+      </p>
+    </div>
+    <div class="shot w215">
+      <img src="screenshots/06-results.png">
+      <div class="cap">Results for one route: cabin, seats left, routing, times and points on every card.</div>
+    </div>
+  </div>
+
+  <div class="pair">
+    <div class="shot">
+      <img src="screenshots/07-result-expanded.png">
+      <div class="cap">Details expanded — aircraft, carrier and timings for the itinerary.</div>
+    </div>
+    <div class="shot">
+      <img src="screenshots/06b-result-filters.png">
+      <div class="cap">Filters sit above the list: sort order, program, airport, airline, and nonstop-only.</div>
+    </div>
+  </div>
+
+  <h3>Narrowing a long list</h3>
+  <p>
+    A wide search can return hundreds of cards. The controls above the results let you sort by
+    date, points, journey length or program, and filter down to a single program, a particular
+    connecting airport, a specific airline, or nonstop flights only. <b>Clear all filters</b>
+    puts everything back.
+  </p>
+
+  <div class="split">
+    <div class="text">
+      <h3>The calendar view</h3>
+      <p>
+        <b>📅 Calendar</b> swaps the list for a month-by-month grid showing the cheapest price
+        available on each day. Days are color-coded — green for the cheapest dates in your
+        results, amber for middling, red for the priciest — so a good week jumps out
+        immediately.
+      </p>
+      <p>
+        Tap any day to filter the results down to that date, and <b>☰ List</b> to switch back.
+        It's the fastest way to answer "when is this trip cheapest?" without reading a single
+        card.
+      </p>
+    </div>
+    <div class="shot w240">
+      <img src="screenshots/08-calendar.png">
+      <div class="cap">Two months of prices at a glance; tap a day to filter.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. UPGRADES ============ -->
+<section>
+  <div class="rule"></div>
+  <h2><span class="num">5</span>UA Upgrades — where the upgrade space is</h2>
+  <div class="tagline">United flights with confirmable upgrade inventory open.</div>
+
+  <div class="split">
+    <div class="text">
+      <p>
+        This tab tracks upgrade availability on United flights, so you can point your
+        PlusPoints at a flight that will actually clear rather than sitting on a waitlist.
+      </p>
+      <p>You can narrow the list by:</p>
+      <ul>
+        <li>Origin and destination airport, or a whole region on either end.</li>
+        <li>A date range.</li>
+        <li>A specific flight number, or an aircraft type such as "777".</li>
+        <li>A minimum amount of upgrade inventory — anything from one seat up to nine.</li>
+      </ul>
+      <p>
+        Sort by date, by how much inventory is open, or by airport, then tap
+        <b>Search Upgrades</b>.
+      </p>
+      <p>
+        Each card shows the route and cities, the date and flight number, the aircraft, the
+        scheduled times where they're known, and how much upgrade space is open — colored
+        green when there's plenty and amber when it's thinner. Underneath is how recently that
+        flight was last confirmed to have space.
+      </p>
+    </div>
+    <div class="shot w215">
+      <img src="screenshots/09-upgrades.png">
+      <div class="cap">Upgrade filters, with a note showing how current the list is.</div>
+    </div>
+  </div>
+
+  <div class="split" style="margin-top:14px;">
+    <div class="text">
+      <p>
+        Every card has a <b>Book on United →</b> link and a <b>Share</b> button, and the whole
+        filtered list can be exported with <b>⬇ CSV</b>. Long lists show the first 200 matches,
+        so tighten the filters if you hit that.
+      </p>
+      <p>
+        Above the results, <b>📡 Request Updated Data</b> asks for a fresh sweep if the list is
+        looking stale — useful when you're planning around a date that's close.
+      </p>
+    </div>
+    <div class="shot w215">
+      <img src="screenshots/10-upgrades-results.png">
+      <div class="cap">Upgrade results out of Chicago, sorted by date, showing open inventory per flight.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. ALLIANCES ============ -->
+<section>
+  <div class="rule"></div>
+  <h2><span class="num">6</span>Alliances — who flies with whom</h2>
+  <div class="tagline">A reference for the question "can I book this airline with those miles?"</div>
+
+  <div class="split">
+    <div class="text">
+      <p>
+        The Alliances tab is a directory of Star Alliance, oneworld and SkyTeam, listing every
+        member airline together with the loyalty program its miles actually live in.
+      </p>
+      <p>
+        The <b>Shared Mileage Programs</b> panel at the top is the part worth knowing about.
+        Several airlines pool into a single currency — Lufthansa, Swiss, Austrian, Brussels,
+        LOT and Croatia all sit in Miles &amp; More, and British Airways, Finnair, Iberia and
+        Qatar all sit in Avios. Miles earned on any of them are spendable across the rest, and
+        the app flags those relationships on each airline as you scroll.
+      </p>
+      <p>
+        The search box at the top matches on airline name, two-letter code or program name,
+        so typing "Avios", "AY" or "Finnair" all land in the same place. Membership reflects
+        recent moves between alliances rather than the line-up from a few years ago.
+      </p>
+    </div>
+    <div class="shot w215">
+      <img src="screenshots/11-alliances.png">
+      <div class="cap">Shared currencies first, then each alliance with its members and programs.</div>
+    </div>
+  </div>
+
+  <div class="split" style="margin-top:14px;">
+    <div class="text">
+      <p>
+        Searching for a single carrier collapses everything down to the match, showing its
+        alliance and which other programs share its currency — a two-second answer to
+        "where do I need miles to fly this airline?"
+      </p>
+    </div>
+    <div class="shot w215">
+      <img src="screenshots/12-alliances-search.png">
+      <div class="cap">One airline, its alliance, and the currency it shares with three others.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. POINTS ============ -->
+<section>
+  <div class="rule"></div>
+  <h2><span class="num">7</span>Points — is this worth paying in miles?</h2>
+  <div class="tagline">A straight verdict on points versus cash for one specific ticket.</div>
+
+  <div class="split">
+    <div class="text">
+      <p>
+        You've found an award seat. Should you actually use your points on it? This tab
+        settles that. Pick the airline, then enter three numbers:
+      </p>
+      <table class="kv">
+        <tr><td>Cash price</td><td>What the same ticket would cost you in money.</td></tr>
+        <tr><td>Points required</td><td>The award price the airline is quoting.</td></tr>
+        <tr><td>Taxes &amp; fees</td><td>The cash still due on the award ticket.</td></tr>
+      </table>
+      <p>
+        The app works out what each point is buying you, after subtracting the taxes you'd pay
+        anyway, and compares it against what points in that particular program are generally
+        reckoned to be worth. The verdict comes back as one of three answers:
+      </p>
+      <ul>
+        <li><b>Use Points</b> — you're getting meaningfully more than the going rate.</li>
+        <li><b>Toss-Up</b> — close enough to the baseline that other factors should decide.</li>
+        <li><b>Pay Cash</b> — you'd be spending points cheaply; save them for a better trip.</li>
+      </ul>
+      <p>
+        Underneath is the full arithmetic, so you can see how the answer was reached rather
+        than taking it on faith. Your last entry is remembered when you come back to the tab.
+      </p>
+      <div class="note">
+        The baselines are rough consensus estimates of what a point is worth, not promises.
+        Taxes and carrier surcharges vary a lot by route and program.
+      </div>
+    </div>
+    <div class="shot w215">
+      <img src="screenshots/14-points-result.png">
+      <div class="cap">A verdict with the full breakdown underneath.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8. TRANSFERS ============ -->
+<section>
+  <div class="rule"></div>
+  <h2><span class="num">8</span>Transfers — moving card points to airlines</h2>
+  <div class="tagline">Which points go where, at what rate, and what's on sale right now.</div>
+
+  <div class="split">
+    <div class="text">
+      <p>
+        Most award bookings start with credit card points rather than airline miles. This tab
+        lays out the transfer partners for the six major rewards currencies — American Express,
+        Chase, Capital One, Citi, Bilt and Wells Fargo — with the ratio for each partner
+        airline and a badge showing which alliance that airline belongs to.
+      </p>
+      <p>
+        Two views: <b>By Card</b> groups partners under each rewards program, which is what
+        you want when you're deciding where your existing points can go. <b>By Airline</b>
+        flips it around to show which cards feed a given airline — the view for "I need Turkish
+        miles, who can get me there?" The search box filters either view by airline, code or
+        program name.
+      </p>
+      <p>
+        When a transfer bonus is running, it appears inline: a banner counts how many are live,
+        and the affected partners show the boosted ratio with the standard one struck through,
+        along with the bonus percentage and its expiry. Bonuses appear for everyone as soon as
+        they're posted.
+      </p>
+      <div class="note">
+        <b>Worth repeating:</b> transfers are one-way and can't be reversed. Confirm the ratio
+        in your own account before moving anything — published rates change often, and some
+        cards in a family transfer at a lower rate than others.
+      </div>
+    </div>
+    <div class="shot w215">
+      <img src="screenshots/15-transfers.png">
+      <div class="cap">Transfer partners by card, with three live bonuses flagged at the top.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 9. WRAP ============ -->
+<section>
+  <div class="rule"></div>
+  <h2><span class="num">9</span>Small things that help</h2>
+  <div class="tagline">Habits worth picking up.</div>
+
+  <div class="split">
+    <div class="text">
+      <ul>
+        <li><b>Search wide, then filter.</b> Selecting several programs at once and narrowing
+            afterwards costs the same as one narrow search, and you see more.</li>
+        <li><b>Check the calendar before reading cards.</b> Shifting a trip by two days is
+            often the cheapest change you can make.</li>
+        <li><b>Use Share rather than screenshots.</b> The summary it produces carries the
+            route, cabin, price, taxes and a booking link in one message.</li>
+        <li><b>Export before the list changes.</b> Award space moves; a CSV is a snapshot you
+            can compare against later.</li>
+        <li><b>Stop a long search early.</b> Region sweeps keep whatever they've already found
+            when you tap ✕ Stop.</li>
+        <li><b>Check the Points tab before transferring.</b> It costs nothing to run the
+            numbers, and a transfer can't be undone.</li>
+        <li><b>Dark mode.</b> The moon icon in the header, on the passcode screen too.</li>
+      </ul>
+      <p>
+        Availability shown here is what the airlines were offering when the search ran. Seats
+        come and go quickly — always confirm on the airline's own site before making plans
+        around a find.
+      </p>
+      <div class="footer-note">
+        Advanced Flight Seat Search &middot; User Guide &middot; August 2026
+      </div>
+    </div>
+    <div class="shot w190">
+      <img src="screenshots/18-dark-points.png">
+      <div class="cap">Dark mode carries through every tab, including the calculator.</div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
