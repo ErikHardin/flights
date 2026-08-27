@@ -4,26 +4,22 @@
 <meta charset="utf-8">
 <title>Advanced Flight Seat Search — User Guide</title>
 <style>
-  @page { size: Letter; margin: 0.62in 0.7in 0.7in 0.7in; }
+  @page { size: Letter; margin: 0.62in 0.7in 0.72in 0.7in; }
   @page :first { margin: 0; }
 
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    color: #1a2433;
-    font-size: 10.3pt;
-    line-height: 1.5;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    color: #1a2433; font-size: 10.3pt; line-height: 1.5;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
 
   /* ---------- cover ---------- */
   .cover {
     height: 11in;
     background: linear-gradient(160deg, #1e4d7b 0%, #2f6ea6 55%, #4c8fc4 100%);
-    color: #fff;
-    padding: 1.1in 0.9in 0.8in 0.9in;
+    color: #fff; padding: 1.1in 0.9in 0.8in 0.9in;
     display: flex; flex-direction: column;
     page-break-after: always; position: relative; overflow: hidden;
   }
@@ -35,99 +31,94 @@
     border-top: 2px solid rgba(255,255,255,.35); padding-top: 18px;
   }
   .cover-shot {
-    position: absolute; right: 0.75in; bottom: 0.7in;
-    width: 2.45in; border-radius: 16px; box-shadow: 0 18px 48px rgba(0,0,0,.35);
-    border: 5px solid rgba(255,255,255,.9);
+    position: absolute; right: 0.75in; bottom: 0.7in; width: 2.45in;
+    border-radius: 16px; box-shadow: 0 18px 48px rgba(0,0,0,.35); border: 5px solid rgba(255,255,255,.9);
   }
   .cover-foot { margin-top: auto; font-size: 9.5pt; opacity: .85; letter-spacing: .3px; }
 
-  /* ---------- structure ---------- */
-  h2 { font-size: 16pt; margin: 0 0 3px; color: #123a5e; font-weight: 700; letter-spacing: -0.2px; }
-  h2 .num {
-    display: inline-block; min-width: 26px; height: 26px; line-height: 26px;
-    background: #2f6ea6; color: #fff; border-radius: 7px; text-align: center;
-    font-size: 11pt; margin-right: 9px; vertical-align: 2px;
+  /* ---------- contents ---------- */
+  .contents { page-break-after: always; padding-top: 0.35in; }
+  .contents h2 { margin-bottom: 4px; }
+  .contents .intro { color: #5b6b7d; font-size: 10pt; margin: 0 0 26px; max-width: 5in; }
+  .toc-row { display: flex; align-items: baseline; padding: 11px 4px; border-bottom: 1px solid #e3eaf1; page-break-inside: avoid; }
+  .toc-row .n {
+    flex: 0 0 auto; width: 22px; height: 22px; line-height: 22px; text-align: center;
+    background: #2f6ea6; color: #fff; border-radius: 6px; font-size: 9pt; font-weight: 600; margin-right: 14px;
   }
-  h3 { font-size: 10.5pt; margin: 15px 0 5px; color: #123a5e; page-break-after: avoid; }
-  .tagline { color: #5b6b7d; font-size: 9.8pt; margin: 0 0 12px 35px; font-style: italic; page-break-after: avoid; }
-  p { margin: 0 0 8px; }
-  p.lead { max-width: 5.6in; }
-  section { margin-top: 22px; }
-  section.first { margin-top: 0; }
-  section > h2 { page-break-after: avoid; }
-  .rule { border-top: 2px solid #dbe4ee; margin: 0 0 16px; }
+  .toc-row .t { flex: 0 0 2.35in; font-size: 11pt; font-weight: 700; color: #123a5e; }
+  .toc-row .d { flex: 1 1 auto; font-size: 9.8pt; color: #5b6b7d; }
 
-  ul { margin: 6px 0 9px; padding-left: 17px; }
-  li { margin-bottom: 4px; }
-  li b { color: #123a5e; }
+  /* ---------- sections ---------- */
+  section { page-break-before: always; }
+  h2 { font-size: 16.5pt; margin: 0 0 3px; color: #123a5e; font-weight: 700; letter-spacing: -0.2px; page-break-after: avoid; }
+  h2 .num {
+    display: inline-block; min-width: 27px; height: 27px; line-height: 27px;
+    background: #2f6ea6; color: #fff; border-radius: 7px; text-align: center;
+    font-size: 11.5pt; margin-right: 10px; vertical-align: 2px;
+  }
+  h3 { font-size: 10.8pt; margin: 16px 0 6px; color: #123a5e; page-break-after: avoid; }
+  .tagline { color: #5b6b7d; font-size: 9.9pt; margin: 0 0 14px 37px; font-style: italic; page-break-after: avoid; }
+  p { margin: 0 0 9px; }
+  p.lead { max-width: 5.9in; }
 
   /* ---------- inline UI chips ---------- */
   .ui {
-    background: #eef4fa; border: 1px solid #cfdded; border-radius: 4px;
-    padding: 0 4px; font-size: 9.1pt; font-weight: 600; color: #123a5e; white-space: nowrap;
+    background: #eef4fa; border: 1px solid #cfdded; border-radius: 4px; padding: 0 4px;
+    font-size: 9.1pt; font-weight: 600; color: #123a5e; white-space: nowrap;
   }
 
   /* ---------- tables ---------- */
-  .tbl {
-    width: 100%; border-collapse: collapse; margin: 4px 0 12px;
-    font-size: 9.3pt; line-height: 1.42; page-break-inside: avoid;
-  }
-  .tbl caption {
-    caption-side: top; text-align: left; font-size: 8.6pt; font-weight: 700;
-    color: #4a6b8a; padding-bottom: 5px;
-  }
+  .tbl { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: 9.4pt; line-height: 1.42; page-break-inside: avoid; }
   .tbl th {
-    background: #123a5e; color: #fff; text-align: left; font-weight: 600;
-    font-size: 8.7pt; letter-spacing: .4px; text-transform: uppercase;
-    padding: 6px 9px; border: none;
+    background: #123a5e; color: #fff; text-align: left; font-weight: 600; font-size: 8.7pt;
+    letter-spacing: .4px; text-transform: uppercase; padding: 6px 10px;
   }
-  .tbl td { padding: 6px 9px; border-bottom: 1px solid #e0e8f0; vertical-align: top; }
+  .tbl td { padding: 6px 10px; border-bottom: 1px solid #e0e8f0; vertical-align: top; }
   .tbl tr:nth-child(even) td { background: #f5f8fb; }
   .tbl td:first-child { font-weight: 600; color: #123a5e; white-space: nowrap; }
   .tbl td.wrap:first-child { white-space: normal; }
   .tbl tr:last-child td { border-bottom: none; }
-  .tbl.two td:first-child { width: 1.85in; }
+  .tbl.two td:first-child { width: 2.0in; }
   .tbl.three td:first-child { width: 22%; }
   .tbl.three td:nth-child(2) { width: 53%; }
   .tbl .dim { color: #5b6b7d; font-weight: 400; }
+  .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; }
 
-  .swatch {
-    display: inline-block; width: 9px; height: 9px; border-radius: 2px;
-    margin-right: 6px; vertical-align: 0px;
+  /* ---------- figures ---------- */
+  .figrow { display: flex; gap: 22px; align-items: flex-start; justify-content: center; margin-top: 14px; page-break-inside: avoid; }
+  .fig { text-align: center; }
+  .frame {
+    position: relative; overflow: hidden; border: 1px solid #d5dde6; border-radius: 11px;
+    box-shadow: 0 4px 14px rgba(20,45,75,.13);
   }
-
-  /* ---------- contents ---------- */
-  .toc { border: 1px solid #d5dde6; border-radius: 9px; padding: 12px 16px 6px; margin-bottom: 22px; background: #fafcfe; }
-  .toc-title { font-size: 8.6pt; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #4a6b8a; margin-bottom: 8px; }
-  .toc-grid { display: flex; flex-wrap: wrap; }
-  .toc-item { width: 50%; font-size: 9.4pt; margin-bottom: 6px; padding-right: 12px; }
-  .toc-item b { color: #123a5e; }
-  .toc-item .n {
-    display: inline-block; width: 15px; height: 15px; line-height: 15px; text-align: center;
-    background: #2f6ea6; color: #fff; border-radius: 4px; font-size: 7.6pt; margin-right: 6px;
+  .frame img { display: block; width: 100%; }
+  .frame.clip img { object-fit: cover; object-position: top center; }
+  .frame.clip::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 26px;
+    background: linear-gradient(rgba(255,255,255,0), rgba(255,255,255,.94));
   }
-  .toc-item .d { color: #5b6b7d; }
+  .frame.clip.dark::after { background: linear-gradient(rgba(18,21,27,0), rgba(18,21,27,.94)); }
+  .frame.h20 img { height: 2.0in; }
+  .frame.h22 img { height: 2.2in; }
+  .frame.h25 img { height: 2.5in; }
+  .frame.h28 img { height: 2.8in; }
+  .frame.h30 img { height: 3.0in; }
+  .frame.h32 img { height: 3.2in; }
+  .fig.w175 { flex: 0 0 1.75in; }
+  .fig.w195 { flex: 0 0 1.95in; }
+  .fig.w205 { flex: 0 0 2.05in; }
+  .fig.w225 { flex: 0 0 2.25in; }
+  .cap { font-size: 8.1pt; color: #6c7c8d; margin-top: 6px; line-height: 1.35; }
 
-  /* ---------- screenshots ---------- */
-  .split { display: flex; gap: 20px; align-items: flex-start; page-break-inside: avoid; }
+  .split { display: flex; gap: 22px; align-items: flex-start; page-break-inside: avoid; }
   .split .text { flex: 1 1 auto; min-width: 0; }
-  .shot { flex: 0 0 auto; text-align: center; }
-  .shot img { width: 100%; border: 1px solid #d5dde6; border-radius: 11px; box-shadow: 0 4px 14px rgba(20,45,75,.13); }
-  .shot.w170 { width: 1.7in; }
-  .shot.w180 { width: 1.8in; }
-  .shot.w200 { width: 2.0in; }
-  .cap { font-size: 8pt; color: #6c7c8d; margin-top: 5px; line-height: 1.35; }
-
-  .pair { display: flex; gap: 22px; margin-top: 14px; page-break-inside: avoid; justify-content: center; }
-  .pair .shot { flex: 0 0 1.9in; }
 
   .note {
     background: #eef4fa; border-left: 3px solid #2f6ea6; border-radius: 0 7px 7px 0;
-    padding: 9px 13px; font-size: 9.4pt; margin: 11px 0; color: #26405a; page-break-inside: avoid;
+    padding: 10px 14px; font-size: 9.5pt; margin: 12px 0; color: #26405a; page-break-inside: avoid;
   }
   .note b { color: #123a5e; }
-
-  .footer-note { margin-top: 16px; padding-top: 10px; border-top: 1px solid #e3eaf1; font-size: 9pt; color: #6c7c8d; }
+  .closing { margin-top: 18px; padding-top: 11px; border-top: 1px solid #e3eaf1; font-size: 9pt; color: #6c7c8d; }
 </style>
 </head>
 <body>
@@ -147,23 +138,25 @@
 </div>
 
 <!-- ============ CONTENTS ============ -->
-<div class="toc">
-  <div class="toc-title">What's inside</div>
-  <div class="toc-grid">
-    <div class="toc-item"><span class="n">1</span><b>What the app is for</b><br><span class="d">The six tabs, and getting in</span></div>
-    <div class="toc-item"><span class="n">2</span><b>Region</b><br><span class="d">Award seats across whole regions</span></div>
-    <div class="toc-item"><span class="n">3</span><b>Route</b><br><span class="d">One airport pair, many dates</span></div>
-    <div class="toc-item"><span class="n">4</span><b>Results</b><br><span class="d">Reading cards, filtering, calendar</span></div>
-    <div class="toc-item"><span class="n">5</span><b>UA Upgrades</b><br><span class="d">Where the upgrade space is</span></div>
-    <div class="toc-item"><span class="n">6</span><b>Alliances</b><br><span class="d">Who flies with whom</span></div>
-    <div class="toc-item"><span class="n">7</span><b>Points</b><br><span class="d">Points versus cash, decided</span></div>
-    <div class="toc-item"><span class="n">8</span><b>Transfers</b><br><span class="d">Card points to airline miles</span></div>
-    <div class="toc-item"><span class="n">9</span><b>Small things that help</b><br><span class="d">Habits worth picking up</span></div>
-  </div>
+<div class="contents">
+  <h2>Contents</h2>
+  <p class="intro">One section to a page. Sections 1 to 3 cover getting in and setting up a search;
+  4 and 5 cover what comes back; 6 to 9 are the tools that sit alongside.</p>
+
+  <div class="toc-row"><span class="n">1</span><span class="t">What the app is for</span><span class="d">The six tabs, and getting in</span></div>
+  <div class="toc-row"><span class="n">2</span><span class="t">Region</span><span class="d">Award seats across whole parts of the world</span></div>
+  <div class="toc-row"><span class="n">3</span><span class="t">Route</span><span class="d">One airport pair, every date in your window</span></div>
+  <div class="toc-row"><span class="n">4</span><span class="t">Reading a result</span><span class="d">What each card tells you, and its buttons</span></div>
+  <div class="toc-row"><span class="n">5</span><span class="t">Narrowing the list</span><span class="d">Filters, sorting and the calendar view</span></div>
+  <div class="toc-row"><span class="n">6</span><span class="t">UA Upgrades</span><span class="d">United flights with upgrade space open</span></div>
+  <div class="toc-row"><span class="n">7</span><span class="t">Alliances</span><span class="d">Who flies with whom, and whose miles are shared</span></div>
+  <div class="toc-row"><span class="n">8</span><span class="t">Points</span><span class="d">Points versus cash, decided</span></div>
+  <div class="toc-row"><span class="n">9</span><span class="t">Transfers</span><span class="d">Card points to airline miles</span></div>
+  <div class="toc-row"><span class="n">10</span><span class="t">Small things that help</span><span class="d">Habits worth picking up</span></div>
 </div>
 
 <!-- ============ 1 ============ -->
-<section class="first">
+<section>
   <h2><span class="num">1</span>What the app is for</h2>
   <div class="tagline">Six tools behind one passcode.</div>
 
@@ -199,59 +192,48 @@
     <tr><td>Number badge</td><td>Search allowance left today; resets daily</td><td class="dim">Header</td></tr>
   </table>
 
-  <div class="pair">
-    <div class="shot">
-      <img src="screenshots/01-lock.png">
-      <div class="cap">The passcode screen, with access requests and PIN recovery underneath.</div>
-    </div>
-    <div class="shot">
-      <img src="screenshots/02-about.png">
-      <div class="cap">The <span class="ui">ℹ️</span> button in the header opens a refresher on what each tab does.</div>
+  <div class="figrow">
+    <div class="fig w195">
+      <div class="frame clip h20"><img src="screenshots/02-about.png"></div>
+      <div class="cap">The <span class="ui">ℹ️</span> button opens a refresher on each tab.</div>
     </div>
   </div>
 </section>
 
 <!-- ============ 2 ============ -->
 <section>
-  <div class="rule"></div>
   <h2><span class="num">2</span>Region — explore, then narrow</h2>
   <div class="tagline">For when you know roughly where you'd like to go, but not exactly.</div>
 
-  <div class="split">
-    <div class="text">
-      <p>
-        Region search answers the question "what can I get to Europe on, sometime in the next two
-        months?" Instead of one airport pair, you pick a part of the world to leave from and a part
-        of the world to land in, and the app sweeps everything in between.
-      </p>
-      <p>
-        Then tap <span class="ui">Explore Region</span>. Because a sweep can take a while, a
-        <span class="ui">✕ Stop</span> button appears alongside the results if you want to cut it
-        short and work with what has come back so far.
-      </p>
-    </div>
-    <div class="shot w180">
-      <img src="screenshots/03-region.png">
-      <div class="cap">The Region tab: programs, cabin, both regions and dates on one screen.</div>
-    </div>
-  </div>
+  <p class="lead">
+    Region search answers the question "what can I get to Europe on, sometime in the next two
+    months?" Instead of one airport pair, you pick a part of the world to leave from and a part of
+    the world to land in, and the app sweeps everything in between. Then tap
+    <span class="ui">Explore Region</span> — and because a sweep can take a while, a
+    <span class="ui">✕ Stop</span> button appears alongside the results if you want to cut it short
+    and work with what has come back so far.
+  </p>
 
   <table class="tbl three">
-        <tr><th>Control</th><th>Choices</th><th>Notes</th></tr>
-        <tr><td>Mileage programs</td><td>16 programs, from United and Delta to Qatar and SAS</td><td class="dim">Pick several; one always stays on</td></tr>
-        <tr><td>Cabin</td><td>Any · Eco · Prem · Biz · First</td><td class="dim">Toggles, so Biz and First combine</td></tr>
-        <tr><td>Origin region</td><td>North and South America, Europe, Africa, Asia, Oceania</td><td class="dim">Opens a country list underneath</td></tr>
-        <tr><td>Destination region</td><td>The same six</td><td class="dim">Also filterable by country</td></tr>
-        <tr><td>Date range</td><td>Start and end date</td><td class="dim">Up to 60 days</td></tr>
+    <tr><th>Control</th><th>Choices</th><th>Notes</th></tr>
+    <tr><td>Mileage programs</td><td>16 programs, from United and Delta to Qatar and SAS</td><td class="dim">Pick several; one always stays on</td></tr>
+    <tr><td>Cabin</td><td>Any · Eco · Prem · Biz · First</td><td class="dim">Toggles, so Biz and First combine</td></tr>
+    <tr><td>Origin region</td><td>North and South America, Europe, Africa, Asia, Oceania</td><td class="dim">Opens a country list underneath</td></tr>
+    <tr><td>Destination region</td><td>The same six</td><td class="dim">Also filterable by country</td></tr>
+    <tr><td>Date range</td><td>Start and end date</td><td class="dim">Up to 60 days</td></tr>
   </table>
 
-  <div class="pair">
-    <div class="shot">
-      <img src="screenshots/04-region-selected.png">
-      <div class="cap">Picking a region reveals its countries, so a broad search can be narrowed to specific destinations.</div>
+  <div class="figrow">
+    <div class="fig w175">
+      <div class="frame clip h30"><img src="screenshots/03-region.png"></div>
+      <div class="cap">Programs, cabin, both regions and dates on one screen.</div>
     </div>
-    <div class="shot">
-      <img src="screenshots/17-dark-region.png">
+    <div class="fig w175">
+      <div class="frame clip h30"><img src="screenshots/04-region-selected.png"></div>
+      <div class="cap">Picking a region reveals its countries, narrowing a broad search.</div>
+    </div>
+    <div class="fig w175">
+      <div class="frame clip h30 dark"><img src="screenshots/17-dark-region.png"></div>
       <div class="cap">The same screen in dark mode — every tab follows the setting.</div>
     </div>
   </div>
@@ -259,7 +241,6 @@
 
 <!-- ============ 3 ============ -->
 <section>
-  <div class="rule"></div>
   <h2><span class="num">3</span>Route — one city pair, many dates</h2>
   <div class="tagline">For when the trip is already decided and you need a seat.</div>
 
@@ -270,6 +251,10 @@
         window across whichever programs you've selected. The program, cabin and date controls work
         exactly as they do on the Region tab, and the end date follows the start date automatically,
         capped 60 days later.
+      </p>
+      <p>
+        Tap <span class="ui">Search Availability</span> and the results appear underneath — one card
+        per bookable itinerary, sorted by date, with a running count in the corner.
       </p>
       <table class="tbl two">
         <tr><th>Reach for Region when…</th><th>Reach for Route when…</th></tr>
@@ -282,8 +267,8 @@
         anything you learn on one tab carries straight over to the other.
       </div>
     </div>
-    <div class="shot w180">
-      <img src="screenshots/05-route.png">
+    <div class="fig w205" style="flex:0 0 2.05in">
+      <div class="frame"><img src="screenshots/05-route.png"></div>
       <div class="cap">A route search set up from Newark to London.</div>
     </div>
   </div>
@@ -291,32 +276,19 @@
 
 <!-- ============ 4 ============ -->
 <section>
-  <div class="rule"></div>
-  <h2><span class="num">4</span>Reading and working with results</h2>
-  <div class="tagline">What each card tells you, and the ways to cut the list down.</div>
+  <h2><span class="num">4</span>Reading a result</h2>
+  <div class="tagline">Everything you need for a first pass is on the face of the card.</div>
 
-  <div class="split">
-    <div class="text">
-      <p>
-        Results arrive as one card per bookable itinerary, sorted by date, with a running count in
-        the corner. Everything you need for a first pass is on the face of the card.
-      </p>
-      <table class="tbl two">
-        <tr><th>On the card</th><th>What it tells you</th></tr>
-        <tr><td>Airports and cities</td><td class="dim">Where the itinerary starts and ends</td></tr>
-        <tr><td>Date</td><td class="dim">Day of travel</td></tr>
-        <tr><td>Program badge</td><td class="dim">Which loyalty program prices this seat</td></tr>
-        <tr><td>Cabin · (n left)</td><td class="dim">Class of service and seats remaining at that price</td></tr>
-        <tr><td>Nonstop / n stops</td><td class="dim">Whether you change planes</td></tr>
-        <tr><td>Times and flights</td><td class="dim">Departure, arrival and flight numbers; <b>+1</b> means you land the next day</td></tr>
-        <tr><td>Points · taxes</td><td class="dim">The award price and the cash still due on top</td></tr>
-      </table>
-    </div>
-    <div class="shot w180">
-      <img src="screenshots/06-results.png">
-      <div class="cap">Results for one route: cabin, seats left, routing, times and points on every card.</div>
-    </div>
-  </div>
+  <table class="tbl two">
+    <tr><th>On the card</th><th>What it tells you</th></tr>
+    <tr><td>Airports and cities</td><td class="dim">Where the itinerary starts and ends</td></tr>
+    <tr><td>Date</td><td class="dim">Day of travel</td></tr>
+    <tr><td>Program badge</td><td class="dim">Which loyalty program prices this seat</td></tr>
+    <tr><td>Cabin · (n left)</td><td class="dim">Class of service, and seats remaining at that price</td></tr>
+    <tr><td>Nonstop / n stops</td><td class="dim">Whether you change planes</td></tr>
+    <tr><td>Times and flights</td><td class="dim">Departure, arrival and flight numbers; <b>+1</b> means you land the next day</td></tr>
+    <tr><td>Points · taxes</td><td class="dim">The award price, and the cash still due on top</td></tr>
+  </table>
 
   <table class="tbl three">
     <tr><th>Button</th><th>What happens</th><th>Where</th></tr>
@@ -327,38 +299,42 @@
     <tr><td>✕ Stop</td><td>Cancels a running search, keeping what has arrived</td><td class="dim">Results header</td></tr>
   </table>
 
-  <div class="pair">
-    <div class="shot">
-      <img src="screenshots/07-result-expanded.png">
+  <div class="figrow">
+    <div class="fig w195">
+      <div class="frame clip h28"><img src="screenshots/06-results.png"></div>
+      <div class="cap">Cabin, seats left, routing, times and points on every card.</div>
+    </div>
+    <div class="fig w195">
+      <div class="frame clip h28"><img src="screenshots/07-result-expanded.png"></div>
       <div class="cap">Details expanded — aircraft, carrier and timings for the itinerary.</div>
     </div>
-    <div class="shot">
-      <img src="screenshots/06b-result-filters.png">
-      <div class="cap">Filters sit above the list, with a running result count beside them.</div>
-    </div>
   </div>
+</section>
 
-  <h3>Narrowing a long list</h3>
-  <p>
-    A wide search can return hundreds of cards. Five controls sit above the results, and
-    <span class="ui">Clear all filters</span> puts everything back.
-  </p>
-  <table class="tbl two">
-    <tr><th>Filter</th><th>Options</th></tr>
-    <tr><td>Sort by</td><td class="dim">Date · Points (low to high) · Duration (fastest) · Program</td></tr>
-    <tr><td>Program</td><td class="dim">Any single program present in the results</td></tr>
-    <tr><td>Airport</td><td class="dim">A three-letter code, to pin down a connecting point</td></tr>
-    <tr><td>Airline</td><td class="dim">A carrier code, such as UA or LX</td></tr>
-    <tr><td>Direct flights only</td><td class="dim">Hides anything with a plane change</td></tr>
-  </table>
+<!-- ============ 5 ============ -->
+<section>
+  <h2><span class="num">5</span>Narrowing a long list</h2>
+  <div class="tagline">Five filters, four sort orders, and a calendar that answers "when is this cheapest?"</div>
 
   <div class="split">
     <div class="text">
+      <p>
+        A wide search can return hundreds of cards. The controls above the results cut them down,
+        and <span class="ui">Clear all filters</span> puts everything back.
+      </p>
+      <table class="tbl two">
+        <tr><th>Filter</th><th>Options</th></tr>
+        <tr><td>Sort by</td><td class="dim">Date · Points (low to high) · Duration (fastest) · Program</td></tr>
+        <tr><td>Program</td><td class="dim">Any single program present in the results</td></tr>
+        <tr><td>Airport</td><td class="dim">A three-letter code, to pin down a connecting point</td></tr>
+        <tr><td>Airline</td><td class="dim">A carrier code, such as UA or LX</td></tr>
+        <tr><td>Direct flights only</td><td class="dim">Hides anything with a plane change</td></tr>
+      </table>
       <h3>The calendar view</h3>
       <p>
         <span class="ui">📅 Calendar</span> swaps the list for a month-by-month grid showing the
         cheapest price available on each day, so a good week jumps out immediately. Tap any day to
-        filter the results down to that date, and <span class="ui">☰ List</span> to switch back.
+        filter the results to that date, and <span class="ui">☰ List</span> to switch back.
       </p>
       <table class="tbl two">
         <tr><th>Color</th><th>Meaning</th></tr>
@@ -367,104 +343,88 @@
         <tr><td><span class="swatch" style="background:#ef4444"></span>Red</td><td class="dim">The priciest days found</td></tr>
       </table>
     </div>
-    <div class="shot w200">
-      <img src="screenshots/08-calendar.png">
+    <div class="fig w205" style="flex:0 0 2.05in">
+      <div class="frame"><img src="screenshots/08-calendar.png"></div>
       <div class="cap">Two months of prices at a glance; tap a day to filter.</div>
     </div>
   </div>
-</section>
 
-<!-- ============ 5 ============ -->
-<section>
-  <div class="rule"></div>
-  <h2><span class="num">5</span>UA Upgrades — where the upgrade space is</h2>
-  <div class="tagline">United flights with confirmable upgrade inventory open.</div>
-
-  <div class="split">
-    <div class="text">
-      <p>
-        This tab tracks upgrade availability on United flights, so you can point your PlusPoints at
-        a flight that will actually clear rather than sitting on a waitlist. Set the filters, then
-        tap <span class="ui">Search Upgrades</span>.
-      </p>
-      <table class="tbl two">
-        <tr><th>Filter</th><th>Options</th></tr>
-        <tr><td>Origin / Dest airport</td><td class="dim">Three-letter codes, such as ORD and LHR</td></tr>
-        <tr><td>Origin / Dest region</td><td class="dim">Any of the six world regions</td></tr>
-        <tr><td>Date from / to</td><td class="dim">A departure window</td></tr>
-        <tr><td>Flight #</td><td class="dim">A specific flight, such as UA123</td></tr>
-        <tr><td>Aircraft</td><td class="dim">A type or fragment, such as 777</td></tr>
-        <tr><td>Min inventory</td><td class="dim">Any (PZ1+) · PZ2+ · PZ3+ · PZ4+ · PZ6+ · PZ9 only</td></tr>
-        <tr><td>Sort by</td><td class="dim">Date · Inventory (high to low) · Origin · Destination</td></tr>
-      </table>
-    </div>
-    <div class="shot w180">
-      <img src="screenshots/09-upgrades.png">
-      <div class="cap">Upgrade filters, with a note showing how current the list is.</div>
-    </div>
-  </div>
-
-  <div class="split">
-    <div class="text">
-      <p>
-        Each card shows the route and cities, the date and flight number, the aircraft, and the
-        scheduled times where they're known. The figure on the right is how much upgrade space is
-        open, and underneath it, how recently that flight was last confirmed to have it.
-      </p>
-      <table class="tbl two">
-        <tr><th>On the card</th><th>What it means</th></tr>
-        <tr><td><span class="swatch" style="background:#059669"></span>PZ6 and up</td><td class="dim">Plenty of space — comfortable odds</td></tr>
-        <tr><td><span class="swatch" style="background:#b45309"></span>PZ3 to PZ5</td><td class="dim">Some space, worth a look</td></tr>
-        <tr><td><span class="swatch" style="background:#8a97a5"></span>PZ1 to PZ2</td><td class="dim">Thin; likely to go quickly</td></tr>
-        <tr><td>"seen 3 days ago"</td><td class="dim">How recently the space was last confirmed</td></tr>
-        <tr><td>Book on United →</td><td class="dim">Opens that flight on the airline's site</td></tr>
-        <tr><td>📤 Share</td><td class="dim">A summary of the flight and its open space</td></tr>
-      </table>
-      <p>
-        The whole filtered list exports with <span class="ui">⬇ CSV</span>, and long lists show the
-        first 200 matches — tighten the filters if you hit that.
-        <span class="ui">📡 Request Updated Data</span> asks for a fresh sweep when the list is
-        looking stale.
-      </p>
-    </div>
-    <div class="shot w180">
-      <img src="screenshots/10-upgrades-results.png">
-      <div class="cap">Upgrade results out of Chicago, sorted by date, showing open inventory per flight.</div>
+  <div class="figrow">
+    <div class="fig w205">
+      <div class="frame clip h22"><img src="screenshots/06b-result-filters.png"></div>
+      <div class="cap">The filter bar sits above the list, with a running result count beside it.</div>
     </div>
   </div>
 </section>
 
 <!-- ============ 6 ============ -->
 <section>
-  <div class="rule"></div>
-  <h2><span class="num">6</span>Alliances — who flies with whom</h2>
-  <div class="tagline">A reference for the question "can I book this airline with those miles?"</div>
+  <h2><span class="num">6</span>UA Upgrades — where the upgrade space is</h2>
+  <div class="tagline">United flights with confirmable upgrade inventory open.</div>
 
-  <div class="split">
-    <div class="text">
-      <p>
-        The Alliances tab is a directory of the three global alliances, listing every member airline
-        together with the loyalty program its miles actually live in. The search box matches on
-        airline name, two-letter code or program name, so "Avios", "AY" and "Finnair" all land in
-        the same place.
-      </p>
-      <table class="tbl two">
-        <tr><th>Alliance</th><th>Airlines listed</th></tr>
-        <tr><td>★ Star Alliance</td><td class="dim">26</td></tr>
-        <tr><td>⊕ oneworld</td><td class="dim">16</td></tr>
-        <tr><td>◆ SkyTeam</td><td class="dim">19</td></tr>
-      </table>
-      <p>
-        The <b>Shared Mileage Programs</b> panel at the top is the part worth knowing about. Several
-        airlines pool into a single currency, so miles earned on any of them are spendable across
-        the rest — and the app flags those relationships on each airline as you scroll.
-      </p>
+  <p class="lead">
+    This tab tracks upgrade availability on United flights, so you can point your PlusPoints at a
+    flight that will actually clear rather than sitting on a waitlist. Set the filters, then tap
+    <span class="ui">Search Upgrades</span>. The whole filtered list exports with
+    <span class="ui">⬇ CSV</span>, long lists show the first 200 matches, and
+    <span class="ui">📡 Request Updated Data</span> asks for a fresh sweep when the list looks stale.
+  </p>
+
+  <table class="tbl two">
+    <tr><th>Filter</th><th>Options</th></tr>
+    <tr><td>Origin / Dest airport</td><td class="dim">Three-letter codes, such as ORD and LHR</td></tr>
+    <tr><td>Origin / Dest region</td><td class="dim">Any of the six world regions</td></tr>
+    <tr><td>Date from / to</td><td class="dim">A departure window</td></tr>
+    <tr><td>Flight #</td><td class="dim">A specific flight, such as UA123</td></tr>
+    <tr><td>Aircraft</td><td class="dim">A type or fragment, such as 777</td></tr>
+    <tr><td>Min inventory</td><td class="dim">Any (PZ1+) · PZ2+ · PZ3+ · PZ4+ · PZ6+ · PZ9 only</td></tr>
+    <tr><td>Sort by</td><td class="dim">Date · Inventory (high to low) · Origin · Destination</td></tr>
+  </table>
+
+  <table class="tbl two">
+    <tr><th>On the card</th><th>What it means</th></tr>
+    <tr><td><span class="swatch" style="background:#059669"></span>PZ6 and up</td><td class="dim">Plenty of space — comfortable odds</td></tr>
+    <tr><td><span class="swatch" style="background:#b45309"></span>PZ3 to PZ5</td><td class="dim">Some space, worth a look</td></tr>
+    <tr><td><span class="swatch" style="background:#8a97a5"></span>PZ1 to PZ2</td><td class="dim">Thin; likely to go quickly</td></tr>
+    <tr><td>"seen 3 days ago"</td><td class="dim">How recently that space was last confirmed</td></tr>
+    <tr><td>Route, date, flight</td><td class="dim">With the aircraft and scheduled times where known</td></tr>
+  </table>
+
+  <div class="figrow">
+    <div class="fig w195">
+      <div class="frame clip h25"><img src="screenshots/09-upgrades.png"></div>
+      <div class="cap">Upgrade filters, with a note showing how current the list is.</div>
     </div>
-    <div class="shot w180">
-      <img src="screenshots/11-alliances.png">
-      <div class="cap">Shared currencies first, then each alliance with its members and programs.</div>
+    <div class="fig w195">
+      <div class="frame clip h25"><img src="screenshots/10-upgrades-results.png"></div>
+      <div class="cap">Results out of Chicago, sorted by date, showing open inventory per flight.</div>
     </div>
   </div>
+</section>
+
+<!-- ============ 7 ============ -->
+<section>
+  <h2><span class="num">7</span>Alliances — who flies with whom</h2>
+  <div class="tagline">A reference for the question "can I book this airline with those miles?"</div>
+
+  <p class="lead">
+    The Alliances tab is a directory of the three global alliances, listing every member airline
+    together with the loyalty program its miles actually live in. The search box matches on airline
+    name, two-letter code or program name, so "Avios", "AY" and "Finnair" all land in the same place.
+  </p>
+
+  <table class="tbl two">
+    <tr><th>Alliance</th><th>Airlines listed</th></tr>
+    <tr><td>★ Star Alliance</td><td class="dim">26</td></tr>
+    <tr><td>⊕ oneworld</td><td class="dim">16</td></tr>
+    <tr><td>◆ SkyTeam</td><td class="dim">19</td></tr>
+  </table>
+
+  <p class="lead">
+    The <b>Shared Mileage Programs</b> panel at the top is the part worth knowing about. Several
+    airlines pool into a single currency, so miles earned on any of them are spendable across the
+    rest — and the app flags those relationships on each airline as you scroll.
+  </p>
 
   <table class="tbl two">
     <tr><th>Shared currency</th><th>Airlines whose miles land in the same account</th></tr>
@@ -475,25 +435,21 @@
     <tr><td>PhoenixMiles</td><td class="dim">Air China, Shenzhen Airlines</td></tr>
   </table>
 
-  <div class="split">
-    <div class="text">
-      <p>
-        Searching for a single carrier collapses everything down to the match, showing its alliance
-        and which other programs share its currency — a two-second answer to "where do I need miles
-        to fly this airline?"
-      </p>
+  <div class="figrow">
+    <div class="fig w195">
+      <div class="frame clip h28"><img src="screenshots/11-alliances.png"></div>
+      <div class="cap">Shared currencies first, then each alliance with its members and programs.</div>
     </div>
-    <div class="shot w180">
-      <img src="screenshots/12-alliances-search.png">
+    <div class="fig w195">
+      <div class="frame"><img src="screenshots/12-alliances-search.png"></div>
       <div class="cap">One airline, its alliance, and the currency it shares with three others.</div>
     </div>
   </div>
 </section>
 
-<!-- ============ 7 ============ -->
+<!-- ============ 8 ============ -->
 <section>
-  <div class="rule"></div>
-  <h2><span class="num">7</span>Points — is this worth paying in miles?</h2>
+  <h2><span class="num">8</span>Points — is this worth paying in miles?</h2>
   <div class="tagline">A straight verdict on points versus cash for one specific ticket.</div>
 
   <div class="split">
@@ -515,8 +471,8 @@
         reached rather than taking it on faith. Your last entry is remembered.
       </p>
     </div>
-    <div class="shot w180">
-      <img src="screenshots/14-points-result.png">
+    <div class="fig w205" style="flex:0 0 2.05in">
+      <div class="frame"><img src="screenshots/14-points-result.png"></div>
       <div class="cap">A verdict with the full breakdown underneath.</div>
     </div>
   </div>
@@ -534,10 +490,9 @@
   </div>
 </section>
 
-<!-- ============ 8 ============ -->
+<!-- ============ 9 ============ -->
 <section>
-  <div class="rule"></div>
-  <h2><span class="num">8</span>Transfers — moving card points to airlines</h2>
+  <h2><span class="num">9</span>Transfers — moving card points to airlines</h2>
   <div class="tagline">Which points go where, at what rate, and what's on sale right now.</div>
 
   <div class="split">
@@ -557,8 +512,8 @@
         <tr><td>Wells Fargo Rewards</td><td class="dim">8</td></tr>
       </table>
     </div>
-    <div class="shot w180">
-      <img src="screenshots/15-transfers.png">
+    <div class="fig w205" style="flex:0 0 2.05in">
+      <div class="frame"><img src="screenshots/15-transfers.png"></div>
       <div class="cap">Transfer partners by card, with live bonuses flagged at the top.</div>
     </div>
   </div>
@@ -582,10 +537,9 @@
   </div>
 </section>
 
-<!-- ============ 9 ============ -->
+<!-- ============ 10 ============ -->
 <section>
-  <div class="rule"></div>
-  <h2><span class="num">9</span>Small things that help</h2>
+  <h2><span class="num">10</span>Small things that help</h2>
   <div class="tagline">Habits worth picking up.</div>
 
   <div class="split">
@@ -603,12 +557,12 @@
         Availability shown here is what the airlines were offering when the search ran. Seats come
         and go quickly — always confirm on the airline's own site before making plans around a find.
       </p>
-      <div class="footer-note">
+      <div class="closing">
         Advanced Flight Seat Search &middot; User Guide &middot; July 2025
       </div>
     </div>
-    <div class="shot w170">
-      <img src="screenshots/18-dark-points.png">
+    <div class="fig w195" style="flex:0 0 1.95in">
+      <div class="frame"><img src="screenshots/18-dark-points.png"></div>
       <div class="cap">Dark mode carries through every tab, including the calculator.</div>
     </div>
   </div>
