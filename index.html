@@ -2888,53 +2888,110 @@ function syncCsvDateTo() {
   // renderCSVResults called manually via Search button
 }
 
-function getUpgradeCSV() {
-  window.location.href = "x-safari-https://seats.aero/_api/pnpz?fare_class=PZ&origin_region=Anywhere&destination_region=Anywhere&csv=true";
+// Seat Aero has no multi-class export and iOS hands one download per trip to
+// Safari, so each class is its own tap. They can all be re-imported together
+// afterwards — handleCSVFiles takes the whole set at once.
+function getUpgradeCSV(fc) {
+  window.location.href = "x-safari-https://seats.aero/_api/pnpz?fare_class=" + (fc || "PZ") +
+    "&origin_region=Anywhere&destination_region=Anywhere&csv=true";
 }
 
-async function handleCSVFile(input) {
-  var file = input.files[0];
-  if (!file) return;
-  var btn = document.getElementById("csvRefreshBtn");
+// The Worker derives the committed filename from this field. Until it has been
+// taught to, it writes every upload to the PZ file — which would overwrite the
+// PZ export with PN/RN/IN data — so non-PZ uploads stay local while this is off.
+var WORKER_FARE_CLASS_ROUTING = false;
 
-  var reader = new FileReader();
-  reader.onload = async function(e) {
-    var text = e.target.result;
-    var lines = text.split("\n").filter(Boolean);
-    csvUpgradeData = [];
-    for (var i = 1; i < lines.length; i++) {
-      var cols = lines[i].split(",");
-      if (cols.length < 7) continue;
-      csvUpgradeData.push({
-        departure_date:      cols[0].trim(),
-        last_seen:           cols[1].trim(),
-        flight_number:       cols[2].trim(),
-        aircraft:            cols[3].trim(),
-        origin_airport:      cols[4].trim(),
-        destination_airport: cols[5].trim(),
-        inventory:           cols[6].trim(),
-        fare_class:          cols[6].trim().replace(/[0-9]/g,"")
-      });
-    }
-    csvJustLoaded = true;
-    showCSVUpgradeResults();
-    csvJustLoaded = false;
+async function pushUpgradeCSV(fc, text) {
+  if (fc !== "PZ" && !WORKER_FARE_CLASS_ROUTING) {
+    return { ok:false, skipped:true, error:"Worker can't route " + fc + " yet" };
+  }
+  try {
+    var res = await fetch(WORKER + "/update-csv", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ content: text, fare_class: fc, path: "PNPZ_Data_" + fc + ".csv" })
+    });
+    return await res.json();
+  } catch(e) {
+    return { ok:false, error:e.message };
+  }
+}
 
-    // Push to GitHub so it's fresh next load
+// Which class an export holds is written in every row's inventory cell
+// ("PZ3", "RN2"), so the file identifies itself and the picker order doesn't
+// matter. Falls back to the filename for an export with no rows.
+function detectFareClass(rows, filename) {
+  var counts = {};
+  rows.forEach(function(r){
+    var fc = (r.fare_class||"").toUpperCase();
+    if (fc) counts[fc] = (counts[fc]||0) + 1;
+  });
+  var best = "", n = 0;
+  Object.keys(counts).forEach(function(fc){ if (counts[fc] > n) { n = counts[fc]; best = fc; } });
+  if (best) return best;
+  var m = (filename||"").toUpperCase().match(/(PZ|PN|RN|IN)/);
+  return m ? m[1] : "";
+}
+
+function readFileText(file) {
+  return new Promise(function(resolve, reject){
+    var r = new FileReader();
+    r.onload  = function(e){ resolve(e.target.result); };
+    r.onerror = function(){ reject(new Error("could not read " + file.name)); };
+    r.readAsText(file);
+  });
+}
+
+function setCSVLoadStatus(msg) {
+  var el = document.getElementById("csvLoadStatus");
+  if (el) el.innerHTML = msg;
+}
+
+// Takes any mix of the four exports in one go and files each by the class it
+// declares, so the four downloads only cost one trip through the picker.
+async function handleCSVFiles(input) {
+  var files = Array.prototype.slice.call(input.files || []);
+  input.value = "";                      // let the same file be re-picked later
+  if (!files.length) return;
+
+  setCSVLoadStatus("Reading " + files.length + " file" + (files.length === 1 ? "" : "s") + "…");
+  var results = [];
+
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i], text;
     try {
-      var ghRes = await fetch(WORKER + "/update-csv", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ content: text })
-      });
-      var ghData = await ghRes.json();
-      if (ghData.ok) console.log("GitHub updated successfully");
-      else console.log("GitHub update failed:", ghData.error);
+      text = await readFileText(file);
     } catch(e) {
-      console.log("GitHub push failed:", e.message);
+      results.push({ name:file.name, error:"unreadable" });
+      continue;
     }
-  };
-  reader.readAsText(file);
+    var rows = parseUpgradeCSV(text);
+    var fc   = detectFareClass(rows, file.name);
+
+    if (!rows.length)                          { results.push({ name:file.name, error:"no rows" }); continue; }
+    if (UPGRADE_CLASSES.indexOf(fc) === -1)    { results.push({ name:file.name, error:"unknown class" }); continue; }
+
+    csvUpgradeByClass[fc] = rows;
+    if (fc === "PZ") csvUpgradeData = rows;    // the Search tab reads this one
+
+    var push = await pushUpgradeCSV(fc, text);
+    results.push({ name:file.name, fc:fc, rows:rows.length, push:push });
+  }
+
+  csvJustLoaded = true;
+  showCSVUpgradeResults();
+  csvJustLoaded = false;
+  rerunHubScanIfShown();
+
+  setCSVLoadStatus(results.map(function(r){
+    if (r.error) return '<div style="color:#dc2626">✕ ' + r.name + ' — ' + r.error + '</div>';
+    var saved = r.push && r.push.ok ? "saved"
+              : r.push && r.push.skipped ? "loaded locally, not saved"
+              : "save failed: " + ((r.push && r.push.error) || "unknown");
+    var colour = r.push && r.push.ok ? "var(--green)" : "var(--grey-light)";
+    return '<div style="color:' + colour + '">✓ ' + r.fc + ' — ' +
+           r.rows.toLocaleString() + ' row' + (r.rows === 1 ? '' : 's') + ', ' + saved + '</div>';
+  }).join(""));
 }
 
 async function refreshUpgradeCSV() {
@@ -2977,9 +3034,8 @@ var UA_HUBS = ["EWR","ORD","IAD","DEN","IAH","LAX","SFO","GUM"];
 // Upgrade fare classes, in the order they appear as table columns. Add a code
 // here and the updater, the fetch and the table all pick it up.
 var UPGRADE_CLASSES = ["PZ","PN","RN","IN"];
-// Cabin gloss shown under the table. Left blank where the mapping isn't
-// confirmed — the column header carries the code either way.
-var UPGRADE_CLASS_LABELS = { PZ:"Polaris/business", PN:"Premium Plus", RN:"", IN:"" };
+// Cabin gloss shown under the table.
+var UPGRADE_CLASS_LABELS = { PZ:"Polaris", PN:"GS Polaris", RN:"Premium Plus", IN:"Award Polaris" };
 var hubScanSelected = null;    // Set of hub codes; seeded with all of them
 var upgradeView = "search";
 var lastHubScan = null;        // args of the scan on screen, for redraws
@@ -3826,14 +3882,17 @@ function buildCSVPanel() {
   '<button onclick="requestDataUpdate(this)" id="requestDataBtn" style="width:100%;margin-bottom:12px;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--grey-text);cursor:pointer;">📡 Request Updated Data</button>'+
   '<div class="results-header"><span>Upgrade Availability</span>'+
     '<div style="display:flex;align-items:center;gap:8px;">'+
-      '<div id="csvAdminBtns" style="display:none;gap:6px;align-items:center;">'+
-        '<button onclick="getUpgradeCSV()" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">🔄 Get CSV</button>'+
-        '<label style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">📂 Load CSV<input type="file" accept=".csv" style="display:none" onchange="handleCSVFile(this)"/></label>'+
+      '<div id="csvAdminBtns" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">'+
+        UPGRADE_CLASSES.map(function(fc){
+          return '<button onclick="getUpgradeCSV(\''+fc+'\')" title="Download the '+fc+' export in Safari" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 9px;cursor:pointer;">⬇ '+fc+'</button>';
+        }).join("")+
+        '<label style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">📂 Load CSVs<input type="file" accept=".csv,text/csv" multiple style="display:none" onchange="handleCSVFiles(this)"/></label>'+
       '</div>'+
       '<button onclick="exportFilteredCSV()" style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button>'+
       '<span class="results-count" id="csvResultCount" onclick="handleCountTap()" style="cursor:pointer;">0</span>'+
     '</div>'+
   '</div>'+
+  '<div id="csvLoadStatus" style="font-size:11px;line-height:1.6;margin:6px 2px 0;"></div>'+
   '<div id="csvResultsList"><div class="empty-state" style="padding:40px 0;">Enter your search criteria above and tap Search</div></div>'+
   '<div style="text-align:center;font-size:11px;color:var(--grey-light);margin-top:12px;" id="csvGitHubDate"></div>';
 }
