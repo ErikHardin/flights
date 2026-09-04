@@ -64,8 +64,10 @@ uploads will commit to their own files.
 
 ## Refreshing automatically
 
-`.github/workflows/update-csv.yml` pulls all four every four hours and commits
-whatever it gets. It needs a repository secret `SEAT_AERO_SESSION` holding the
+`.github/workflows/update-csv.yml` pulls all four and commits whatever it gets.
+It is **manual-only** until proven to work — its `schedule:` block is commented
+out so a runner that can't reach Seat Aero doesn't fail every four hours. Run it
+from the Actions tab, and re-enable the cron once a run succeeds. It needs a repository secret `SEAT_AERO_SESSION` holding the
 value of the `__Host-session` cookie from a logged-in seats.aero browser
 session. PZ is required; PN/RN/IN are attempted independently and skipped if
 Seat Aero won't serve them for the account.

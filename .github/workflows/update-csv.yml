@@ -1,8 +1,12 @@
 name: Update Upgrade CSV
 
 on:
-  schedule:
-    - cron: '0 */4 * * *'
+  # Manual only for now. The scheduled pull needs a SEAT_AERO_SESSION secret,
+  # and Seat Aero's Cloudflare rules may refuse a runner outright, so leaving
+  # the cron live would fail every four hours and mail about it each time.
+  # Set the secret, run it by hand once, and re-enable this if it succeeds.
+  # schedule:
+  #   - cron: '0 */4 * * *'
   workflow_dispatch:
 
 jobs:
