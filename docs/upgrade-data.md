@@ -34,24 +34,36 @@ Triple-tap the results count on the UA Upgrades tab to reveal the admin row.
    the class its rows declare, so the picker order and the filenames don't
    matter.
 
-Every file loads into the app immediately. Whether it is also committed to the
-repo depends on the Worker — see below.
+Every file loads into the app immediately and is committed to the repo in one
+go, so it is still there on the next load. The status line under the buttons
+reports each file's row count and whether the commit succeeded.
 
-## Persisting all four (needs a Worker change)
+## How the phone import persists
 
-`POST /update-csv` on the Worker currently derives no filename from the request,
-so it writes every upload to `PNPZ_Data_PZ.csv`. Sending a PN export to it would
-overwrite the PZ data. The app therefore refuses to push anything but PZ while
-`WORKER_FARE_CLASS_ROUTING` is `false`.
+`POST /update-csv` on the Worker commits whatever it is given to one fixed
+path, and it can't be told to write a second file. That doesn't block anything,
+because every row already names its own class in the `inventory` column
+(`PZ3`, `RN2`), so the four exports are spliced into one combined CSV, sent as a
+single commit, and split back apart on load. `PNPZ_Data_PZ.csv` therefore holds
+every class, and `csvUpgradeData` — which backs the Search tab, whose inventory
+filter is written in PZ terms — keeps only the PZ rows.
 
-The app already sends the target on every upload:
+Bytes are unchanged: the app was already fetching all four files, and now
+fetches one of the same total size in a single request.
+
+A class published as its own file still wins over whatever the combined export
+carried for it, so the two routes mix safely — but don't leave a stale
+`PNPZ_Data_PN.csv` lying around, because it will take precedence over a fresher
+combined import.
+
+### Optional: a file per class
+
+If the Worker is ever taught to read the `fare_class`/`path` fields the app
+already sends:
 
 ```json
 { "content": "departure_date,...", "fare_class": "RN", "path": "PNPZ_Data_RN.csv" }
 ```
-
-Teach the Worker to honour it, rejecting anything not on the allowlist so the
-endpoint can't be used to write arbitrary paths:
 
 ```js
 const ALLOWED = ["PZ", "PN", "RN", "IN"];
@@ -59,8 +71,9 @@ const fareClass = ALLOWED.includes(body.fare_class) ? body.fare_class : "PZ";
 const path = `PNPZ_Data_${fareClass}.csv`;   // was hardcoded to PNPZ_Data_PZ.csv
 ```
 
-Then flip `WORKER_FARE_CLASS_ROUTING` to `true` in `index.html` and all four
-uploads will commit to their own files.
+...then set `WORKER_FARE_CLASS_ROUTING` to `true` in `index.html` and each class
+commits to its own file instead. Tidier, and it keeps the Search tab's file
+small, but nothing depends on it.
 
 ## Refreshing automatically
 
