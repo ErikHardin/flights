@@ -3906,12 +3906,26 @@ function runCSVSearch() {
 
 }
 
+// ua_schedule.json holds two merged sources: 342 long-haul international
+// entries keyed "UA123" (median block ~8h) and 3,439 domestic ones keyed by the
+// bare number "123" (~2h). Only the prefixed form is read, so times appear on
+// about 9% of rows — every one of them international.
+//
+// Reading the bare keys too would raise that to ~70%, and it is deliberately
+// not done: those entries don't correspond to the routes in the export. UA2182
+// flies only ORD-DSM here (~1h25m) while bare "2182" says 7:24/10:20, nearly
+// three hours; and 37% of the rows it would newly cover are flight numbers
+// flying two or more routes with a single stored time, which cannot be right
+// for all of them. A wrong departure time is worse than a blank one, so this
+// stays narrow until the schedule is keyed by route and date rather than by
+// flight number alone.
 function getFlightTimes(flightNum) {
   if (!flightNum) return null;
   var key = flightNum.replace(/\s+/g,'').toUpperCase();
   var val = UA_SCHEDULE[key];
   if (!val) return null;
   var parts = val.split('/');
+  if (parts.length < 2 || !parts[0] || !parts[1]) return null;
   return { dep: parts[0], arr: parts[1] };
 }
 
