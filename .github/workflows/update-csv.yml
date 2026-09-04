@@ -19,23 +19,27 @@ jobs:
           SEAT_AERO_SESSION: ${{ secrets.SEAT_AERO_SESSION }}
         run: ./.github/scripts/fetch-pnpz.sh PZ PNPZ_Data_PZ.csv
 
-      # PN (Premium Plus upgrade space) is a bonus column in the Hub Scan view.
-      # Not every account can pull it, so a failure here must not cost us the
-      # PZ refresh that just succeeded.
-      - name: Download PN CSV from Seat Aero
+      # Extra upgrade classes are bonus columns in the Hub Scan view. Not every
+      # account can pull every class, so a failure here must not cost us the PZ
+      # refresh that just succeeded — each is attempted independently.
+      - name: Download PN/RN/IN CSVs from Seat Aero
         continue-on-error: true
         env:
           SEAT_AERO_SESSION: ${{ secrets.SEAT_AERO_SESSION }}
-        run: ./.github/scripts/fetch-pnpz.sh PN PNPZ_Data_PN.csv
+        run: |
+          for FC in PN RN IN; do
+            ./.github/scripts/fetch-pnpz.sh "$FC" "PNPZ_Data_$FC.csv" || echo "$FC unavailable — skipping"
+          done
 
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -- PNPZ_Data_PZ.csv
-          if [ -f PNPZ_Data_PN.csv ]; then
-            git add -- PNPZ_Data_PN.csv
-          fi
+          for FC in PZ PN RN IN; do
+            if [ -f "PNPZ_Data_$FC.csv" ]; then
+              git add -- "PNPZ_Data_$FC.csv"
+            fi
+          done
           if git diff --staged --quiet; then
             echo "No changes"
           else

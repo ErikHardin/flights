@@ -1521,9 +1521,13 @@ async function verifyPin(){
 // ── Init ──
 var csvJustLoaded = false;
 var CSV_URL = "https://raw.githubusercontent.com/ErikHardin/flights/main/PNPZ_Data_PZ.csv"; // Also accepts "PNPZ Data PZ.csv"
-// Premium Plus upgrade space. The updater publishes this only when Seat Aero
-// serves it, so every reader has to cope with the file being absent.
-var CSV_URL_PN = "https://raw.githubusercontent.com/ErikHardin/flights/main/PNPZ_Data_PN.csv";
+// Seat Aero exports one file per upgrade fare class. PZ is the base file the
+// Search tab reads; the rest are extra columns in the Hub Scan table, and the
+// updater publishes each only when Seat Aero serves it, so every reader has to
+// cope with any of them being absent.
+function upgradeCSVUrl(fc) {
+  return "https://raw.githubusercontent.com/ErikHardin/flights/main/PNPZ_Data_" + fc + ".csv";
+}
 
 function parseUpgradeCSV(text) {
   var lines = text.split("\n").filter(Boolean);
@@ -1545,16 +1549,19 @@ function parseUpgradeCSV(text) {
   return out;
 }
 
-// PN is additive: a missing or broken file just means the Hub Scan shows a
-// dash in that column, never a failed load.
-async function fetchUpgradePNCSV() {
-  try {
-    var res = await fetch(CSV_URL_PN + "?t=" + Date.now());
-    if (!res.ok) { csvUpgradeDataPN = []; return; }
-    csvUpgradeDataPN = parseUpgradeCSV(await res.text());
-  } catch(e) {
-    csvUpgradeDataPN = [];
-  }
+// The non-PZ classes are additive: a missing or broken file just drops that
+// column from the Hub Scan table, never fails the load.
+async function fetchUpgradeExtraCSVs() {
+  await Promise.all(UPGRADE_CLASSES.filter(function(fc){ return fc !== "PZ"; }).map(async function(fc){
+    try {
+      var res = await fetch(upgradeCSVUrl(fc) + "?t=" + Date.now());
+      csvUpgradeByClass[fc] = res.ok ? parseUpgradeCSV(await res.text()) : [];
+    } catch(e) {
+      csvUpgradeByClass[fc] = [];
+    }
+  }));
+  // A scan already on screen was drawn without these; redraw it now they exist.
+  if (upgradeView === "hub" && document.getElementById("hubScanResults")) rerunHubScanIfShown();
 }
 
 async function fetchUpgradeCSV() {
@@ -1566,8 +1573,9 @@ async function fetchUpgradeCSV() {
     var res = await fetch(CSV_URL + "?t=" + Date.now());
     if (!res.ok) throw new Error("HTTP " + res.status);
     csvUpgradeData = parseUpgradeCSV(await res.text());
+    csvUpgradeByClass.PZ = csvUpgradeData;
     showCSVUpgradeResults();
-    fetchUpgradePNCSV();   // fire and forget; Hub Scan reads it when it lands
+    fetchUpgradeExtraCSVs();   // fire and forget; Hub Scan picks them up on arrival
   } catch(e) {
     document.getElementById("csvUpgradeLoading").style.display = "none";
     document.getElementById("csvUpgradeError").style.display = "block";
@@ -2785,7 +2793,7 @@ function deleteSaved(e,i){e.stopPropagation();savedRoutes.splice(i,1);localStora
 
 // ── CSV Upload & Display ──
 var csvUpgradeData = [];
-var csvUpgradeDataPN = [];
+var csvUpgradeByClass = {};   // fare class -> parsed rows
 
 function loadUpgradeCSV(input) {
   var file = input.files[0];
@@ -2966,8 +2974,15 @@ function showCSVUpgradeResults() {
 // "Which hub should I position to?" — one destination, one date, every United
 // hub side by side with the upgrade inventory on each nonstop.
 var UA_HUBS = ["EWR","ORD","IAD","DEN","IAH","LAX","SFO","GUM"];
+// Upgrade fare classes, in the order they appear as table columns. Add a code
+// here and the updater, the fetch and the table all pick it up.
+var UPGRADE_CLASSES = ["PZ","PN","RN","IN"];
+// Cabin gloss shown under the table. Left blank where the mapping isn't
+// confirmed — the column header carries the code either way.
+var UPGRADE_CLASS_LABELS = { PZ:"Polaris/business", PN:"Premium Plus", RN:"", IN:"" };
 var hubScanSelected = null;    // Set of hub codes; seeded with all of them
 var upgradeView = "search";
+var lastHubScan = null;        // args of the scan on screen, for redraws
 
 function setUpgradeView(view) {
   upgradeView = view;
@@ -3062,12 +3077,20 @@ function upgradeKey(r) {
   return r.departure_date+"|"+r.flight_number+"|"+r.origin_airport+"|"+r.destination_airport;
 }
 
-// PZ and PN arrive as two separate exports; join them per flight so one row
-// carries both cabins. Either side may be missing for a given flight.
-function hubScanRows(dest, from, to, min) {
+// Columns to show: PZ always, plus any class whose export actually loaded, so
+// a class Seat Aero won't serve doesn't leave a permanently empty column.
+function activeUpgradeClasses() {
+  return UPGRADE_CLASSES.filter(function(fc){
+    return fc === "PZ" || (csvUpgradeByClass[fc] && csvUpgradeByClass[fc].length);
+  });
+}
+
+// Each class arrives as its own export, so join them per flight — one row
+// carrying every cabin. Any class may be missing for a given flight.
+function hubScanRows(dest, from, to, min, classes) {
   var merged = {};
-  function absorb(rows, field) {
-    rows.forEach(function(r){
+  classes.forEach(function(fc){
+    (csvUpgradeByClass[fc] || []).forEach(function(r){
       var o = (r.origin_airport||"").toUpperCase();
       if (!hubScanSelected.has(o)) return;
       if ((r.destination_airport||"").toUpperCase() !== dest) return;
@@ -3076,26 +3099,27 @@ function hubScanRows(dest, from, to, min) {
       var row = merged[k];
       if (!row) {
         row = merged[k] = { hub:o, date:r.departure_date, flight:r.flight_number,
-                            aircraft:r.aircraft, seen:r.last_seen, pz:0, pn:0 };
+                            aircraft:r.aircraft, seen:r.last_seen, inv:{} };
       }
-      row[field] = invNum(r.inventory);
+      row.inv[fc] = invNum(r.inventory);
       if (!row.aircraft) row.aircraft = r.aircraft;
     });
-  }
-  absorb(csvUpgradeData,   "pz");
-  absorb(csvUpgradeDataPN, "pn");
+  });
 
   var byHub = {};
   UA_HUBS.forEach(function(h){ if (hubScanSelected.has(h)) byHub[h] = []; });
   Object.keys(merged).forEach(function(k){
     var row = merged[k];
-    if (row.pz < min && row.pn < min) return;
+    // One cabin clearing the bar is enough to be worth showing.
+    var worth = classes.some(function(fc){ return (row.inv[fc]||0) >= min; });
+    if (!worth) return;
+    row.total = classes.reduce(function(n,fc){ return n + (row.inv[fc]||0); }, 0);
     byHub[row.hub].push(row);
   });
   Object.keys(byHub).forEach(function(h){
     byHub[h].sort(function(a,b){
       if (a.date !== b.date) return a.date < b.date ? -1 : 1;
-      return (b.pz + b.pn) - (a.pz + a.pn);
+      return b.total - a.total;
     });
   });
   return byHub;
@@ -3113,32 +3137,48 @@ function runHubScan() {
   if (dest.length !== 3 || !date) {
     out.innerHTML = '<div class="empty-state"><div class="empty-icon">✏️</div>Enter a 3-letter destination and a date.</div>';
     if (cnt) cnt.textContent = "0";
+    lastHubScan = null;
     return;
   }
 
   var from = shiftISODate(date, -win), to = shiftISODate(date, win);
-  renderHubScan(hubScanRows(dest, from, to, min), dest, from, to, win > 0);
+  lastHubScan = { dest:dest, from:from, to:to, min:min, showDate:win > 0 };
+  drawHubScan();
 }
 
-function renderHubScan(byHub, dest, from, to, showDate) {
-  var out = document.getElementById("hubScanResults");
-  var cnt = document.getElementById("hubScanCount");
+// Redraw the scan on screen against whatever data is loaded now.
+function rerunHubScanIfShown() { if (lastHubScan) drawHubScan(); }
+
+function drawHubScan() {
+  var a = lastHubScan;
+  var classes = activeUpgradeClasses();
+  renderHubScan(hubScanRows(a.dest, a.from, a.to, a.min, classes), classes);
+}
+
+function renderHubScan(byHub, classes) {
+  var a    = lastHubScan;
+  var out  = document.getElementById("hubScanResults");
+  var cnt  = document.getElementById("hubScanCount");
   var hubs = UA_HUBS.filter(function(h){ return hubScanSelected.has(h); });
 
   var total = 0, seats = 0;
   hubs.forEach(function(h){
     total += byHub[h].length;
-    byHub[h].forEach(function(r){ seats += r.pz + r.pn; });
+    byHub[h].forEach(function(r){ seats += r.total; });
   });
   if (cnt) cnt.textContent = total;
 
+  var when = a.showDate ? ' between '+formatDate(a.from)+' and '+formatDate(a.to)
+                        : ' on '+formatDate(a.from);
   if (!total) {
     out.innerHTML = '<div class="empty-state"><div class="empty-icon">⬆️</div>'+
-      'No upgrade space to '+dest+' from any selected hub'+
-      (showDate ? ' between '+formatDate(from)+' and '+formatDate(to) : ' on '+formatDate(from))+'.'+
+      'No upgrade space to '+a.dest+' from any selected hub'+when+'.'+
       '<div style="font-size:12px;margin-top:8px;">Try a wider date window, a lower minimum, or more hubs.</div></div>';
     return;
   }
+
+  // Hub cell + optional date cell + flight cell, then one cell per class.
+  var fillSpan = (a.showDate ? 2 : 1) + classes.length;
 
   var body = hubs.map(function(h){
     var rows  = byHub[h];
@@ -3147,39 +3187,45 @@ function renderHubScan(byHub, dest, from, to, showDate) {
 
     if (!rows.length) {
       return '<tr class="group scan-dry"><td>'+label+'</td>'+
-        '<td colspan="'+(showDate ? 4 : 3)+'">no space</td></tr>';
+        '<td colspan="'+fillSpan+'">no space</td></tr>';
     }
     return rows.map(function(r, i){
       var t = getFlightTimes(r.flight);
-      var book = "https://www.united.com/en/us/fsr/choose-flights?f="+r.hub+"&t="+dest+
+      var book = "https://www.united.com/en/us/fsr/choose-flights?f="+r.hub+"&t="+a.dest+
                  "&d="+r.date+"&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True";
       return '<tr'+(i === 0 ? ' class="group"' : '')+'>'+
         '<td>'+(i === 0 ? label : '')+'</td>'+
-        (showDate ? '<td style="white-space:nowrap">'+formatDate(r.date)+'</td>' : '')+
+        (a.showDate ? '<td style="white-space:nowrap">'+formatDate(r.date)+'</td>' : '')+
         '<td>'+
           '<a href="'+book+'" target="_blank" rel="noopener" class="scan-flight">'+r.flight+' →</a>'+
           (t ? '<div class="scan-sub">'+fmt12(t.dep)+' → '+fmt12(t.arr)+'</div>' : '')+
           (r.aircraft ? '<div class="scan-sub">'+r.aircraft+'</div>' : '')+
         '</td>'+
-        '<td class="scan-num" style="color:'+invColor(r.pz)+'">'+(r.pz || "—")+'</td>'+
-        '<td class="scan-num" style="color:'+invColor(r.pn)+'">'+(r.pn || "—")+'</td>'+
+        classes.map(function(fc){
+          var n = r.inv[fc] || 0;
+          return '<td class="scan-num" style="color:'+invColor(n)+'">'+(n || "—")+'</td>';
+        }).join("")+
       '</tr>';
     }).join("");
   }).join("");
 
+  var legend = classes.filter(function(fc){ return UPGRADE_CLASS_LABELS[fc]; })
+    .map(function(fc){ return fc+" = "+UPGRADE_CLASS_LABELS[fc]; }).join(", ");
+  var missing = UPGRADE_CLASSES.filter(function(fc){ return classes.indexOf(fc) === -1; });
+
   out.innerHTML =
     '<div class="scan-wrap"><table class="scan-table">'+
-      '<thead><tr><th>Hub</th>'+(showDate ? '<th>Date</th>' : '')+
-        '<th>Flight</th><th class="num">PZ</th><th class="num">PN</th></tr></thead>'+
+      '<thead><tr><th>Hub</th>'+(a.showDate ? '<th>Date</th>' : '')+'<th>Flight</th>'+
+        classes.map(function(fc){ return '<th class="num">'+fc+'</th>'; }).join("")+
+      '</tr></thead>'+
       '<tbody>'+body+'</tbody>'+
     '</table></div>'+
     '<div class="scan-note">'+
-      total+' nonstop'+(total === 1 ? '' : 's')+' to '+dest+
-      (AIRPORT_CITIES[dest] ? ' ('+AIRPORT_CITIES[dest]+')' : '')+
-      (showDate ? ', '+formatDate(from)+' – '+formatDate(to) : ' on '+formatDate(from))+
-      ' · '+seats+' seat'+(seats === 1 ? '' : 's')+' total.<br>'+
-      'PZ = Polaris/first upgrade space, PN = Premium Plus. '+
-      (csvUpgradeDataPN.length ? '' : 'PN data not published yet — that column stays blank until the updater pulls it. ')+
+      total+' nonstop'+(total === 1 ? '' : 's')+' to '+a.dest+
+      (AIRPORT_CITIES[a.dest] ? ' ('+AIRPORT_CITIES[a.dest]+')' : '')+when+
+      ' · '+seats+' seat'+(seats === 1 ? '' : 's')+' across '+classes.join("/")+'.<br>'+
+      (legend ? legend+'. ' : '')+
+      (missing.length ? 'No export published yet for '+missing.join(", ")+'. ' : '')+
       'Counts come from the Seat Aero export, not live from united.com.'+
     '</div>';
 }
