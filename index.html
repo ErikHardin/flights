@@ -188,6 +188,29 @@
     .book-link{display:block;text-align:center;padding:9px;background:var(--blue-pale);border-radius:var(--radius-sm);font-size:12px;font-weight:600;color:var(--blue-dark);text-decoration:none;transition:all .15s}
     .book-link:active{background:var(--blue-primary);color:white}
 
+    /* Hub scan */
+    .sub-tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:3px;background:var(--surface2);border-radius:var(--radius-sm);padding:3px;margin-bottom:12px}
+    .sub-tab{padding:9px 4px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--grey-text);border:none;background:none;border-radius:6px;cursor:pointer;transition:all .15s}
+    .sub-tab.active{background:var(--surface);color:var(--blue-primary);font-weight:600;box-shadow:var(--shadow)}
+    .hub-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+    .hub-chip{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;padding:5px 11px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--grey-light);cursor:pointer;user-select:none;transition:all .12s}
+    .hub-chip.on{border-color:var(--blue-primary);background:var(--blue-pale);color:var(--blue-dark);font-weight:700}
+    .scan-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+    .scan-table{width:100%;border-collapse:collapse;font-size:12px;min-width:330px}
+    .scan-table th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--grey-light);padding:9px 8px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2)}
+    /* Fixed, narrow seat columns so PZ/PN stay on screen at phone widths and the
+       flight cell absorbs whatever room is left. */
+    .scan-table th.num,.scan-table td.scan-num{text-align:center;width:38px;padding-left:4px;padding-right:4px}
+    .scan-table td{padding:9px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+    .scan-table tr:last-child td{border-bottom:none}
+    .scan-table tr.group td{border-top:2px solid var(--border)}
+    .scan-hub{font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:var(--blue-dark)}
+    .scan-sub{font-size:10px;font-weight:400;color:var(--grey-light);margin-top:1px}
+    .scan-num{font-family:'DM Mono',monospace;font-size:14px;font-weight:700}
+    .scan-flight{font-family:'DM Mono',monospace;font-weight:500;color:var(--blue-dark);text-decoration:none}
+    .scan-dry td{color:var(--grey-light);font-style:italic}
+    .scan-note{font-size:11px;color:var(--grey-light);margin:8px 2px 0;line-height:1.5}
+
     /* Upgrades */
     .connect-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);padding:28px 20px;text-align:center;margin-bottom:12px}
     .connect-icon{font-size:48px;margin-bottom:14px}
@@ -537,7 +560,14 @@
       <div style="font-size:13px;color:var(--grey-light);">Loading live upgrade data…</div>
     </div>
     <div id="csvUpgradeError" style="display:none" class="empty-state"><div class="empty-icon">⚠️</div>Could not load upgrade data.</div>
-    <div id="csvUpgradePanel" style="display:none"></div>
+    <div id="upgradeViews" style="display:none">
+      <div class="sub-tabs">
+        <button class="sub-tab active" id="subtab-search" onclick="setUpgradeView('search')">Search</button>
+        <button class="sub-tab"        id="subtab-hub"    onclick="setUpgradeView('hub')">Hub Scan</button>
+      </div>
+      <div id="csvUpgradePanel"></div>
+      <div id="hubScanPanel" style="display:none"></div>
+    </div>
   </div>
 
   <!-- ALLIANCES -->
@@ -1491,33 +1521,53 @@ async function verifyPin(){
 // ── Init ──
 var csvJustLoaded = false;
 var CSV_URL = "https://raw.githubusercontent.com/ErikHardin/flights/main/PNPZ_Data_PZ.csv"; // Also accepts "PNPZ Data PZ.csv"
+// Premium Plus upgrade space. The updater publishes this only when Seat Aero
+// serves it, so every reader has to cope with the file being absent.
+var CSV_URL_PN = "https://raw.githubusercontent.com/ErikHardin/flights/main/PNPZ_Data_PN.csv";
+
+function parseUpgradeCSV(text) {
+  var lines = text.split("\n").filter(Boolean);
+  var out = [];
+  for (var i = 1; i < lines.length; i++) {
+    var cols = lines[i].split(",");
+    if (cols.length < 7) continue;
+    out.push({
+      departure_date:      cols[0].trim(),
+      last_seen:           cols[1].trim(),
+      flight_number:       cols[2].trim(),
+      aircraft:            cols[3].trim(),
+      origin_airport:      cols[4].trim(),
+      destination_airport: cols[5].trim(),
+      inventory:           cols[6].trim(),
+      fare_class:          cols[6].trim().replace(/[0-9]/g,"")
+    });
+  }
+  return out;
+}
+
+// PN is additive: a missing or broken file just means the Hub Scan shows a
+// dash in that column, never a failed load.
+async function fetchUpgradePNCSV() {
+  try {
+    var res = await fetch(CSV_URL_PN + "?t=" + Date.now());
+    if (!res.ok) { csvUpgradeDataPN = []; return; }
+    csvUpgradeDataPN = parseUpgradeCSV(await res.text());
+  } catch(e) {
+    csvUpgradeDataPN = [];
+  }
+}
 
 async function fetchUpgradeCSV() {
   try {
     document.getElementById("csvUpgradeLoading").style.display = "block";
     document.getElementById("csvUpgradeError").style.display = "none";
-    document.getElementById("csvUpgradePanel").style.display = "none";
+    document.getElementById("upgradeViews").style.display = "none";
 
     var res = await fetch(CSV_URL + "?t=" + Date.now());
     if (!res.ok) throw new Error("HTTP " + res.status);
-    var text = await res.text();
-    var lines = text.split("\n").filter(Boolean);
-    csvUpgradeData = [];
-    for (var i = 1; i < lines.length; i++) {
-      var cols = lines[i].split(",");
-      if (cols.length < 7) continue;
-      csvUpgradeData.push({
-        departure_date:      cols[0].trim(),
-        last_seen:           cols[1].trim(),
-        flight_number:       cols[2].trim(),
-        aircraft:            cols[3].trim(),
-        origin_airport:      cols[4].trim(),
-        destination_airport: cols[5].trim(),
-        inventory:           cols[6].trim(),
-        fare_class:          cols[6].trim().replace(/[0-9]/g,"")
-      });
-    }
+    csvUpgradeData = parseUpgradeCSV(await res.text());
     showCSVUpgradeResults();
+    fetchUpgradePNCSV();   // fire and forget; Hub Scan reads it when it lands
   } catch(e) {
     document.getElementById("csvUpgradeLoading").style.display = "none";
     document.getElementById("csvUpgradeError").style.display = "block";
@@ -2735,6 +2785,7 @@ function deleteSaved(e,i){e.stopPropagation();savedRoutes.splice(i,1);localStora
 
 // ── CSV Upload & Display ──
 var csvUpgradeData = [];
+var csvUpgradeDataPN = [];
 
 function loadUpgradeCSV(input) {
   var file = input.files[0];
@@ -2884,9 +2935,10 @@ async function refreshUpgradeCSV() {
 
 function showCSVUpgradeResults() {
   document.getElementById("csvUpgradeLoading").style.display = "none";
+  document.getElementById("upgradeViews").style.display = "block";
   var panel = document.getElementById("csvUpgradePanel");
-  panel.style.display = "block";
   panel.innerHTML = buildCSVPanel();
+  setUpgradeView(upgradeView);   // a reload shouldn't bounce you back to Search
   // Results shown after Search button tapped
 
   // Show count immediately
@@ -2908,6 +2960,228 @@ function showCSVUpgradeResults() {
         }
       }).catch(function(){});
   }
+}
+
+// ── Hub scan ──
+// "Which hub should I position to?" — one destination, one date, every United
+// hub side by side with the upgrade inventory on each nonstop.
+var UA_HUBS = ["EWR","ORD","IAD","DEN","IAH","LAX","SFO","GUM"];
+var hubScanSelected = null;    // Set of hub codes; seeded with all of them
+var upgradeView = "search";
+
+function setUpgradeView(view) {
+  upgradeView = view;
+  var search = document.getElementById("csvUpgradePanel");
+  var hub    = document.getElementById("hubScanPanel");
+  if (!search || !hub) return;
+  search.style.display = view === "search" ? "block" : "none";
+  hub.style.display    = view === "hub"    ? "block" : "none";
+  document.getElementById("subtab-search").classList.toggle("active", view === "search");
+  document.getElementById("subtab-hub").classList.toggle("active", view === "hub");
+  if (view === "hub") buildHubScanPanel();
+}
+
+function buildHubScanPanel() {
+  var panel = document.getElementById("hubScanPanel");
+  if (!panel) return;
+  if (!hubScanSelected) hubScanSelected = new Set(UA_HUBS);
+  // Build the controls once so a trip through the Search tab doesn't wipe
+  // what was typed, or the results already on screen.
+  if (panel.getAttribute("data-built")) return;
+  panel.innerHTML = hubScanControlsHTML();
+  panel.setAttribute("data-built", "1");
+  var d = document.getElementById("hubScanDate");
+  if (d && !d.value) d.value = todayISO();
+}
+
+function todayISO() {
+  var n = new Date();
+  return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0");
+}
+
+// Date maths in UTC: parsing "2026-11-15T00:00:00" as local and formatting the
+// result back through toISOString() lands on the wrong day east of Greenwich.
+function shiftISODate(iso, days) {
+  var p = iso.split("-");
+  var d = new Date(Date.UTC(+p[0], +p[1]-1, +p[2]));
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+function hubScanControlsHTML() {
+  return '<div class="controls-bar" style="margin-bottom:10px;">'+
+    '<div class="controls-row">'+
+      '<div class="control-wrap"><label>Destination</label><input type="text" class="filter-input" id="hubScanDest" placeholder="e.g. NRT" maxlength="3" /></div>'+
+      '<div class="input-wrap"><label>Date</label><input type="date" id="hubScanDate" /></div>'+
+    '</div>'+
+    '<div class="controls-row">'+
+      '<div class="control-wrap"><label>Date Window</label>'+
+        '<select class="control-select" id="hubScanWindow">'+
+          '<option value="0">Exact date</option>'+
+          '<option value="1">± 1 day</option>'+
+          '<option value="3">± 3 days</option>'+
+          '<option value="7">± 7 days</option>'+
+        '</select>'+
+      '</div>'+
+      '<div class="control-wrap"><label>Min Seats</label>'+
+        '<select class="control-select" id="hubScanMin">'+
+          '<option value="1">Any (1+)</option>'+
+          '<option value="2">2+</option>'+
+          '<option value="4">4+</option>'+
+          '<option value="6">6+</option>'+
+        '</select>'+
+      '</div>'+
+    '</div>'+
+    '<div class="control-wrap" style="margin-top:6px;"><label>Hubs</label>'+
+      '<div class="hub-chips" id="hubScanChips">'+
+        UA_HUBS.map(function(h){
+          return '<span class="hub-chip'+(hubScanSelected.has(h)?' on':'')+'" onclick="toggleHubChip(this,\''+h+'\')">'+h+'</span>';
+        }).join("")+
+      '</div>'+
+    '</div>'+
+  '</div>'+
+  '<button onclick="runHubScan()" style="width:100%;padding:14px;background:var(--blue-dark);color:white;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px;">Scan Hubs</button>'+
+  '<div class="results-header"><span>Hub Availability</span><span class="results-count" id="hubScanCount">0</span></div>'+
+  '<div id="hubScanResults"><div class="empty-state" style="padding:40px 0;">Pick a destination and date, then tap Scan Hubs.</div></div>';
+}
+
+function toggleHubChip(el, hub) {
+  if (hubScanSelected.has(hub)) {
+    if (hubScanSelected.size === 1) return;   // never scan zero hubs
+    hubScanSelected.delete(hub);
+    el.classList.remove("on");
+  } else {
+    hubScanSelected.add(hub);
+    el.classList.add("on");
+  }
+}
+
+function invNum(v) { return parseInt(String(v||"").replace(/[^0-9]/g,""), 10) || 0; }
+function invColor(n) { return n >= 6 ? "var(--green)" : n >= 3 ? "#b45309" : n > 0 ? "var(--grey-text)" : "var(--grey-light)"; }
+function upgradeKey(r) {
+  return r.departure_date+"|"+r.flight_number+"|"+r.origin_airport+"|"+r.destination_airport;
+}
+
+// PZ and PN arrive as two separate exports; join them per flight so one row
+// carries both cabins. Either side may be missing for a given flight.
+function hubScanRows(dest, from, to, min) {
+  var merged = {};
+  function absorb(rows, field) {
+    rows.forEach(function(r){
+      var o = (r.origin_airport||"").toUpperCase();
+      if (!hubScanSelected.has(o)) return;
+      if ((r.destination_airport||"").toUpperCase() !== dest) return;
+      if (r.departure_date < from || r.departure_date > to) return;
+      var k = upgradeKey(r);
+      var row = merged[k];
+      if (!row) {
+        row = merged[k] = { hub:o, date:r.departure_date, flight:r.flight_number,
+                            aircraft:r.aircraft, seen:r.last_seen, pz:0, pn:0 };
+      }
+      row[field] = invNum(r.inventory);
+      if (!row.aircraft) row.aircraft = r.aircraft;
+    });
+  }
+  absorb(csvUpgradeData,   "pz");
+  absorb(csvUpgradeDataPN, "pn");
+
+  var byHub = {};
+  UA_HUBS.forEach(function(h){ if (hubScanSelected.has(h)) byHub[h] = []; });
+  Object.keys(merged).forEach(function(k){
+    var row = merged[k];
+    if (row.pz < min && row.pn < min) return;
+    byHub[row.hub].push(row);
+  });
+  Object.keys(byHub).forEach(function(h){
+    byHub[h].sort(function(a,b){
+      if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+      return (b.pz + b.pn) - (a.pz + a.pn);
+    });
+  });
+  return byHub;
+}
+
+function runHubScan() {
+  var dest = ((document.getElementById("hubScanDest")||{}).value||"").trim().toUpperCase();
+  var date = (document.getElementById("hubScanDate")||{}).value||"";
+  var win  = parseInt((document.getElementById("hubScanWindow")||{}).value||"0", 10);
+  var min  = parseInt((document.getElementById("hubScanMin")||{}).value||"1", 10);
+  var out  = document.getElementById("hubScanResults");
+  var cnt  = document.getElementById("hubScanCount");
+  if (!out) return;
+
+  if (dest.length !== 3 || !date) {
+    out.innerHTML = '<div class="empty-state"><div class="empty-icon">✏️</div>Enter a 3-letter destination and a date.</div>';
+    if (cnt) cnt.textContent = "0";
+    return;
+  }
+
+  var from = shiftISODate(date, -win), to = shiftISODate(date, win);
+  renderHubScan(hubScanRows(dest, from, to, min), dest, from, to, win > 0);
+}
+
+function renderHubScan(byHub, dest, from, to, showDate) {
+  var out = document.getElementById("hubScanResults");
+  var cnt = document.getElementById("hubScanCount");
+  var hubs = UA_HUBS.filter(function(h){ return hubScanSelected.has(h); });
+
+  var total = 0, seats = 0;
+  hubs.forEach(function(h){
+    total += byHub[h].length;
+    byHub[h].forEach(function(r){ seats += r.pz + r.pn; });
+  });
+  if (cnt) cnt.textContent = total;
+
+  if (!total) {
+    out.innerHTML = '<div class="empty-state"><div class="empty-icon">⬆️</div>'+
+      'No upgrade space to '+dest+' from any selected hub'+
+      (showDate ? ' between '+formatDate(from)+' and '+formatDate(to) : ' on '+formatDate(from))+'.'+
+      '<div style="font-size:12px;margin-top:8px;">Try a wider date window, a lower minimum, or more hubs.</div></div>';
+    return;
+  }
+
+  var body = hubs.map(function(h){
+    var rows  = byHub[h];
+    var city  = AIRPORT_CITIES[h] || "";
+    var label = '<span class="scan-hub">'+h+'</span>'+(city ? '<div class="scan-sub">'+city+'</div>' : '');
+
+    if (!rows.length) {
+      return '<tr class="group scan-dry"><td>'+label+'</td>'+
+        '<td colspan="'+(showDate ? 4 : 3)+'">no space</td></tr>';
+    }
+    return rows.map(function(r, i){
+      var t = getFlightTimes(r.flight);
+      var book = "https://www.united.com/en/us/fsr/choose-flights?f="+r.hub+"&t="+dest+
+                 "&d="+r.date+"&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True";
+      return '<tr'+(i === 0 ? ' class="group"' : '')+'>'+
+        '<td>'+(i === 0 ? label : '')+'</td>'+
+        (showDate ? '<td style="white-space:nowrap">'+formatDate(r.date)+'</td>' : '')+
+        '<td>'+
+          '<a href="'+book+'" target="_blank" rel="noopener" class="scan-flight">'+r.flight+' →</a>'+
+          (t ? '<div class="scan-sub">'+fmt12(t.dep)+' → '+fmt12(t.arr)+'</div>' : '')+
+          (r.aircraft ? '<div class="scan-sub">'+r.aircraft+'</div>' : '')+
+        '</td>'+
+        '<td class="scan-num" style="color:'+invColor(r.pz)+'">'+(r.pz || "—")+'</td>'+
+        '<td class="scan-num" style="color:'+invColor(r.pn)+'">'+(r.pn || "—")+'</td>'+
+      '</tr>';
+    }).join("");
+  }).join("");
+
+  out.innerHTML =
+    '<div class="scan-wrap"><table class="scan-table">'+
+      '<thead><tr><th>Hub</th>'+(showDate ? '<th>Date</th>' : '')+
+        '<th>Flight</th><th class="num">PZ</th><th class="num">PN</th></tr></thead>'+
+      '<tbody>'+body+'</tbody>'+
+    '</table></div>'+
+    '<div class="scan-note">'+
+      total+' nonstop'+(total === 1 ? '' : 's')+' to '+dest+
+      (AIRPORT_CITIES[dest] ? ' ('+AIRPORT_CITIES[dest]+')' : '')+
+      (showDate ? ', '+formatDate(from)+' – '+formatDate(to) : ' on '+formatDate(from))+
+      ' · '+seats+' seat'+(seats === 1 ? '' : 's')+' total.<br>'+
+      'PZ = Polaris/first upgrade space, PN = Premium Plus. '+
+      (csvUpgradeDataPN.length ? '' : 'PN data not published yet — that column stays blank until the updater pulls it. ')+
+      'Counts come from the Seat Aero export, not live from united.com.'+
+    '</div>';
 }
 
 // ── Alliances tab ──
