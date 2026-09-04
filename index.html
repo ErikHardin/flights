@@ -195,12 +195,13 @@
     .hub-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
     .hub-chip{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;padding:5px 11px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--grey-light);cursor:pointer;user-select:none;transition:all .12s}
     .hub-chip.on{border-color:var(--blue-primary);background:var(--blue-pale);color:var(--blue-dark);font-weight:700}
-    /* No overflow here: an overflow-x container computes overflow-y to auto and
-       becomes the scroll context, which would pin the sticky rows below to the
-       top of this box as it scrolls off rather than to the viewport. Dropping
-       the hub column for a group row left the table narrow enough not to need
-       sideways scrolling anyway. */
-    .scan-wrap{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+    /* One card per hub. No overflow here: an overflow-x container computes
+       overflow-y to auto and becomes the scroll context, which would pin the
+       sticky headers to the top of this box as it scrolls off rather than to
+       the viewport. Losing the hub column left the table narrow enough not to
+       need sideways scrolling anyway. */
+    .scan-wrap{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);margin-bottom:10px}
+    .scan-wrap:last-child{margin-bottom:0}
     .scan-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
     /* border-collapse:collapse drops the borders of sticky cells as they detach,
        so these draw their own with an inset shadow. */
@@ -208,16 +209,15 @@
     .scan-table thead th{position:sticky;top:var(--app-header-h,0px);z-index:3}
     /* Each hub's own row, pinned directly beneath the column header so the
        departure airport stays on screen through a long run of dates. */
-    /* The hub lives in a second sticky header row rather than a sticky group row
-       in the body. A sticky row inside a <tbody> is constrained by the whole
-       table in Chrome, not by its section, so group headers pile up at the same
-       offset instead of handing over; anything in <thead> never has to be
-       released and simply stays. Its text is rewritten on scroll. */
-    .scan-ctxrow th{position:sticky;top:var(--app-header-h,0px);z-index:4;background:var(--surface);text-transform:none;letter-spacing:0;padding:7px 8px;box-shadow:none}
-    .scan-table thead tr.scan-labels th{top:calc(var(--app-header-h,0px) + var(--scan-ctx-h,30px))}
-    /* In-body hub rows still mark where each group starts as you scroll past. */
-    .scan-hubrow th{background:var(--surface2);text-transform:none;letter-spacing:0;padding:7px 8px}
-    .scan-hubrow.dry th{color:var(--grey-light)}
+    /* Each hub owning a table is what makes the handoff work: a sticky <thead>
+       is constrained by its own table, so it pins while that hub's rows are on
+       screen and is pushed off as the next hub's table arrives. Sticky rows in
+       a shared table can't do this — inside a <tbody> they are constrained by
+       the whole table in Chrome, not by their section, so hub headers pile up
+       at the same offset instead of handing over. */
+    .scan-hubrow th{position:sticky;top:var(--app-header-h,0px);z-index:4;background:var(--surface);text-transform:none;letter-spacing:0;padding:8px;box-shadow:inset 0 -1px 0 var(--border);border-radius:var(--radius) var(--radius) 0 0}
+    .scan-table thead tr.scan-labels th{top:calc(var(--app-header-h,0px) + var(--scan-hub-h,34px))}
+    .scan-wrap.dry .scan-hubrow th{color:var(--grey-light);box-shadow:none}
     /* Fixed, narrow seat columns so PZ/PN stay on screen at phone widths and the
        flight cell absorbs whatever room is left. */
     .scan-table th.num,.scan-table td.scan-num{text-align:center;width:34px;padding-left:3px;padding-right:3px}
@@ -3333,58 +3333,59 @@ function renderHubScan(byHub, classes) {
     return;
   }
 
-  // Optional date cell + flight cell, then one cell per class. The hub is a
-  // row of its own now, so it spans all of them.
+  // Optional date cell + flight cell, then one cell per class. The hub heads
+  // its own table, so it spans all of them.
   var cols = (a.showDate ? 1 : 0) + 1 + classes.length;
+  var labels = '<tr class="scan-labels">'+
+    (a.showDate ? '<th class="scan-datecol">Date</th>' : '')+'<th>Flight</th>'+
+    classes.map(function(fc){ return '<th class="num">'+fc+'</th>'; }).join("")+
+  '</tr>';
 
+  // One table per hub. Beyond reading as separate buckets, it is what lets each
+  // hub's header pin over its own rows and then hand over to the next.
   var body = hubs.map(function(h){
     var rows = byHub[h];
     var city = AIRPORT_CITIES[h] || "";
-    // Each hub gets its own tbody: a sticky row is held inside its nearest
-    // table section, so this is what makes one hub's header push the previous
-    // one out of the way instead of every hub stacking at the same offset.
-    var label = '<span class="scan-hub">'+h+'</span>'+
-      (city ? '<span class="scan-hub-city">'+city+'</span>' : '')+
-      '<span class="scan-hub-tag">'+
-        (rows.length ? rows.length+(rows.length === 1 ? ' flight' : ' flights') : 'no space')+
-      '</span>';
-    var head = '<tbody><tr class="scan-hubrow'+(rows.length ? '' : ' dry')+
-      '" data-label="'+label.replace(/"/g,'&quot;')+'">'+
-      '<th colspan="'+cols+'">'+label+'</th></tr>';
+    var head = '<tr class="scan-hubrow"><th colspan="'+cols+'">'+
+        '<span class="scan-hub">'+h+'</span>'+
+        (city ? '<span class="scan-hub-city">'+city+'</span>' : '')+
+        '<span class="scan-hub-tag">'+
+          (rows.length ? rows.length+(rows.length === 1 ? ' flight' : ' flights') : 'no space')+
+        '</span>'+
+      '</th></tr>';
 
-    return head + rows.map(function(r){
-      var t = getFlightTimes(r.flight, r.hub, a.dest);
-      var book = "https://www.united.com/en/us/fsr/choose-flights?f="+r.hub+"&t="+a.dest+
-                 "&d="+r.date+"&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True";
-      return '<tr>'+
-        (a.showDate ? '<td class="scan-datecell">'+scanDateLabel(r.date)+'</td>' : '')+
-        '<td>'+
-          '<a href="'+book+'" target="_blank" rel="noopener" class="scan-flight">'+r.flight+' →</a>'+
-          (t ? '<div class="scan-sub scan-times">'+fmt12(t.dep)+' → '+fmt12(t.arr)+'</div>' : '')+
-          (r.aircraft ? '<div class="scan-sub scan-craft" title="'+r.aircraft+'">'+r.aircraft+'</div>' : '')+
-        '</td>'+
-        classes.map(function(fc){
-          var n = r.inv[fc] || 0;
-          return '<td class="scan-num" style="color:'+invColor(n)+'">'+(n || "—")+'</td>';
-        }).join("")+
-      '</tr>';
-    }).join("") + '</tbody>';
+    if (!rows.length) {
+      return '<div class="scan-wrap dry"><table class="scan-table">'+
+        '<thead>'+head+'</thead></table></div>';
+    }
+
+    return '<div class="scan-wrap"><table class="scan-table">'+
+      '<thead>'+head+labels+'</thead>'+
+      '<tbody>'+rows.map(function(r){
+        var t = getFlightTimes(r.flight, r.hub, a.dest);
+        var book = "https://www.united.com/en/us/fsr/choose-flights?f="+r.hub+"&t="+a.dest+
+                   "&d="+r.date+"&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True";
+        return '<tr>'+
+          (a.showDate ? '<td class="scan-datecell">'+scanDateLabel(r.date)+'</td>' : '')+
+          '<td>'+
+            '<a href="'+book+'" target="_blank" rel="noopener" class="scan-flight">'+r.flight+' →</a>'+
+            (t ? '<div class="scan-sub scan-times">'+fmt12(t.dep)+' → '+fmt12(t.arr)+'</div>' : '')+
+            (r.aircraft ? '<div class="scan-sub scan-craft" title="'+r.aircraft+'">'+r.aircraft+'</div>' : '')+
+          '</td>'+
+          classes.map(function(fc){
+            var n = r.inv[fc] || 0;
+            return '<td class="scan-num" style="color:'+invColor(n)+'">'+(n || "—")+'</td>';
+          }).join("")+
+        '</tr>';
+      }).join("")+'</tbody>'+
+    '</table></div>';
   }).join("");
 
   var legend = classes.filter(function(fc){ return UPGRADE_CLASS_LABELS[fc]; })
     .map(function(fc){ return fc+" = "+UPGRADE_CLASS_LABELS[fc]; }).join(", ");
   var missing = UPGRADE_CLASSES.filter(function(fc){ return classes.indexOf(fc) === -1; });
 
-  out.innerHTML =
-    '<div class="scan-wrap"><table class="scan-table">'+
-      '<thead>'+
-        '<tr class="scan-ctxrow"><th colspan="'+cols+'" id="scanCtxHub"></th></tr>'+
-        '<tr class="scan-labels">'+(a.showDate ? '<th class="scan-datecol">Date</th>' : '')+'<th>Flight</th>'+
-          classes.map(function(fc){ return '<th class="num">'+fc+'</th>'; }).join("")+
-        '</tr>'+
-      '</thead>'+
-      body+
-    '</table></div>'+
+  out.innerHTML = body+
     '<div class="scan-note">'+
       total+' nonstop'+(total === 1 ? '' : 's')+' to '+a.dest+
       (AIRPORT_CITIES[a.dest] ? ' ('+AIRPORT_CITIES[a.dest]+')' : '')+when+
@@ -3393,60 +3394,22 @@ function renderHubScan(byHub, classes) {
       (missing.length ? ' No export published yet for '+missing.join(", ")+'.' : '')+
     '</div>';
 
-  updateScanContextHub();
   syncScanStickyOffsets();
 }
 
-// The app header is sticky, so the table's own header rows start below it, and
+// The app header is sticky, so each table's header rows start below it, and
 // the column labels below the hub row. Measured rather than hardcoded because
 // the app header grows by the device's safe-area inset.
 function syncScanStickyOffsets() {
   var root = document.documentElement;
   var head = document.querySelector(".header");
   if (head) root.style.setProperty("--app-header-h", Math.round(head.getBoundingClientRect().height) + "px");
-  var ctx = document.querySelector(".scan-ctxrow th");
-  if (ctx) root.style.setProperty("--scan-ctx-h", Math.round(ctx.getBoundingClientRect().height) + "px");
+  var hub = document.querySelector(".scan-hubrow th");
+  if (hub) root.style.setProperty("--scan-hub-h", Math.round(hub.getBoundingClientRect().height) + "px");
 }
 
-// Name the hub whose rows are under the header right now: the last in-body hub
-// row that has passed above the labels, or the first one before any has.
-function updateScanContextHub() {
-  var cell = document.getElementById("scanCtxHub");
-  if (!cell) return;
-  var labels = document.querySelector(".scan-labels th");
-  if (!labels) return;
-  var edge = labels.getBoundingClientRect().bottom;
-  // Name the hub whose section the header is actually sitting over. Picking the
-  // last hub row scrolled past instead goes wrong on a hub with no space: its
-  // section is one row tall, so it stays "current" while the rows on screen
-  // already belong to the next hub.
-  var sections = document.querySelectorAll(".scan-table tbody");
-  var current = null;
-  for (var i = 0; i < sections.length; i++) {
-    var box = sections[i].getBoundingClientRect();
-    if (box.top <= edge + 1 && box.bottom > edge + 1) { current = sections[i]; break; }
-    if (box.top > edge + 1) break;          // past the edge; keep the last match
-    current = sections[i];
-  }
-  if (!current) current = sections[0];
-  if (!current) return;
-  var mark = current.querySelector(".scan-hubrow");
-  if (!mark) return;
-  var html = mark.getAttribute("data-label");
-  if (cell.getAttribute("data-for") !== html) {
-    cell.innerHTML = html;
-    cell.setAttribute("data-for", html);
-  }
-}
-
-var scanScrollQueued = false;
-window.addEventListener("scroll", function(){
-  if (scanScrollQueued) return;
-  scanScrollQueued = true;
-  requestAnimationFrame(function(){ scanScrollQueued = false; updateScanContextHub(); });
-}, { passive: true });
-window.addEventListener("resize", function(){ syncScanStickyOffsets(); updateScanContextHub(); });
-window.addEventListener("orientationchange", function(){ syncScanStickyOffsets(); updateScanContextHub(); });
+window.addEventListener("resize", syncScanStickyOffsets);
+window.addEventListener("orientationchange", syncScanStickyOffsets);
 
 // ── Alliances tab ──
 var allianceCollapsed = {};
