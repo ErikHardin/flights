@@ -1549,16 +1549,38 @@ function parseUpgradeCSV(text) {
   return out;
 }
 
-// The non-PZ classes are additive: a missing or broken file just drops that
-// column from the Hub Scan table, never fails the load.
+// The PZ file may carry more than PZ. The Worker commits whatever it is given
+// to one fixed path, so a phone import of all four classes arrives as a single
+// combined export — and every row already names its own class in the inventory
+// column, so it can simply be split back out here.
+//
+// csvUpgradeData stays PZ-only: it backs the Search tab, whose inventory filter
+// is written in PZ terms, and which should not start listing other cabins.
+function ingestPZExport(rows) {
+  var byClass = {};
+  rows.forEach(function(r){
+    var fc = (r.fare_class||"").toUpperCase();
+    if (UPGRADE_CLASSES.indexOf(fc) === -1) return;
+    (byClass[fc] = byClass[fc] || []).push(r);
+  });
+  csvUpgradeData = byClass.PZ || [];
+  csvUpgradeByClass = { PZ: csvUpgradeData };
+  UPGRADE_CLASSES.forEach(function(fc){
+    if (fc !== "PZ" && byClass[fc]) csvUpgradeByClass[fc] = byClass[fc];
+  });
+}
+
+// A class published as its own file is the explicit choice, so it wins over
+// anything the combined export carried for that class. A missing or broken
+// file just leaves whatever was already there — never a failed load.
 async function fetchUpgradeExtraCSVs() {
   await Promise.all(UPGRADE_CLASSES.filter(function(fc){ return fc !== "PZ"; }).map(async function(fc){
     try {
       var res = await fetch(upgradeCSVUrl(fc) + "?t=" + Date.now());
-      csvUpgradeByClass[fc] = res.ok ? parseUpgradeCSV(await res.text()) : [];
-    } catch(e) {
-      csvUpgradeByClass[fc] = [];
-    }
+      if (!res.ok) return;
+      var rows = parseUpgradeCSV(await res.text());
+      if (rows.length) csvUpgradeByClass[fc] = rows;
+    } catch(e) { /* keep whatever the combined export gave us */ }
   }));
   // A scan already on screen was drawn without these; redraw it now they exist.
   if (upgradeView === "hub" && document.getElementById("hubScanResults")) rerunHubScanIfShown();
@@ -1572,8 +1594,7 @@ async function fetchUpgradeCSV() {
 
     var res = await fetch(CSV_URL + "?t=" + Date.now());
     if (!res.ok) throw new Error("HTTP " + res.status);
-    csvUpgradeData = parseUpgradeCSV(await res.text());
-    csvUpgradeByClass.PZ = csvUpgradeData;
+    ingestPZExport(parseUpgradeCSV(await res.text()));
     showCSVUpgradeResults();
     fetchUpgradeExtraCSVs();   // fire and forget; Hub Scan picks them up on arrival
   } catch(e) {
@@ -2905,25 +2926,38 @@ function getUpgradeCSV(fc) {
     "&origin_region=Anywhere&destination_region=Anywhere&csv=true";
 }
 
-// The Worker derives the committed filename from this field. Until it has been
-// taught to, it writes every upload to the PZ file — which would overwrite the
-// PZ export with PN/RN/IN data — so non-PZ uploads stay local while this is off.
+// The Worker commits whatever it is given to one fixed path. Switch this on
+// once it reads the fare_class/path fields below and writes a file per class;
+// until then every class is folded into one combined export instead, which the
+// unchanged endpoint stores happily and the reader splits apart again.
 var WORKER_FARE_CLASS_ROUTING = false;
 
-async function pushUpgradeCSV(fc, text) {
-  if (fc !== "PZ" && !WORKER_FARE_CLASS_ROUTING) {
-    return { ok:false, skipped:true, error:"Worker can't route " + fc + " yet" };
-  }
+async function pushUpgradeCSV(text, fc) {
   try {
+    var body = { content: text };
+    if (fc) { body.fare_class = fc; body.path = "PNPZ_Data_" + fc + ".csv"; }
     var res = await fetch(WORKER + "/update-csv", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ content: text, fare_class: fc, path: "PNPZ_Data_" + fc + ".csv" })
+      body: JSON.stringify(body)
     });
     return await res.json();
   } catch(e) {
     return { ok:false, error:e.message };
   }
+}
+
+// Splice exports together, keeping the original lines rather than rebuilding
+// them, so nothing is lost to a field this parser doesn't model.
+function combineExports(texts) {
+  var header = null, body = [];
+  texts.forEach(function(t){
+    var lines = t.split("\n").filter(function(l){ return l.trim(); });
+    if (!lines.length) return;
+    if (header === null) header = lines[0];
+    body = body.concat(lines.slice(1));
+  });
+  return header === null ? "" : header + "\n" + body.join("\n") + "\n";
 }
 
 // Which class an export holds is written in every row's inventory cell
@@ -2964,7 +2998,7 @@ async function handleCSVFiles(input) {
   if (!files.length) return;
 
   setCSVLoadStatus("Reading " + files.length + " file" + (files.length === 1 ? "" : "s") + "…");
-  var results = [];
+  var results = [], accepted = [];
 
   for (var i = 0; i < files.length; i++) {
     var file = files[i], text;
@@ -2982,9 +3016,8 @@ async function handleCSVFiles(input) {
 
     csvUpgradeByClass[fc] = rows;
     if (fc === "PZ") csvUpgradeData = rows;    // the Search tab reads this one
-
-    var push = await pushUpgradeCSV(fc, text);
-    results.push({ name:file.name, fc:fc, rows:rows.length, push:push });
+    accepted.push({ fc:fc, text:text, rows:rows.length });
+    results.push({ name:file.name, fc:fc, rows:rows.length });
   }
 
   csvJustLoaded = true;
@@ -2992,12 +3025,30 @@ async function handleCSVFiles(input) {
   csvJustLoaded = false;
   rerunHubScanIfShown();
 
+  // One combined commit unless the Worker can file each class on its own.
+  var pushes = {};
+  if (accepted.length) {
+    if (WORKER_FARE_CLASS_ROUTING) {
+      for (var j = 0; j < accepted.length; j++)
+        pushes[accepted[j].fc] = await pushUpgradeCSV(accepted[j].text, accepted[j].fc);
+    } else {
+      var order = UPGRADE_CLASSES.filter(function(fc){
+        return accepted.some(function(a){ return a.fc === fc; });
+      });
+      var combined = combineExports(order.map(function(fc){
+        return accepted.filter(function(a){ return a.fc === fc; })[0].text;
+      }));
+      var one = await pushUpgradeCSV(combined);
+      order.forEach(function(fc){ pushes[fc] = one; });
+    }
+  }
+
   setCSVLoadStatus(results.map(function(r){
     if (r.error) return '<div style="color:#dc2626">✕ ' + r.name + ' — ' + r.error + '</div>';
-    var saved = r.push && r.push.ok ? "saved"
-              : r.push && r.push.skipped ? "loaded locally, not saved"
-              : "save failed: " + ((r.push && r.push.error) || "unknown");
-    var colour = r.push && r.push.ok ? "var(--green)" : "var(--grey-light)";
+    var push = pushes[r.fc];
+    var saved = push && push.ok ? "saved"
+              : "save failed: " + ((push && push.error) || "unknown");
+    var colour = push && push.ok ? "var(--green)" : "#dc2626";
     return '<div style="color:' + colour + '">✓ ' + r.fc + ' — ' +
            r.rows.toLocaleString() + ' row' + (r.rows === 1 ? '' : 's') + ', ' + saved + '</div>';
   }).join(""));
@@ -3289,9 +3340,8 @@ function renderHubScan(byHub, classes) {
       total+' nonstop'+(total === 1 ? '' : 's')+' to '+a.dest+
       (AIRPORT_CITIES[a.dest] ? ' ('+AIRPORT_CITIES[a.dest]+')' : '')+when+
       ' · '+seats+' seat'+(seats === 1 ? '' : 's')+' across '+classes.join("/")+'.<br>'+
-      (legend ? legend+'. ' : '')+
-      (missing.length ? 'No export published yet for '+missing.join(", ")+'. ' : '')+
-      'Counts come from the Seat Aero export, not live from united.com.'+
+      (legend ? legend+'.' : '')+
+      (missing.length ? ' No export published yet for '+missing.join(", ")+'.' : '')+
     '</div>';
 }
 
