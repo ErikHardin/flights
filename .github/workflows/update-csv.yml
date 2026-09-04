@@ -1,8 +1,12 @@
 name: Update Upgrade CSV
 
 on:
-  schedule:
-    - cron: '0 */4 * * *'
+  # Manual only for now. The scheduled pull needs a SEAT_AERO_SESSION secret,
+  # and Seat Aero's Cloudflare rules may refuse a runner outright, so leaving
+  # the cron live would fail every four hours and mail about it each time.
+  # Set the secret, run it by hand once, and re-enable this if it succeeds.
+  # schedule:
+  #   - cron: '0 */4 * * *'
   workflow_dispatch:
 
 jobs:
@@ -14,34 +18,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download CSV from Seat Aero
+      - name: Download PZ CSV from Seat Aero
+        env:
+          SEAT_AERO_SESSION: ${{ secrets.SEAT_AERO_SESSION }}
+        run: ./.github/scripts/fetch-pnpz.sh PZ PNPZ_Data_PZ.csv
+
+      # Extra upgrade classes are bonus columns in the Hub Scan view. Not every
+      # account can pull every class, so a failure here must not cost us the PZ
+      # refresh that just succeeded — each is attempted independently.
+      - name: Download PN/RN/IN CSVs from Seat Aero
+        continue-on-error: true
         env:
           SEAT_AERO_SESSION: ${{ secrets.SEAT_AERO_SESSION }}
         run: |
-          curl -s -w "\nHTTP_STATUS:%{http_code}" \
-            -H "Cookie: __Host-session=${SEAT_AERO_SESSION}" \
-            "https://seats.aero/_api/pnpz?fare_class=PZ&origin_region=Anywhere&destination_region=Anywhere&csv=true" \
-            -o response.txt
-
-          echo "--- HTTP status and first 500 chars of response ---"
-          tail -1 response.txt
-          head -c 500 response.txt
-
-          HTTP_CODE=$(tail -1 response.txt | grep -o '[0-9]*$')
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "Request failed with HTTP $HTTP_CODE — see response above"
-            exit 1
-          fi
-
-          cp response.txt PNPZ_Data_PZ.csv
-          ROWS=$(wc -l < PNPZ_Data_PZ.csv)
-          echo "Downloaded $ROWS rows"
+          for FC in PN RN IN; do
+            ./.github/scripts/fetch-pnpz.sh "$FC" "PNPZ_Data_$FC.csv" || echo "$FC unavailable — skipping"
+          done
 
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add PNPZ_Data_PZ.csv
+          for FC in PZ PN RN IN; do
+            if [ -f "PNPZ_Data_$FC.csv" ]; then
+              git add -- "PNPZ_Data_$FC.csv"
+            fi
+          done
           if git diff --staged --quiet; then
             echo "No changes"
           else
