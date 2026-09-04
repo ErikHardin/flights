@@ -201,7 +201,7 @@
        the hub column for a group row left the table narrow enough not to need
        sideways scrolling anyway. */
     .scan-wrap{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
-    .scan-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;table-layout:fixed}
+    .scan-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
     /* border-collapse:collapse drops the borders of sticky cells as they detach,
        so these draw their own with an inset shadow. */
     .scan-table th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--grey-light);padding:9px 8px;white-space:nowrap;background:var(--surface2);box-shadow:inset 0 -1px 0 var(--border)}
@@ -220,13 +220,17 @@
     .scan-hubrow.dry th{color:var(--grey-light)}
     /* Fixed, narrow seat columns so PZ/PN stay on screen at phone widths and the
        flight cell absorbs whatever room is left. */
-    .scan-table th.num,.scan-table td.scan-num{text-align:center;width:38px;padding-left:4px;padding-right:4px}
+    .scan-table th.num,.scan-table td.scan-num{text-align:center;width:34px;padding-left:3px;padding-right:3px}
     .scan-table td{padding:9px 8px;box-shadow:inset 0 -1px 0 var(--border);color:var(--text);vertical-align:top;word-break:break-word}
     .scan-table tbody:last-of-type tr:last-child td{box-shadow:none}
     .scan-hub{font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:var(--blue-dark)}
     .scan-hub-city{font-size:11px;font-weight:400;color:var(--grey-light);margin-left:6px}
     .scan-hub-tag{float:right;font-size:10px;font-weight:600;color:var(--grey-light);padding-top:3px}
-    .scan-datecol{width:58px}
+    .scan-datecol{width:54px}
+    /* The departure/arrival pair is the point of this cell, so it never wraps;
+       the aircraft is the least important line and gives up its tail instead. */
+    .scan-times{white-space:nowrap}
+    .scan-craft{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .scan-datecell{white-space:nowrap}
     .scan-date{font-weight:600}
     .scan-sub{font-size:10px;font-weight:400;color:var(--grey-light);margin-top:1px}
@@ -3356,8 +3360,8 @@ function renderHubScan(byHub, classes) {
         (a.showDate ? '<td class="scan-datecell">'+scanDateLabel(r.date)+'</td>' : '')+
         '<td>'+
           '<a href="'+book+'" target="_blank" rel="noopener" class="scan-flight">'+r.flight+' →</a>'+
-          (t ? '<div class="scan-sub">'+fmt12(t.dep)+' → '+fmt12(t.arr)+'</div>' : '')+
-          (r.aircraft ? '<div class="scan-sub">'+r.aircraft+'</div>' : '')+
+          (t ? '<div class="scan-sub scan-times">'+fmt12(t.dep)+' → '+fmt12(t.arr)+'</div>' : '')+
+          (r.aircraft ? '<div class="scan-sub scan-craft" title="'+r.aircraft+'">'+r.aircraft+'</div>' : '')+
         '</td>'+
         classes.map(function(fc){
           var n = r.inv[fc] || 0;
@@ -3412,15 +3416,23 @@ function updateScanContextHub() {
   var labels = document.querySelector(".scan-labels th");
   if (!labels) return;
   var edge = labels.getBoundingClientRect().bottom;
+  // Name the hub whose section the header is actually sitting over. Picking the
+  // last hub row scrolled past instead goes wrong on a hub with no space: its
+  // section is one row tall, so it stays "current" while the rows on screen
+  // already belong to the next hub.
+  var sections = document.querySelectorAll(".scan-table tbody");
   var current = null;
-  var marks = document.querySelectorAll(".scan-table .scan-hubrow");
-  for (var i = 0; i < marks.length; i++) {
-    if (marks[i].getBoundingClientRect().top <= edge + 1) current = marks[i];
-    else break;
+  for (var i = 0; i < sections.length; i++) {
+    var box = sections[i].getBoundingClientRect();
+    if (box.top <= edge + 1 && box.bottom > edge + 1) { current = sections[i]; break; }
+    if (box.top > edge + 1) break;          // past the edge; keep the last match
+    current = sections[i];
   }
-  if (!current) current = marks[0];
+  if (!current) current = sections[0];
   if (!current) return;
-  var html = current.getAttribute("data-label");
+  var mark = current.querySelector(".scan-hubrow");
+  if (!mark) return;
+  var html = mark.getAttribute("data-label");
   if (cell.getAttribute("data-for") !== html) {
     cell.innerHTML = html;
     cell.setAttribute("data-for", html);
