@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="AFSS" />
@@ -31,6 +31,22 @@
       if(link) link.href = canvas.toDataURL('image/png');
     });
   </script>
+  <script>
+    // Block pinch and ctrl+wheel / ctrl+key zoom (iOS ignores user-scalable=no).
+    // Double-tap zoom is handled by touch-action in CSS.
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); }, { passive: false });
+    document.addEventListener('gesturechange', function(e){ e.preventDefault(); }, { passive: false });
+    document.addEventListener('gestureend', function(e){ e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchmove', function(e){
+      if (e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
+    window.addEventListener('wheel', function(e){
+      if (e.ctrlKey) e.preventDefault();
+    }, { passive: false });
+    window.addEventListener('keydown', function(e){
+      if ((e.ctrlKey || e.metaKey) && ['+', '-', '=', '_', '0'].indexOf(e.key) !== -1) e.preventDefault();
+    }, { passive: false });
+  </script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>" />
   <link rel="apple-touch-icon" href="#" />
   <title>Advanced Flight Seat Search</title>
@@ -53,7 +69,8 @@
       --shadow:0 4px 24px rgba(0,0,0,.4);
     }
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overscroll-behavior:none}
+    html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:pan-x pan-y}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overscroll-behavior:none;touch-action:pan-x pan-y}
 
     /* Lock */
     .lock-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;padding:20px;padding-top:calc(20px + var(--safe-top));padding-bottom:calc(20px + var(--safe-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch}
