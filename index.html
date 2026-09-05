@@ -192,6 +192,9 @@
     .sub-tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:3px;background:var(--surface2);border-radius:var(--radius-sm);padding:3px;margin-bottom:12px}
     .sub-tab{padding:9px 4px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--grey-text);border:none;background:none;border-radius:6px;cursor:pointer;transition:all .15s}
     .sub-tab.active{background:var(--surface);color:var(--blue-primary);font-weight:600;box-shadow:var(--shadow)}
+    .dir-toggle{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:var(--surface2);border-radius:var(--radius-sm);padding:3px;margin-top:4px}
+    .dir-btn{padding:8px 4px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--grey-text);border:none;background:none;border-radius:6px;cursor:pointer;transition:all .15s}
+    .dir-btn.on{background:var(--surface);color:var(--blue-primary);font-weight:600;box-shadow:var(--shadow)}
     .hub-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
     .hub-chip{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;padding:5px 11px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--grey-light);cursor:pointer;user-select:none;transition:all .12s}
     .hub-chip.on{border-color:var(--blue-primary);background:var(--blue-pale);color:var(--blue-dark);font-weight:700}
@@ -3144,6 +3147,9 @@ var UPGRADE_CLASS_LABELS = { PZ:"Polaris", PN:"GS Polaris", RN:"Premium Plus", I
 var hubScanSelected = null;    // Set of hub codes; seeded with all of them
 var upgradeView = "search";
 var lastHubScan = null;        // args of the scan on screen, for redraws
+// "out" scans hub -> city, "ret" scans city -> hub. The export holds both, and
+// there is rather more of the return direction than the outbound.
+var hubScanDir = "out";
 
 function setUpgradeView(view) {
   upgradeView = view;
@@ -3187,7 +3193,7 @@ function shiftISODate(iso, days) {
 function hubScanControlsHTML() {
   return '<div class="controls-bar" style="margin-bottom:10px;">'+
     '<div class="controls-row">'+
-      '<div class="control-wrap"><label>Destination</label><input type="text" class="filter-input" id="hubScanDest" placeholder="e.g. NRT" maxlength="3" /></div>'+
+      '<div class="control-wrap"><label id="hubScanCityLabel">'+(hubScanDir === "out" ? "To" : "From")+'</label><input type="text" class="filter-input" id="hubScanDest" placeholder="e.g. NRT" maxlength="3" /></div>'+
       '<div class="input-wrap"><label>Date</label><input type="date" id="hubScanDate" /></div>'+
     '</div>'+
     '<div class="controls-row">'+
@@ -3208,6 +3214,12 @@ function hubScanControlsHTML() {
         '</select>'+
       '</div>'+
     '</div>'+
+    '<div class="control-wrap" style="margin-top:6px;"><label>Direction</label>'+
+      '<div class="dir-toggle">'+
+        '<button type="button" class="dir-btn'+(hubScanDir === "out" ? " on" : "")+'" id="dirOut" onclick="setHubScanDir(\'out\')">Hub → City</button>'+
+        '<button type="button" class="dir-btn'+(hubScanDir === "ret" ? " on" : "")+'" id="dirRet" onclick="setHubScanDir(\'ret\')">City → Hub</button>'+
+      '</div>'+
+    '</div>'+
     '<div class="control-wrap" style="margin-top:6px;"><label>Hubs</label>'+
       '<div class="hub-chips" id="hubScanChips">'+
         UA_HUBS.map(function(h){
@@ -3219,6 +3231,19 @@ function hubScanControlsHTML() {
   '<button onclick="runHubScan()" style="width:100%;padding:14px;background:var(--blue-dark);color:white;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px;">Scan Hubs</button>'+
   '<div class="results-header"><span>Hub Availability</span><span class="results-count" id="hubScanCount">0</span></div>'+
   '<div id="hubScanResults"><div class="empty-state" style="padding:40px 0;">Pick a destination and date, then tap Scan Hubs.</div></div>';
+}
+
+// Flipping direction re-runs whatever is already on screen, so the outbound and
+// the way home are one tap apart rather than a re-typed search.
+function setHubScanDir(dir) {
+  if (hubScanDir === dir) return;
+  hubScanDir = dir;
+  var out = document.getElementById("dirOut"), ret = document.getElementById("dirRet");
+  if (out) out.classList.toggle("on", dir === "out");
+  if (ret) ret.classList.toggle("on", dir === "ret");
+  var lab = document.getElementById("hubScanCityLabel");
+  if (lab) lab.textContent = dir === "out" ? "To" : "From";
+  if (lastHubScan) runHubScan();
 }
 
 function toggleHubChip(el, hub) {
@@ -3248,19 +3273,25 @@ function activeUpgradeClasses() {
 
 // Each class arrives as its own export, so join them per flight — one row
 // carrying every cabin. Any class may be missing for a given flight.
-function hubScanRows(dest, from, to, min, classes) {
+function hubScanRows(dest, from, to, min, classes, dir) {
   var merged = {};
   classes.forEach(function(fc){
     (csvUpgradeByClass[fc] || []).forEach(function(r){
-      var o = (r.origin_airport||"").toUpperCase();
+      var origin = (r.origin_airport||"").toUpperCase();
+      var target = (r.destination_airport||"").toUpperCase();
+      // Outbound groups by the departure hub, return by the arrival hub; the
+      // other end is the city in both cases.
+      var o    = dir === "ret" ? target : origin;
+      var city = dir === "ret" ? origin : target;
       if (!hubScanSelected.has(o)) return;
-      if ((r.destination_airport||"").toUpperCase() !== dest) return;
+      if (city !== dest) return;
       if (r.departure_date < from || r.departure_date > to) return;
       var k = upgradeKey(r);
       var row = merged[k];
       if (!row) {
-        row = merged[k] = { hub:o, date:r.departure_date, flight:r.flight_number,
-                            aircraft:r.aircraft, seen:r.last_seen, inv:{} };
+        row = merged[k] = { hub:o, from:origin, to:target, date:r.departure_date,
+                            flight:r.flight_number, aircraft:r.aircraft,
+                            seen:r.last_seen, inv:{} };
       }
       row.inv[fc] = invNum(r.inventory);
       if (!row.aircraft) row.aircraft = r.aircraft;
@@ -3296,14 +3327,14 @@ function runHubScan() {
   if (!out) return;
 
   if (dest.length !== 3 || !date) {
-    out.innerHTML = '<div class="empty-state"><div class="empty-icon">✏️</div>Enter a 3-letter destination and a date.</div>';
+    out.innerHTML = '<div class="empty-state"><div class="empty-icon">✏️</div>Enter a 3-letter airport and a date.</div>';
     if (cnt) cnt.textContent = "0";
     lastHubScan = null;
     return;
   }
 
   var from = shiftISODate(date, -win), to = shiftISODate(date, win);
-  lastHubScan = { dest:dest, from:from, to:to, min:min, showDate:win > 0 };
+  lastHubScan = { dest:dest, from:from, to:to, min:min, showDate:win > 0, dir:hubScanDir };
   drawHubScan();
 }
 
@@ -3313,7 +3344,7 @@ function rerunHubScanIfShown() { if (lastHubScan) drawHubScan(); }
 function drawHubScan() {
   var a = lastHubScan;
   var classes = activeUpgradeClasses();
-  renderHubScan(hubScanRows(a.dest, a.from, a.to, a.min, classes), classes);
+  renderHubScan(hubScanRows(a.dest, a.from, a.to, a.min, classes, a.dir), classes);
 }
 
 // "Aug 29, 2026" overruns the narrow date column and collides with the flight
@@ -3345,7 +3376,8 @@ function renderHubScan(byHub, classes) {
                         : ' on '+formatDate(a.from);
   if (!total) {
     out.innerHTML = '<div class="empty-state"><div class="empty-icon">⬆️</div>'+
-      'No upgrade space to '+a.dest+' from any selected hub'+when+'.'+
+      'No upgrade space '+(a.dir === "ret" ? 'from '+a.dest+' to any selected hub'
+                                              : 'to '+a.dest+' from any selected hub')+when+'.'+
       '<div style="font-size:12px;margin-top:8px;">Try a wider date window, a lower minimum, or more hubs.</div></div>';
     return;
   }
@@ -3379,8 +3411,8 @@ function renderHubScan(byHub, classes) {
     return '<div class="scan-wrap"><table class="scan-table">'+
       '<thead>'+head+labels+'</thead>'+
       '<tbody>'+rows.map(function(r){
-        var t = getFlightTimes(r.flight, r.hub, a.dest);
-        var book = "https://www.united.com/en/us/fsr/choose-flights?f="+r.hub+"&t="+a.dest+
+        var t = getFlightTimes(r.flight, r.from, r.to);
+        var book = "https://www.united.com/en/us/fsr/choose-flights?f="+r.from+"&t="+r.to+
                    "&d="+r.date+"&tt=1&at=1&sc=7&px=1&taxng=1&newHP=True";
         return '<tr>'+
           (a.showDate ? '<td class="scan-datecell">'+scanDateLabel(r.date)+'</td>' : '')+
@@ -3404,7 +3436,7 @@ function renderHubScan(byHub, classes) {
 
   out.innerHTML = body+
     '<div class="scan-note">'+
-      total+' nonstop'+(total === 1 ? '' : 's')+' to '+a.dest+
+      total+' nonstop'+(total === 1 ? '' : 's')+(a.dir === "ret" ? ' from ' : ' to ')+a.dest+
       (AIRPORT_CITIES[a.dest] ? ' ('+AIRPORT_CITIES[a.dest]+')' : '')+when+
       ' · '+seats+' seat'+(seats === 1 ? '' : 's')+' across '+classes.join("/")+'.<br>'+
       (legend ? legend+'.' : '')+
