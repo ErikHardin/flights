@@ -206,7 +206,7 @@
     .book-link:active{background:var(--blue-primary);color:white}
 
     /* Hub scan */
-    .sub-tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:3px;background:var(--surface2);border-radius:var(--radius-sm);padding:3px;margin-bottom:12px}
+    .sub-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;background:var(--surface2);border-radius:var(--radius-sm);padding:3px;margin-bottom:12px}
     .sub-tab{padding:9px 4px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--grey-text);border:none;background:none;border-radius:6px;cursor:pointer;transition:all .15s}
     .sub-tab.active{background:var(--surface);color:var(--blue-primary);font-weight:600;box-shadow:var(--shadow)}
     .dir-toggle{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:var(--surface2);border-radius:var(--radius-sm);padding:3px;margin-top:4px}
@@ -215,6 +215,31 @@
     .hub-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
     .hub-chip{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;padding:5px 11px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--grey-light);cursor:pointer;user-select:none;transition:all .12s}
     .hub-chip.on{border-color:var(--blue-primary);background:var(--blue-pale);color:var(--blue-dark);font-weight:700}
+    /* A class Seat Aero never served has no rows to rate, so its chip is shown
+       but refuses the tap rather than quietly reporting 0%. */
+    .hub-chip.off{opacity:.4;cursor:default}
+
+    /* Odds */
+    .odds-hero{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 14px;margin-bottom:10px;box-shadow:var(--shadow);text-align:center}
+    .odds-pair{font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:var(--grey-text);letter-spacing:.04em}
+    .odds-pct{font-size:44px;font-weight:700;line-height:1.1;margin:6px 0 2px;font-family:'DM Sans',sans-serif}
+    .odds-frac{font-size:12px;color:var(--grey-light);font-weight:500}
+    .odds-sub{font-size:12px;color:var(--grey-text);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+    .odds-sub b{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--text)}
+    .odds-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px;box-shadow:var(--shadow)}
+    .odds-card h4{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--grey-light);margin:0 0 8px}
+    .odds-table{width:100%;border-collapse:collapse}
+    .odds-table td{padding:6px 2px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .odds-table tr:last-child td{border-bottom:none}
+    .odds-table td.k{font-family:'DM Mono',monospace;font-weight:600;color:var(--text);white-space:nowrap;width:1%;padding-right:8px}
+    .odds-table td.v{font-family:'DM Mono',monospace;font-weight:700;text-align:right;white-space:nowrap;width:1%;padding-left:8px}
+    .odds-table td.n{font-size:11px;color:var(--grey-light);text-align:right;white-space:nowrap;width:1%;padding-left:6px}
+    .odds-row-on td{background:var(--blue-pale)}
+    .odds-row-on td.k,.odds-row-on td.v{color:var(--blue-dark)}
+    /* Bar sits behind the cells so a long route list stays scannable without
+       a second column of numbers. */
+    .odds-bar{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden;min-width:40px}
+    .odds-bar span{display:block;height:100%;border-radius:3px;background:var(--blue-primary)}
     /* One card per hub. No overflow here: an overflow-x container computes
        overflow-y to auto and becomes the scroll context, which would pin the
        sticky headers to the top of this box as it scrolls off rather than to
@@ -440,11 +465,12 @@
     </p>
     <div style="font-size:13px;font-weight:700;color:var(--blue-dark);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">UA Upgrades</div>
     <p style="font-size:13px;color:var(--grey-text);line-height:1.6;margin-bottom:8px;">
-      PlusPoints upgrade space on United flights, with two views:
+      PlusPoints upgrade space on United flights, with three views:
     </p>
     <ul style="font-size:13px;color:var(--grey-text);line-height:1.7;margin-bottom:16px;padding-left:18px;">
       <li><strong>Search</strong> — one route at a time. Search by origin, destination, date range, and aircraft type, with departure and arrival times for each flight.</li>
       <li><strong>Hub Scan</strong> — one destination from every United hub at once. Pick a destination, a date (with an optional &plusmn; day window) and a minimum number of seats, tap the hub chips to narrow the list, then Scan Hubs. Results come back as a table per hub, one column per upgrade class.</li>
+      <li><strong>Odds</strong> &mdash; how often a city pair shows space, rather than whether it does today. Enter two airport codes and the dates you could travel, pick a class, and you get the share of days that class appeared, a per-flight and per-weekday breakdown, and all four classes side by side. The export only records space that exists, so the denominator is the days in your range &mdash; and every result says how well covered that range is, because United loads inventory close in and a 0% a year out means &ldquo;not published yet&rdquo;, not &ldquo;never&rdquo;.</li>
     </ul>
     <div style="font-size:13px;font-weight:700;color:var(--blue-dark);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Alliances</div>
     <p style="font-size:13px;color:var(--grey-text);line-height:1.6;margin-bottom:16px;">
@@ -629,9 +655,11 @@
       <div class="sub-tabs">
         <button class="sub-tab active" id="subtab-search" onclick="setUpgradeView('search')">Search</button>
         <button class="sub-tab"        id="subtab-hub"    onclick="setUpgradeView('hub')">Hub Scan</button>
+        <button class="sub-tab"        id="subtab-odds"   onclick="setUpgradeView('odds')">Odds</button>
       </div>
       <div id="csvUpgradePanel"></div>
       <div id="hubScanPanel" style="display:none"></div>
+      <div id="oddsPanel" style="display:none"></div>
     </div>
   </div>
 
@@ -1633,6 +1661,7 @@ function ingestPZExport(rows) {
   UPGRADE_CLASSES.forEach(function(fc){
     if (fc !== "PZ" && byClass[fc]) csvUpgradeByClass[fc] = byClass[fc];
   });
+  invalidateOddsBounds();
 }
 
 // A class published as its own file is the explicit choice, so it wins over
@@ -1647,8 +1676,10 @@ async function fetchUpgradeExtraCSVs() {
       if (rows.length) csvUpgradeByClass[fc] = rows;
     } catch(e) { /* keep whatever the combined export gave us */ }
   }));
-  // A scan already on screen was drawn without these; redraw it now they exist.
-  if (upgradeView === "hub" && document.getElementById("hubScanResults")) rerunHubScanIfShown();
+  invalidateOddsBounds();
+  // Anything already on screen was drawn without these; redraw it now they exist.
+  if (upgradeView === "hub"  && document.getElementById("hubScanResults")) rerunHubScanIfShown();
+  if (upgradeView === "odds" && document.getElementById("oddsResults"))    rerunOddsIfShown();
 }
 
 async function fetchUpgradeCSV() {
@@ -3168,16 +3199,31 @@ var lastHubScan = null;        // args of the scan on screen, for redraws
 // there is rather more of the return direction than the outbound.
 var hubScanDir = "out";
 
+// Every sub-view is one entry here: its panel, its tab button and the builder
+// that fills it in lazily. Adding a fourth is a line, not another pair of
+// hand-toggled variables.
+var UPGRADE_VIEWS = {
+  search: { panel:"csvUpgradePanel", tab:"subtab-search", build:null },
+  hub:    { panel:"hubScanPanel",    tab:"subtab-hub",    build:buildHubScanPanel },
+  odds:   { panel:"oddsPanel",       tab:"subtab-odds",   build:buildOddsPanel }
+};
+
 function setUpgradeView(view) {
+  if (!UPGRADE_VIEWS[view]) view = "search";
   upgradeView = view;
-  var search = document.getElementById("csvUpgradePanel");
-  var hub    = document.getElementById("hubScanPanel");
-  if (!search || !hub) return;
-  search.style.display = view === "search" ? "block" : "none";
-  hub.style.display    = view === "hub"    ? "block" : "none";
-  document.getElementById("subtab-search").classList.toggle("active", view === "search");
-  document.getElementById("subtab-hub").classList.toggle("active", view === "hub");
-  if (view === "hub") buildHubScanPanel();
+  var els = {};
+  var missing = Object.keys(UPGRADE_VIEWS).some(function(v){
+    var cfg = UPGRADE_VIEWS[v];
+    els[v] = { panel:document.getElementById(cfg.panel), tab:document.getElementById(cfg.tab) };
+    return !els[v].panel || !els[v].tab;
+  });
+  if (missing) return;
+  Object.keys(UPGRADE_VIEWS).forEach(function(v){
+    els[v].panel.style.display = v === view ? "block" : "none";
+    els[v].tab.classList.toggle("active", v === view);
+  });
+  var build = UPGRADE_VIEWS[view].build;
+  if (build) build();
 }
 
 function buildHubScanPanel() {
@@ -3476,6 +3522,381 @@ function syncScanStickyOffsets() {
 
 window.addEventListener("resize", syncScanStickyOffsets);
 window.addEventListener("orientationchange", syncScanStickyOffsets);
+
+// ── Odds ──
+// "How often does this pair show PZ?", rather than "is there space today".
+//
+// The export only ever records space that exists — there is no row for a flight
+// with nothing open — so a rate needs a denominator the data does not carry. It
+// is the calendar days in the range you enter. That is a control rather than a
+// fixed window because United loads upgrade space close in: the file holds
+// ~850 rows/day for next month and ~50/day a year out, so a rate measured over
+// the whole file mostly counts months United has not published yet — so keep
+// the range near the dates you would actually book.
+var oddsClass  = "PZ";     // single-select chip
+var oddsDir    = "out";    // "out" = A→B, "ret" = B→A
+var lastOdds   = null;     // args on screen, for redraws
+var oddsBounds = null;     // memoized {first,last} of the loaded rows
+
+// Cleared whenever the loaded rows change, because a late class file can widen
+// the span the date pickers are seeded and bounds-checked against.
+function invalidateOddsBounds() { oddsBounds = null; }
+
+function upgradeDateBounds() {
+  if (oddsBounds) return oddsBounds;
+  var first = null, last = null;
+  UPGRADE_CLASSES.forEach(function(fc){
+    (csvUpgradeByClass[fc] || []).forEach(function(r){
+      var d = r.departure_date;
+      if (!d) return;
+      if (first === null || d < first) first = d;
+      if (last  === null || d > last)  last  = d;
+    });
+  });
+  oddsBounds = { first:first, last:last };
+  return oddsBounds;
+}
+
+// Day arithmetic in UTC, for the same reason shiftISODate is: a local parse of
+// "2026-11-15" lands on the previous day east of Greenwich.
+function isoDayNumber(iso) {
+  var p = iso.split("-");
+  return Math.round(Date.UTC(+p[0], +p[1]-1, +p[2]) / 86400000);
+}
+function daysInclusive(a, b) { return isoDayNumber(b) - isoDayNumber(a) + 1; }
+function isoWeekday(iso) {
+  var p = iso.split("-");
+  return new Date(Date.UTC(+p[0], +p[1]-1, +p[2])).getUTCDay();
+}
+function countKeys(o) { return Object.keys(o).length; }
+function oddsPct(hit, total) { return total > 0 ? (100 * hit / total) : 0; }
+function fmtPct(p) { return (p >= 10 ? p.toFixed(0) : p.toFixed(1)) + "%"; }
+function oddsColor(p) {
+  return p >= 20 ? "var(--green)" : p >= 8 ? "#b45309" : p > 0 ? "var(--grey-text)" : "var(--grey-light)";
+}
+
+function buildOddsPanel() {
+  var panel = document.getElementById("oddsPanel");
+  if (!panel) return;
+  // Built once, so a trip through Search or Hub Scan doesn't wipe the codes and
+  // dates already typed, or the result on screen.
+  if (!panel.getAttribute("data-built")) {
+    panel.innerHTML = oddsControlsHTML();
+    panel.setAttribute("data-built", "1");
+  }
+  // Idempotent — only fills blanks — so it also recovers a panel first built
+  // before any rows had loaded.
+  seedOddsDates();
+}
+
+// Default range: today through the last date the export carries. Today is
+// clamped up to the first date in the file, so an export that starts in the
+// future still yields a valid range rather than one full of empty days.
+function seedOddsDates() {
+  var b = upgradeDateBounds();
+  var s = document.getElementById("oddsStart"), e = document.getElementById("oddsEnd");
+  if (!s || !e || !b.first) return;
+  if (!s.value) { var t = todayISO(); s.value = t < b.first ? b.first : t; }
+  if (!e.value) e.value = b.last;
+  s.min = e.min = b.first;
+  s.max = e.max = b.last;
+}
+
+function oddsControlsHTML() {
+  var active = activeUpgradeClasses();
+  return '<div class="controls-bar" style="margin-bottom:10px;">'+
+    '<div class="controls-row">'+
+      '<div class="control-wrap"><label id="oddsFromLabel">From</label><input type="text" class="filter-input" id="oddsFrom" placeholder="e.g. EWR" maxlength="3" /></div>'+
+      '<div class="control-wrap"><label id="oddsToLabel">To</label><input type="text" class="filter-input" id="oddsTo" placeholder="e.g. LHR" maxlength="3" /></div>'+
+    '</div>'+
+    '<div class="controls-row">'+
+      '<div class="input-wrap"><label>Travel From</label><input type="date" id="oddsStart" /></div>'+
+      '<div class="input-wrap"><label>Travel To</label><input type="date" id="oddsEnd" /></div>'+
+    '</div>'+
+    '<div class="controls-row">'+
+      '<div class="control-wrap"><label>Min Seats</label>'+
+        '<select class="control-select" id="oddsMin">'+
+          '<option value="1">Any (1+)</option>'+
+          '<option value="2">2+</option>'+
+          '<option value="4">4+</option>'+
+          '<option value="6">6+</option>'+
+        '</select>'+
+      '</div>'+
+      '<div class="control-wrap"><label>Direction</label>'+
+        '<div class="dir-toggle">'+
+          '<button type="button" class="dir-btn'+(oddsDir === "out" ? " on" : "")+'" id="oddsDirOut" onclick="setOddsDir(\'out\')">A → B</button>'+
+          '<button type="button" class="dir-btn'+(oddsDir === "ret" ? " on" : "")+'" id="oddsDirRet" onclick="setOddsDir(\'ret\')">B → A</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="control-wrap" style="margin-top:6px;"><label>Upgrade Class</label>'+
+      '<div class="hub-chips" id="oddsChips">'+
+        UPGRADE_CLASSES.map(function(fc){
+          var has = active.indexOf(fc) !== -1;
+          // A class with no export can't be rated, so its chip refuses the tap
+          // rather than quietly reporting 0%.
+          return '<span class="hub-chip'+(fc === oddsClass ? ' on' : '')+(has ? '' : ' off')+'"'+
+                 (has ? ' onclick="setOddsClass(\''+fc+'\')"' : ' title="No export published for '+fc+' yet"')+
+                 ' id="oddsChip-'+fc+'">'+fc+'</span>';
+        }).join("")+
+      '</div>'+
+    '</div>'+
+  '</div>'+
+  '<button onclick="runOdds()" style="width:100%;padding:14px;background:var(--blue-dark);color:white;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px;">Check Odds</button>'+
+  '<div class="results-header"><span>Upgrade Odds</span><span class="results-count" id="oddsCount">—</span></div>'+
+  '<div id="oddsResults"><div class="empty-state" style="padding:40px 0;">Enter two airports and the dates you could travel, then tap Check Odds.</div></div>';
+}
+
+// Flipping direction or class re-runs whatever is on screen, so comparing the
+// outbound against the way home, or PZ against RN, is one tap rather than a
+// re-typed search.
+function setOddsDir(dir) {
+  if (oddsDir === dir) return;
+  oddsDir = dir;
+  var o = document.getElementById("oddsDirOut"), r = document.getElementById("oddsDirRet");
+  if (o) o.classList.toggle("on", dir === "out");
+  if (r) r.classList.toggle("on", dir === "ret");
+  if (lastOdds) runOdds();
+}
+
+function setOddsClass(fc) {
+  if (oddsClass === fc) return;
+  oddsClass = fc;
+  UPGRADE_CLASSES.forEach(function(c){
+    var el = document.getElementById("oddsChip-"+c);
+    if (el) el.classList.toggle("on", c === fc);
+  });
+  if (lastOdds) runOdds();
+}
+
+// One pass over every loaded class, collecting everything the panel needs:
+// per-class day and flight-day sets, the pair's flight roster, the chosen
+// class's per-flight and per-weekday buckets, and the reverse direction, so a
+// pair with nothing outbound can still say where the space actually is.
+function oddsStats(origin, dest, start, end, min) {
+  var st = { byClass:{}, revByClass:{}, roster:{}, perFlight:{}, perWeekday:[],
+             pairAnyDays:{}, seen:{} };
+  UPGRADE_CLASSES.forEach(function(fc){
+    st.byClass[fc]    = { days:{}, flightDays:{} };
+    st.revByClass[fc] = { days:{} };
+  });
+  for (var i = 0; i < 7; i++) st.perWeekday.push({});
+
+  UPGRADE_CLASSES.forEach(function(fc){
+    (csvUpgradeByClass[fc] || []).forEach(function(r){
+      var o = (r.origin_airport||"").toUpperCase();
+      var d = (r.destination_airport||"").toUpperCase();
+      // Tracked across the whole file, not just the range, so a typo can be
+      // told apart from a pair that genuinely never shows space.
+      if (o === origin || d === origin) st.seen[origin] = 1;
+      if (o === dest   || d === dest)   st.seen[dest]   = 1;
+
+      var date = r.departure_date;
+      if (!date || date < start || date > end) return;
+      var fwd = (o === origin && d === dest);
+      var rev = (o === dest   && d === origin);
+      if (!fwd && !rev) return;
+
+      if (fwd) {
+        st.pairAnyDays[date] = 1;
+        // The roster is the denominator's flight count, so it is not seat
+        // filtered: a flight that shows one seat still operates.
+        st.roster[r.flight_number] = 1;
+      }
+      if (invNum(r.inventory) < min) return;
+
+      if (rev) { st.revByClass[fc].days[date] = 1; return; }
+      st.byClass[fc].days[date] = 1;
+      st.byClass[fc].flightDays[date+"|"+r.flight_number] = 1;
+      if (fc === oddsClass) {
+        (st.perFlight[r.flight_number] = st.perFlight[r.flight_number] || {})[date] = 1;
+        st.perWeekday[isoWeekday(date)][date] = 1;
+      }
+    });
+  });
+  return st;
+}
+
+function runOdds() {
+  var a    = ((document.getElementById("oddsFrom")||{}).value||"").trim().toUpperCase();
+  var b    = ((document.getElementById("oddsTo")||{}).value||"").trim().toUpperCase();
+  var s    = (document.getElementById("oddsStart")||{}).value||"";
+  var e    = (document.getElementById("oddsEnd")||{}).value||"";
+  var min  = parseInt((document.getElementById("oddsMin")||{}).value||"1", 10);
+  var out  = document.getElementById("oddsResults");
+  var cnt  = document.getElementById("oddsCount");
+  if (!out) return;
+
+  function bail(msg) {
+    out.innerHTML = '<div class="empty-state"><div class="empty-icon">✏️</div>'+msg+'</div>';
+    if (cnt) cnt.textContent = "—";
+    lastOdds = null;
+  }
+  if (a.length !== 3 || b.length !== 3) return bail("Enter two 3-letter airport codes.");
+  if (a === b) return bail("Enter two different airports.");
+  if (!s || !e) return bail("Pick the dates you could travel.");
+  if (s > e) return bail("The travel range ends before it starts.");
+
+  // Direction is applied here, so everything downstream just works in
+  // origin → destination terms.
+  lastOdds = { origin: oddsDir === "ret" ? b : a, dest: oddsDir === "ret" ? a : b,
+               start:s, end:e, min:min };
+  drawOdds();
+}
+
+function drawOdds() { renderOdds(lastOdds); }
+
+// Redraw whatever is on screen against the data loaded now — the late-arriving
+// class files change the comparison table.
+function rerunOddsIfShown() { if (lastOdds) drawOdds(); }
+
+// Scaled to the biggest value in its own table rather than to 100%. These rates
+// sit in the single digits, so a bar drawn against 100% is a flat line on every
+// row; against the table's own maximum it shows which row leads. The percentage
+// beside it is what carries the absolute.
+function oddsBar(pct, max) {
+  var w = max > 0 ? (100 * pct / max) : 0;
+  return '<div class="odds-bar"><span style="width:'+(pct > 0 ? Math.max(w, 4) : 0)+'%;background:'+oddsColor(pct)+'"></span></div>';
+}
+
+function renderOdds(a) {
+  var out = document.getElementById("oddsResults");
+  var cnt = document.getElementById("oddsCount");
+  if (!out) return;
+  var b = upgradeDateBounds();
+
+  // A range that misses the export entirely is a date problem, not a route
+  // result, so say what the file actually holds rather than reporting 0%.
+  if (!b.first || a.end < b.first || a.start > b.last) {
+    out.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div>'+
+      (b.first ? 'No data for those dates. The export covers '+formatDate(b.first)+' to '+formatDate(b.last)+'.'
+               : 'No upgrade data loaded yet.')+'</div>';
+    if (cnt) cnt.textContent = "—";
+    return;
+  }
+
+  var days     = daysInclusive(a.start, a.end);
+  var st       = oddsStats(a.origin, a.dest, a.start, a.end, a.min);
+  var classes  = activeUpgradeClasses();
+  var mine     = st.byClass[oddsClass] || { days:{}, flightDays:{} };
+  var hitDays  = countKeys(mine.days);
+  var dayPct   = oddsPct(hitDays, days);
+  var roster   = Object.keys(st.roster);
+  var sightings= countKeys(mine.flightDays);
+  var flightDen= roster.length * days;
+  var flightPct= oddsPct(sightings, flightDen);
+  var pairCity = function(c){ return AIRPORT_CITIES[c] ? ' <span style="color:var(--grey-light);font-weight:500">'+AIRPORT_CITIES[c]+'</span>' : ''; };
+
+  if (cnt) cnt.textContent = hitDays ? hitDays + (hitDays === 1 ? " day" : " days") : "0";
+
+  // ── Unknown airport ────────────────────────────────────────────────────────
+  var unknown = [a.origin, a.dest].filter(function(c){ return !st.seen[c]; });
+  if (unknown.length) {
+    out.innerHTML = '<div class="empty-state"><div class="empty-icon">🔎</div>'+
+      unknown.join(" and ")+(unknown.length > 1 ? ' never appear' : ' never appears')+
+      ' anywhere in the upgrade data — check the code'+(unknown.length > 1 ? 's' : '')+'.'+
+      '<div style="font-size:12px;margin-top:8px;">United only publishes upgrade space on its own flights, so a non-UA airport won\'t be here.</div></div>';
+    return;
+  }
+
+  // ── Headline ───────────────────────────────────────────────────────────────
+  var never = hitDays === 0;
+  var hero = '<div class="odds-hero">'+
+    '<div class="odds-pair">'+a.origin+pairCity(a.origin)+' → '+a.dest+pairCity(a.dest)+' · '+oddsClass+
+      (a.min > 1 ? ' · '+a.min+'+ seats' : '')+'</div>'+
+    '<div class="odds-pct" style="color:'+oddsColor(dayPct)+'">'+(never ? "Never" : fmtPct(dayPct))+'</div>'+
+    '<div class="odds-frac">'+hitDays+' of '+days+' day'+(days === 1 ? '' : 's')+
+      ', '+formatDate(a.start)+' – '+formatDate(a.end)+'</div>'+
+    '<div class="odds-sub">'+
+      '<span>Per flight <b style="color:'+oddsColor(flightPct)+'">'+(flightDen ? fmtPct(flightPct) : '—')+'</b></span>'+
+      '<span style="color:var(--grey-light);font-size:11px;">'+sightings+' of '+flightDen+
+        ' flight-days ('+roster.length+' flight'+(roster.length === 1 ? '' : 's')+' × '+days+')</span>'+
+    '</div>'+
+  '</div>';
+
+  // ── Never seen ─────────────────────────────────────────────────────────────
+  var notes = "";
+  if (never) {
+    var others = classes.filter(function(fc){ return fc !== oddsClass && countKeys(st.byClass[fc].days); })
+      .map(function(fc){ return fc+' on '+countKeys(st.byClass[fc].days)+' day'+(countKeys(st.byClass[fc].days) === 1 ? '' : 's'); });
+    var revDays = countKeys((st.revByClass[oddsClass]||{days:{}}).days);
+    notes = '<div class="odds-card"><h4>No '+oddsClass+' in this range</h4>'+
+      '<div style="font-size:12.5px;color:var(--grey-text);line-height:1.6">'+
+        (countKeys(st.pairAnyDays)
+          ? a.origin+'→'+a.dest+' flies here — it shows up on '+countKeys(st.pairAnyDays)+' day'+(countKeys(st.pairAnyDays) === 1 ? '' : 's')+' — but never with '+oddsClass+
+            (a.min > 1 ? ' at '+a.min+'+ seats' : '')+'.'
+          : a.origin+'→'+a.dest+' has no upgrade space of any class in this range.')+
+        (others.length ? '<br>Other classes on this pair: '+others.join(', ')+'.' : '')+
+        (revDays ? '<br>The other direction does better: '+a.dest+'→'+a.origin+' shows '+oddsClass+' on '+revDays+' day'+(revDays === 1 ? '' : 's')+'. Tap the direction toggle to see it.' : '')+
+      '</div></div>';
+  }
+
+  // ── All four classes ───────────────────────────────────────────────────────
+  var classPcts = classes.map(function(fc){ return oddsPct(countKeys(st.byClass[fc].days), days); });
+  var classMax  = Math.max.apply(null, classPcts.concat([0]));
+  var classRows = classes.map(function(fc, ci){
+    var n = countKeys(st.byClass[fc].days), p = classPcts[ci];
+    return '<tr class="'+(fc === oddsClass ? 'odds-row-on' : '')+'">'+
+      '<td class="k">'+fc+'</td>'+
+      '<td>'+oddsBar(p, classMax)+'</td>'+
+      '<td class="v" style="color:'+(fc === oddsClass ? 'var(--blue-dark)' : oddsColor(p))+'">'+fmtPct(p)+'</td>'+
+      '<td class="n">'+n+'/'+days+'</td>'+
+    '</tr>';
+  }).join("");
+  var classCard = '<div class="odds-card"><h4>Every class, same range</h4>'+
+    '<table class="odds-table">'+classRows+'</table></div>';
+
+  // ── Day of week ────────────────────────────────────────────────────────────
+  var dowTotals = [0,0,0,0,0,0,0];
+  for (var i = 0; i < days; i++) dowTotals[isoWeekday(shiftISODate(a.start, i))]++;
+  var DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var dowCard = "";
+  if (!never) {
+    var dowPcts = DOW.map(function(_, i){ return oddsPct(countKeys(st.perWeekday[i]), dowTotals[i]); });
+    var dowMax  = Math.max.apply(null, dowPcts.concat([0]));
+    dowCard = '<div class="odds-card"><h4>By day of week</h4><table class="odds-table">'+
+      DOW.map(function(name, i){
+        var n = countKeys(st.perWeekday[i]), tot = dowTotals[i], p = dowPcts[i];
+        return '<tr><td class="k">'+name+'</td><td>'+oddsBar(p, dowMax)+'</td>'+
+          '<td class="v" style="color:'+oddsColor(p)+'">'+(tot ? fmtPct(p) : '—')+'</td>'+
+          '<td class="n">'+n+'/'+tot+'</td></tr>';
+      }).join("")+'</table></div>';
+  }
+
+  // ── Per flight ─────────────────────────────────────────────────────────────
+  var flightCard = "";
+  if (roster.length) {
+    var rows = roster.map(function(f){
+      return { flight:f, days:countKeys(st.perFlight[f] || {}) };
+    }).sort(function(x, y){
+      if (y.days !== x.days) return y.days - x.days;
+      return x.flight < y.flight ? -1 : 1;
+    });
+    var flightMax = oddsPct(rows.length ? rows[0].days : 0, days);   // rows are sorted desc
+    flightCard = '<div class="odds-card"><h4>'+
+      (never ? 'Flights seen on this pair' : 'Which flights carry it')+
+      '</h4><table class="odds-table">'+
+      rows.map(function(r){
+        var p = oddsPct(r.days, days);
+        return '<tr><td class="k">'+r.flight+'</td><td>'+oddsBar(p, flightMax)+'</td>'+
+          '<td class="v" style="color:'+oddsColor(p)+'">'+fmtPct(p)+'</td>'+
+          '<td class="n">'+r.days+'/'+days+'</td></tr>';
+      }).join("")+'</table></div>';
+  }
+
+  // ── Footnote ───────────────────────────────────────────────────────────────
+  var legend  = classes.filter(function(fc){ return UPGRADE_CLASS_LABELS[fc]; })
+    .map(function(fc){ return fc+" = "+UPGRADE_CLASS_LABELS[fc]; }).join(", ");
+  var missing = UPGRADE_CLASSES.filter(function(fc){ return classes.indexOf(fc) === -1; });
+  // Just the cabin key and any class with no export — the codes are the one
+  // thing the tables above can't explain themselves.
+  var note = (legend || missing.length) ? '<div class="scan-note">'+
+    (legend ? legend+'.' : '')+
+    (missing.length ? ' No export published yet for '+missing.join(", ")+'.' : '')+
+  '</div>' : '';
+
+  out.innerHTML = hero + notes + classCard + dowCard + flightCard + note;
+}
 
 // ── Alliances tab ──
 var allianceCollapsed = {};
