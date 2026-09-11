@@ -3888,13 +3888,12 @@ function renderOdds(a) {
   var legend  = classes.filter(function(fc){ return UPGRADE_CLASS_LABELS[fc]; })
     .map(function(fc){ return fc+" = "+UPGRADE_CLASS_LABELS[fc]; }).join(", ");
   var missing = UPGRADE_CLASSES.filter(function(fc){ return classes.indexOf(fc) === -1; });
-  var note = '<div class="scan-note">'+
-    'The export records only space that exists, so the denominator is the '+days+' day'+(days === 1 ? '' : 's')+
-    ' in your range, not flights observed empty.'+
-    (roster.length ? ' The per-flight rate counts a seasonal flight the same as a daily one, so it runs conservative on an irregular roster.' : '')+
-    (legend ? '<br>'+legend+'.' : '')+
+  // Just the cabin key and any class with no export — the codes are the one
+  // thing the tables above can't explain themselves.
+  var note = (legend || missing.length) ? '<div class="scan-note">'+
+    (legend ? legend+'.' : '')+
     (missing.length ? ' No export published yet for '+missing.join(", ")+'.' : '')+
-  '</div>';
+  '</div>' : '';
 
   out.innerHTML = hero + notes + classCard + dowCard + flightCard + note;
 }
