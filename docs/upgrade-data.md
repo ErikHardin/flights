@@ -234,3 +234,46 @@ EWR and LGA rather than calling it a typo.
   today and the first result is a real rate rather than a one-day sample.
 - A zero with no better neighbour says so explicitly. That is a finding in itself:
   it means the whole area is dry, not just your route.
+
+## Saved searches
+
+Every view on the UA Upgrades tab (Search, Hub Scan, Odds) has a **☆ Save** button
+beside its results count. Name the search and it lands in a **Saved** drawer above
+that view's controls; tapping a row refills every control and re-runs it. The drawer
+only lists saves belonging to the view you are looking at.
+
+### Rolling vs fixed dates
+
+A saved search records its date range one of two ways, decided automatically:
+
+- **Started on the day you saved it** → stored as a length ("next 31 days") and
+  re-anchored to today whenever you recall it. This is what keeps a watchlist entry
+  useful weeks later.
+- **Started on any other day** → stored exactly. A December trip stays in December.
+
+Hub Scan has a single date plus a ± window, so it is rolling when that date is today.
+
+On recall the dates are clamped to the range the export actually covers, and the
+result says so when a saved range had to be trimmed — otherwise the date input
+silently refuses a value outside its bounds and the search would run on something
+other than what it displayed.
+
+### Where they live
+
+Keyed by your Firestore **document id**, not your PIN: changing a PIN rewrites that
+same record, so a PIN-keyed store would orphan itself on the first change.
+
+| | |
+|---|---|
+| Cloud | `saved_searches/<userDocId>`, one document per user, the whole list JSON-encoded into a single `searches` field |
+| Local | `afss_searches`, the offline mirror |
+
+`fbSet` only encodes strings, numbers and booleans, which is why the list is
+stringified. It also PATCHes without an `updateMask`, so this gets its own
+collection rather than a field on `approved_users`, where a stale-read write from
+the change-PIN flow could clobber it.
+
+Saves are written locally first and pushed to Firestore fire-and-forget, so saving
+never blocks on the network and works offline. Signing in with the **admin
+passcode** does not go through `approved_users` and so has no account record — those
+saves stay on the device, and the drawer says so.

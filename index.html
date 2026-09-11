@@ -320,6 +320,11 @@
     .saved-airports{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--text)}
     .saved-detail{font-size:11px;color:var(--grey-light);margin-top:2px}
     .saved-del{color:var(--grey-light);font-size:16px;padding:4px 8px;cursor:pointer}
+    .saved-drawer{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;box-shadow:var(--shadow);overflow:hidden}
+    .saved-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--grey-light);user-select:none}
+    .saved-chev{transition:transform .15s;font-size:12px}
+    .saved-chev.open{transform:rotate(180deg)}
+    .saved-body{padding:0 12px 8px}
 
     /* Loading/empty */
     .loading{text-align:center;padding:40px 20px;color:var(--grey-light)}
@@ -466,7 +471,7 @@
     </p>
     <div style="font-size:13px;font-weight:700;color:var(--blue-dark);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">UA Upgrades</div>
     <p style="font-size:13px;color:var(--grey-text);line-height:1.6;margin-bottom:8px;">
-      PlusPoints upgrade space on United flights, with three views:
+      PlusPoints upgrade space on United flights, with three views. Any of them can be saved: tap &starf; Save, name it, and it appears in the Saved drawer above the controls &mdash; tap a saved row to refill the form and re-run it. Saves sync to your PIN, so they follow you between devices. A date range that starts on the day you saved it is kept as a rolling window and moves with you; a specific range is kept exactly.
     </p>
     <ul style="font-size:13px;color:var(--grey-text);line-height:1.7;margin-bottom:16px;padding-left:18px;">
       <li><strong>Search</strong> — one route at a time. Search by origin, destination, date range, and aircraft type, with departure and arrival times for each flight.</li>
@@ -538,6 +543,19 @@
     <div style="display:flex;gap:10px;">
       <button onclick="hideChangePin()" style="flex:1;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;color:var(--text);">Cancel</button>
       <button onclick="submitChangePin()" style="flex:1;padding:12px;background:var(--blue-dark);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;color:white;">Update PIN</button>
+    </div>
+  </div>
+</div>
+
+<div id="saveSearchModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:100%;max-width:360px;box-shadow:var(--shadow);">
+    <div style="font-size:18px;font-weight:700;margin-bottom:6px;">Save this search</div>
+    <div style="font-size:12px;color:var(--grey-light);margin-bottom:16px;">A range starting today is saved as a rolling window and moves with you.</div>
+    <input id="saveSearchName" placeholder="Name this search" maxlength="40" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;margin-bottom:10px;box-sizing:border-box;background:var(--surface2);color:var(--text);">
+    <div id="saveSearchError" style="color:#e53e3e;font-size:12px;margin-bottom:10px;display:none;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="hideSaveSearch()" style="flex:1;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;color:var(--text);">Cancel</button>
+      <button onclick="submitSaveSearch()" style="flex:1;padding:12px;background:var(--blue-dark);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;color:white;">Save</button>
     </div>
   </div>
 </div>
@@ -899,7 +917,6 @@ var quickFare             = "PZ";
 var currentMode           = "region";
 var allResults            = [];
 var allUpgradeResults     = [];
-var savedRoutes           = JSON.parse(localStorage.getItem("afss_saved")||"[]");
 var accessToken           = localStorage.getItem("afss_access_token")||"";
 var refreshToken          = localStorage.getItem("afss_refresh_token")||"";
 var pinEntry              = "";
@@ -1572,7 +1589,17 @@ var BOOKING_URLS = {
 function checkUnlocked(){
   // Restore admin across a refresh — verifyPin only runs on a fresh unlock.
   isAdmin = sessionStorage.getItem("afss_admin")==="1";
-  if(sessionStorage.getItem("afss_unlocked")==="1")document.getElementById("lockScreen").style.display="none";
+  if(sessionStorage.getItem("afss_unlocked")!=="1") return;
+  document.getElementById("lockScreen").style.display="none";
+  // The account is resolved on unlock and lost on refresh; afss_pin was already
+  // being stored here and never read, so re-resolve from it in the background.
+  var pin = sessionStorage.getItem("afss_pin")||"";
+  currentUserPin = pin;
+  if (pin && !isAdmin) {
+    fbQuery("approved_users","pin",pin).then(function(users){
+      if (users && users.length) setCurrentUser(users[0]._id);
+    }).catch(function(){ /* offline — the local mirror still serves saves */ });
+  }
 }
 function pinPress(digit){if(pinEntry.length>=4)return;pinEntry+=digit;updatePinDots(false);if(pinEntry.length===4)verifyPin()}
 function pinDelete(){pinEntry=pinEntry.slice(0,-1);updatePinDots(false);document.getElementById("lockError").textContent=""}
@@ -1599,6 +1626,9 @@ async function verifyPin(){
       isAdmin=false;
       sessionStorage.removeItem("afss_admin");
       currentUserPin=pinEntry;
+      // The document id, not the PIN: changing a PIN rewrites this same record,
+      // so anything keyed by PIN would orphan itself on the first change.
+      setCurrentUser(users[0]._id);
       sessionStorage.setItem("afss_unlocked","1");
       sessionStorage.setItem("afss_pin",pinEntry);
       document.getElementById("lockScreen").style.display="none";
@@ -1704,6 +1734,7 @@ async function fetchUpgradeCSV() {
 function init(){
   checkUnlocked();
   hydrateTransferBonuses();   // paint from the local mirror; Firestore refreshes on tab open
+  hydrateSavedSearches();     // same idea: the account copy arrives once the PIN resolves
   buildGrid("programGrid",selectedPrograms,toggleRouteProgram);
   buildGrid("programGridRegion",selectedProgramsReg,toggleRegionProgram);
   buildRegionGrids();setDefaultDates();updateAuthUI();updateUpgradeDeepLink();
@@ -1838,7 +1869,6 @@ function setMode(mode){
     document.getElementById("tab-"+m).classList.toggle("active",m===mode);
   });
   if(mode!=="route"&&mode!=="region")document.getElementById("resultsArea").style.display="none";
-  if(mode==="saved")renderSaved();
   if(mode==="upgrades")fetchUpgradeCSV();
   if(mode==="alliances")renderAllianceList();
   if(mode==="points")renderPointsCalc();
@@ -2944,12 +2974,6 @@ function buildResultCard(item,i){
   '</div>';
 }
 
-// ── Saved ──
-function offerSave(origin,dest,programs,cabin){var key=origin+"-"+dest;if(savedRoutes.some(function(r){return r.key===key}))return;if(confirm("Save route "+origin+" → "+dest+"?")){savedRoutes.push({key:key,origin:origin,dest:dest,programs:programs,cabin:cabin});localStorage.setItem("afss_saved",JSON.stringify(savedRoutes))}}
-function renderSaved(){var el=document.getElementById("savedList");if(!savedRoutes.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔖</div>No saved routes yet.</div>';return}el.innerHTML=savedRoutes.map(function(r,i){return'<div class="saved-item" onclick="loadSaved('+i+')"><div><div class="saved-airports">'+r.origin+' → '+r.dest+'</div><div class="saved-detail">'+r.programs.join(", ")+" · "+(r.cabin||"Any")+'</div></div><div class="saved-del" onclick="deleteSaved(event,'+i+')">✕</div></div>'}).join("")}
-function loadSaved(i){var r=savedRoutes[i];setMode("route");document.getElementById("origin").value=r.origin;document.getElementById("destination").value=r.dest;selectedPrograms=new Set(r.programs);selectedCabin=r.cabin||"business";buildGrid("programGrid",selectedPrograms,toggleRouteProgram);setCabin(selectedCabin);runRouteSearch()}
-function deleteSaved(e,i){e.stopPropagation();savedRoutes.splice(i,1);localStorage.setItem("afss_saved",JSON.stringify(savedRoutes));renderSaved()}
-
 // ── CSV Upload & Display ──
 var csvUpgradeData = [];
 var csvUpgradeByClass = {};   // fare class -> parsed rows
@@ -3257,6 +3281,7 @@ function setUpgradeView(view) {
   });
   var build = UPGRADE_VIEWS[view].build;
   if (build) build();
+  renderSavedDrawers();
 }
 
 function buildHubScanPanel() {
@@ -3287,7 +3312,8 @@ function shiftISODate(iso, days) {
 }
 
 function hubScanControlsHTML() {
-  return '<div class="controls-bar" style="margin-bottom:10px;">'+
+  return '<div id="savedDrawer-hub"></div>'+
+    '<div class="controls-bar" style="margin-bottom:10px;">'+
     '<div class="controls-row">'+
       '<div class="control-wrap"><label id="hubScanCityLabel">'+(hubScanDir === "out" ? "To" : "From")+'</label><input type="text" class="filter-input" id="hubScanDest" placeholder="e.g. NRT" maxlength="3" /></div>'+
       '<div class="input-wrap"><label>Date</label><input type="date" id="hubScanDate" /></div>'+
@@ -3319,13 +3345,17 @@ function hubScanControlsHTML() {
     '<div class="control-wrap" style="margin-top:6px;"><label>Hubs</label>'+
       '<div class="hub-chips" id="hubScanChips">'+
         UA_HUBS.map(function(h){
-          return '<span class="hub-chip'+(hubScanSelected.has(h)?' on':'')+'" onclick="toggleHubChip(this,\''+h+'\')">'+h+'</span>';
+          return '<span class="hub-chip'+(hubScanSelected.has(h)?' on':'')+'" data-hub="'+h+'" onclick="toggleHubChip(this,\''+h+'\')">'+h+'</span>';
         }).join("")+
       '</div>'+
     '</div>'+
   '</div>'+
   '<button onclick="runHubScan()" style="width:100%;padding:14px;background:var(--blue-dark);color:white;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px;">Scan Hubs</button>'+
-  '<div class="results-header"><span>Hub Availability</span><span class="results-count" id="hubScanCount">0</span></div>'+
+  '<div class="results-header"><span>Hub Availability</span>'+
+    '<div style="display:flex;align-items:center;gap:8px;">'+
+      '<button onclick="saveCurrentSearch(\'hub\')" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">☆ Save</button>'+
+      '<span class="results-count" id="hubScanCount">0</span>'+
+    '</div></div>'+
   '<div id="hubScanResults"><div class="empty-state" style="padding:40px 0;">Pick a destination and date, then tap Scan Hubs.</div></div>';
 }
 
@@ -3556,6 +3586,296 @@ function syncScanStickyOffsets() {
 window.addEventListener("resize", syncScanStickyOffsets);
 window.addEventListener("orientationchange", syncScanStickyOffsets);
 
+// ── Saved searches ──
+// A named search you can tap to refill the controls and re-run. Stored per
+// account so it follows you between devices, with a local mirror that paints
+// first and carries the whole feature when Firestore is unreachable — the same
+// shape as the transfer-bonus cache above.
+//
+// Keyed by the user's Firestore document id rather than their PIN, because
+// changing a PIN rewrites that same record.
+var savedSearches = [];
+var currentUserId = "";
+var savedLoaded   = false;
+var savedOpen     = {};   // which view's drawer is expanded
+
+function setCurrentUser(id) {
+  if (!id || currentUserId === id) return;
+  currentUserId = id;
+  savedLoaded = false;
+  loadSavedSearches();
+}
+
+function cacheSavedSearches() {
+  try { localStorage.setItem("afss_searches", JSON.stringify(savedSearches)); }
+  catch(e) { /* private mode or quota — the account copy is the durable one */ }
+}
+
+function hydrateSavedSearches() {
+  try {
+    var saved = JSON.parse(localStorage.getItem("afss_searches")||"[]");
+    if (Array.isArray(saved)) savedSearches = saved;
+  } catch(e) { /* corrupt storage shouldn't break the tab */ }
+}
+
+// fbSet only encodes scalars, so the list travels as one JSON string. Its own
+// collection rather than a field on approved_users: fbSet PATCHes without an
+// updateMask, and submitChangePin rewrites that document wholesale.
+async function loadSavedSearches() {
+  if (savedLoaded || !currentUserId) return;
+  savedLoaded = true;
+  try {
+    var doc = await fbGet("/saved_searches/" + currentUserId);
+    if (!doc || !doc.fields) return;              // nothing saved yet, or rules deny
+    var raw = (doc.fields.searches||{}).stringValue || "[]";
+    var list = JSON.parse(raw);
+    if (!Array.isArray(list)) return;
+    savedSearches = list;
+    cacheSavedSearches();
+    renderSavedDrawers();
+  } catch(e) {
+    savedLoaded = false;                          // transient — retry on next open
+  }
+}
+
+// Local first so a save is instant and works offline; the account copy follows.
+function persistSavedSearches() {
+  cacheSavedSearches();
+  renderSavedDrawers();
+  if (!currentUserId) return;                     // admin passcode has no account record
+  fbSet("/saved_searches/" + currentUserId, { searches: JSON.stringify(savedSearches) })
+    .catch(function(){ /* offline; the mirror already has it */ });
+}
+
+// ── Capture ──
+// Read straight from the controls and the module globals. Odds' lastOdds is not
+// enough on its own: it folds direction into origin/dest and drops the class.
+function val(id) { var el = document.getElementById(id); return el ? el.value : ""; }
+
+function captureSearch(view) {
+  if (view === "odds") {
+    return { from:val("oddsFrom").trim().toUpperCase(), to:val("oddsTo").trim().toUpperCase(),
+             start:val("oddsStart"), end:val("oddsEnd"), min:val("oddsMin"),
+             dir:oddsDir, cls:oddsClass };
+  }
+  if (view === "hub") {
+    return { dest:val("hubScanDest").trim().toUpperCase(), date:val("hubScanDate"),
+             window:val("hubScanWindow"), min:val("hubScanMin"), dir:hubScanDir,
+             hubs:UA_HUBS.filter(function(h){ return hubScanSelected && hubScanSelected.has(h); }) };
+  }
+  return { origin:val("csvFilterOrigin"), dest:val("csvFilterDest"),
+           originRegion:val("csvFilterOriginRegion"), destRegion:val("csvFilterDestRegion"),
+           dateFrom:val("csvFilterDateFrom"), dateTo:val("csvFilterDateTo"),
+           flight:val("csvFilterFlight"), aircraft:val("csvFilterAircraft"),
+           inv:val("csvFilterInv"), sort:val("csvSortBy") };
+}
+
+// A range that starts today is a watchlist, not a trip: store its length and
+// re-anchor on recall, so the entry stays useful weeks later. A range starting
+// on any other day is a real trip and is kept exactly.
+function rollingLength(view, p) {
+  var today = todayISO();
+  if (view === "hub") return p.date === today ? 0 : null;
+  if (!p.start || !p.end || p.start !== today) return null;
+  return daysInclusive(p.start, p.end);
+}
+
+function autoSearchName(view, p) {
+  if (view === "odds") return p.from+" → "+p.to+" · "+p.cls+(+p.min > 1 ? " · "+p.min+"+" : "");
+  if (view === "hub")  return (p.dir === "ret" ? p.dest+" → hubs" : "hubs → "+p.dest)+
+                              (+p.min > 1 ? " · "+p.min+"+" : "");
+  var ends = (p.origin||"any")+" → "+(p.dest||"any");
+  return ends + (p.inv ? " · "+p.inv : "");
+}
+
+// A one-line reminder of what the entry actually searches, so two saves of the
+// same pair are still tellable apart.
+function savedSubtitle(r) {
+  var p = r.params;
+  if (r.rolling !== null && r.rolling !== undefined)
+    return r.view === "hub" ? "today ± "+(p.window||0)+" days"
+                            : "next "+r.rolling+" day"+(r.rolling === 1 ? "" : "s");
+  if (r.view === "hub") return p.date ? formatDate(p.date)+" ± "+(p.window||0) : "any date";
+  if (p.start && p.end) return formatDate(p.start)+" – "+formatDate(p.end);
+  if (p.dateFrom && p.dateTo) return formatDate(p.dateFrom)+" – "+formatDate(p.dateTo);
+  return "any date";
+}
+
+// ── Save ──
+var pendingSave = null;
+
+function saveCurrentSearch(view) {
+  var p = captureSearch(view);
+  pendingSave = { view:view, params:p, rolling:rollingLength(view, p) };
+  var input = document.getElementById("saveSearchName");
+  if (input) input.value = autoSearchName(view, p);
+  var err = document.getElementById("saveSearchError");
+  if (err) { err.textContent = ""; err.style.display = "none"; }
+  document.getElementById("saveSearchModal").style.display = "flex";
+  if (input) input.focus();
+}
+
+function hideSaveSearch() {
+  document.getElementById("saveSearchModal").style.display = "none";
+  pendingSave = null;
+}
+
+function submitSaveSearch() {
+  if (!pendingSave) return hideSaveSearch();
+  var input = document.getElementById("saveSearchName");
+  var err   = document.getElementById("saveSearchError");
+  var name  = (input ? input.value : "").trim();
+  if (!name) {
+    if (err) { err.textContent = "Give it a name."; err.style.display = "block"; }
+    return;
+  }
+  // Re-saving under the same name in the same view updates it rather than
+  // stacking a second copy.
+  var existing = savedSearches.filter(function(r){
+    return r.view === pendingSave.view && r.name.toLowerCase() === name.toLowerCase();
+  })[0];
+  if (existing) {
+    existing.params  = pendingSave.params;
+    existing.rolling = pendingSave.rolling;
+    existing.savedOn = todayISO();
+  } else {
+    savedSearches.push({
+      id: "s" + Date.now() + Math.random().toString(36).slice(2, 7),
+      name: name, view: pendingSave.view, savedOn: todayISO(),
+      rolling: pendingSave.rolling, params: pendingSave.params
+    });
+  }
+  // Read the view before hiding — hideSaveSearch clears pendingSave.
+  var view = pendingSave.view;
+  hideSaveSearch();
+  savedOpen[view] = true;          // show what was just saved
+  persistSavedSearches();
+}
+
+function deleteSavedSearch(ev, id) {
+  if (ev) ev.stopPropagation();
+  savedSearches = savedSearches.filter(function(r){ return r.id !== id; });
+  persistSavedSearches();
+}
+
+// ── Recall ──
+function setVal(id, v) { var el = document.getElementById(id); if (el) el.value = v == null ? "" : v; }
+
+// Rolling entries re-anchor to today. Odds' date inputs carry min/max pinned to
+// the loaded export, and a value outside them is silently refused by the
+// control, so clamp and report rather than restoring something that won't stick.
+function recallDates(r) {
+  var p = r.params, out = { start:p.start, end:p.end, date:p.date, trimmed:false };
+  if (r.rolling !== null && r.rolling !== undefined) {
+    if (r.view === "hub") out.date = todayISO();
+    else { out.start = todayISO(); out.end = shiftISODate(out.start, Math.max(r.rolling - 1, 0)); }
+  }
+  if (r.view === "odds") {
+    var b = upgradeDateBounds();
+    if (b.first) {
+      var s = out.start < b.first ? b.first : out.start;
+      var e = out.end   > b.last  ? b.last  : out.end;
+      if (s !== out.start || e !== out.end) out.trimmed = true;
+      out.start = s; out.end = e;
+    }
+  }
+  return out;
+}
+
+function recallSearch(id) {
+  var r = savedSearches.filter(function(x){ return x.id === id; })[0];
+  if (!r) return;
+  var d = recallDates(r);
+
+  if (r.view === "odds") {
+    // setOddsClass/setOddsDir re-run the search whenever lastOdds is set, so
+    // clear it first and paint the chips directly, then run once at the end.
+    lastOdds = null;
+    oddsClass = r.params.cls || oddsClass;
+    oddsDir   = r.params.dir || "out";
+    UPGRADE_CLASSES.forEach(function(fc){
+      var el = document.getElementById("oddsChip-"+fc);
+      if (el) el.classList.toggle("on", fc === oddsClass);
+    });
+    var o = document.getElementById("oddsDirOut"), rt = document.getElementById("oddsDirRet");
+    if (o)  o.classList.toggle("on", oddsDir === "out");
+    if (rt) rt.classList.toggle("on", oddsDir === "ret");
+    setVal("oddsFrom", r.params.from); setVal("oddsTo", r.params.to);
+    setVal("oddsStart", d.start);      setVal("oddsEnd", d.end);
+    setVal("oddsMin", r.params.min || "1");
+    runOdds();
+    if (d.trimmed) {
+      var out = document.getElementById("oddsResults");
+      if (out) out.insertAdjacentHTML("afterbegin",
+        '<div class="scan-note" style="margin:0 2px 8px">Dates trimmed to the range the export covers.</div>');
+    }
+    return;
+  }
+
+  if (r.view === "hub") {
+    hubScanDir = r.params.dir || "out";
+    var ho = document.getElementById("dirOut"), hr = document.getElementById("dirRet");
+    if (ho) ho.classList.toggle("on", hubScanDir === "out");
+    if (hr) hr.classList.toggle("on", hubScanDir === "ret");
+    var lab = document.getElementById("hubScanCityLabel");
+    if (lab) lab.textContent = hubScanDir === "out" ? "To" : "From";
+    // Never restore an empty hub set — runHubScan would return nothing and look
+    // broken, and toggleHubChip refuses to drop below one anyway.
+    var hubs = (r.params.hubs && r.params.hubs.length) ? r.params.hubs : UA_HUBS;
+    hubScanSelected = new Set(hubs);
+    UA_HUBS.forEach(function(h){
+      var el = document.querySelector('#hubScanChips [data-hub="'+h+'"]');
+      if (el) el.classList.toggle("on", hubScanSelected.has(h));
+    });
+    setVal("hubScanDest", r.params.dest); setVal("hubScanDate", d.date);
+    setVal("hubScanWindow", r.params.window || "0"); setVal("hubScanMin", r.params.min || "1");
+    runHubScan();
+    return;
+  }
+
+  var p = r.params;
+  setVal("csvFilterOrigin", p.origin);             setVal("csvFilterDest", p.dest);
+  setVal("csvFilterOriginRegion", p.originRegion); setVal("csvFilterDestRegion", p.destRegion);
+  setVal("csvFilterDateFrom", p.dateFrom);         setVal("csvFilterDateTo", p.dateTo);
+  setVal("csvFilterFlight", p.flight);             setVal("csvFilterAircraft", p.aircraft);
+  setVal("csvFilterInv", p.inv);                   setVal("csvSortBy", p.sort);
+  runCSVSearch();
+}
+
+// ── Drawer ──
+function toggleSavedDrawer(view) {
+  savedOpen[view] = !savedOpen[view];
+  renderSavedDrawers();
+}
+
+function savedDrawerHTML(view) {
+  var mine = savedSearches.filter(function(r){ return r.view === view; });
+  var open = !!savedOpen[view];
+  if (!mine.length) return '';
+  return '<div class="saved-drawer">'+
+    '<div class="saved-head" onclick="toggleSavedDrawer(\''+view+'\')">'+
+      '<span>Saved · '+mine.length+'</span>'+
+      '<span class="saved-chev'+(open ? ' open' : '')+'">▾</span>'+
+    '</div>'+
+    (open ? '<div class="saved-body">'+mine.map(function(r){
+      return '<div class="saved-item" onclick="recallSearch(\''+r.id+'\')">'+
+        '<div><div class="saved-airports">'+r.name+'</div>'+
+        '<div class="saved-detail">'+savedSubtitle(r)+'</div></div>'+
+        '<div class="saved-del" onclick="deleteSavedSearch(event,\''+r.id+'\')">✕</div>'+
+      '</div>';
+    }).join("")+
+    (currentUserId ? '' : '<div class="saved-detail" style="padding-top:8px">On this device only — no account signed in.</div>')+
+    '</div>' : '')+
+  '</div>';
+}
+
+function renderSavedDrawers() {
+  ["search","hub","odds"].forEach(function(view){
+    var slot = document.getElementById("savedDrawer-"+view);
+    if (slot) slot.innerHTML = savedDrawerHTML(view);
+  });
+}
+
 // ── Odds ──
 // "How often does this pair show PZ?", rather than "is there space today".
 //
@@ -3650,7 +3970,8 @@ function seedOddsDates() {
 
 function oddsControlsHTML() {
   var active = activeUpgradeClasses();
-  return '<div class="controls-bar" style="margin-bottom:10px;">'+
+  return '<div id="savedDrawer-odds"></div>'+
+    '<div class="controls-bar" style="margin-bottom:10px;">'+
     '<div class="controls-row">'+
       '<div class="control-wrap"><label id="oddsFromLabel">From</label><input type="text" class="filter-input" id="oddsFrom" placeholder="e.g. EWR" maxlength="3" /></div>'+
       '<div class="control-wrap"><label id="oddsToLabel">To</label><input type="text" class="filter-input" id="oddsTo" placeholder="e.g. LHR" maxlength="3" /></div>'+
@@ -3689,7 +4010,11 @@ function oddsControlsHTML() {
     '</div>'+
   '</div>'+
   '<button onclick="runOdds()" style="width:100%;padding:14px;background:var(--blue-dark);color:white;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px;">Check Odds</button>'+
-  '<div class="results-header"><span>Upgrade Odds</span><span class="results-count" id="oddsCount">—</span></div>'+
+  '<div class="results-header"><span>Upgrade Odds</span>'+
+    '<div style="display:flex;align-items:center;gap:8px;">'+
+      '<button onclick="saveCurrentSearch(\'odds\')" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">☆ Save</button>'+
+      '<span class="results-count" id="oddsCount">—</span>'+
+    '</div></div>'+
   '<div id="oddsResults"><div class="empty-state" style="padding:40px 0;">Enter two airports and the dates you could travel, then tap Check Odds.</div></div>';
 }
 
@@ -4610,7 +4935,8 @@ function buildCSVPanel() {
     ['North America','South America','Europe','Africa','Asia','Oceania'].map(function(r){
       return '<option value="'+r+'">'+r+'</option>';
     }).join('');
-  return '<div class="controls-bar" style="margin-bottom:10px;">'+
+  return '<div id="savedDrawer-search"></div>'+
+    '<div class="controls-bar" style="margin-bottom:10px;">'+
     '<div class="controls-row">'+
       '<div class="control-wrap"><label>Origin Airport</label><input type="text" class="filter-input" id="csvFilterOrigin" placeholder="e.g. ORD" maxlength="3" oninput="" /></div>'+
       '<div class="control-wrap"><label>Dest Airport</label><input type="text" class="filter-input" id="csvFilterDest" placeholder="e.g. LHR" maxlength="3" oninput="" /></div>'+
@@ -4660,6 +4986,7 @@ function buildCSVPanel() {
         }).join("")+
         '<label style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">📂 Load CSVs<input type="file" accept=".csv,text/csv" multiple style="display:none" onchange="handleCSVFiles(this)"/></label>'+
       '</div>'+
+      '<button onclick="saveCurrentSearch(\'search\')" style="font-size:11px;font-weight:600;background:var(--blue-pale);color:var(--blue-dark);border:1px solid var(--blue-primary);border-radius:20px;padding:3px 10px;cursor:pointer;">☆ Save</button>'+
       '<button onclick="exportFilteredCSV()" style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;cursor:pointer;">⬇ CSV</button>'+
       '<span class="results-count" id="csvResultCount" onclick="handleCountTap()" style="cursor:pointer;">0</span>'+
     '</div>'+
@@ -4670,12 +4997,7 @@ function buildCSVPanel() {
 }
 
 function runCSVSearch() {
-function runCSVSearch() {
-    return;
-  }
-  // Results shown after Search button tapped
   renderCSVResults();
-
 }
 
 // ua_schedule.json holds two merged sources: 342 long-haul international
