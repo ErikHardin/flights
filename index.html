@@ -226,10 +226,6 @@
     .odds-frac{font-size:12px;color:var(--grey-light);font-weight:500}
     .odds-sub{font-size:12px;color:var(--grey-text);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
     .odds-sub b{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--text)}
-    /* The coverage verdict is the difference between "no space" and "no data",
-       so it sits with the number rather than in the footnote. */
-    .odds-cov{font-size:11.5px;line-height:1.5;border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:10px;border:1px solid var(--border);background:var(--surface2)}
-    .odds-cov b{font-weight:700}
     .odds-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px;box-shadow:var(--shadow)}
     .odds-card h4{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--grey-light);margin:0 0 8px}
     .odds-table{width:100%;border-collapse:collapse}
@@ -3535,43 +3531,29 @@ window.addEventListener("orientationchange", syncScanStickyOffsets);
 // is the calendar days in the range you enter. That is a control rather than a
 // fixed window because United loads upgrade space close in: the file holds
 // ~850 rows/day for next month and ~50/day a year out, so a rate measured over
-// the whole file mostly counts months United has not published yet. The
-// coverage verdict beside every result says which case you are looking at, so a
-// 0% over a dense window reads as a real no and a 0% over a thin one as unknown.
+// the whole file mostly counts months United has not published yet — so keep
+// the range near the dates you would actually book.
 var oddsClass  = "PZ";     // single-select chip
 var oddsDir    = "out";    // "out" = A→B, "ret" = B→A
 var lastOdds   = null;     // args on screen, for redraws
-var oddsBounds = null;     // memoized date span + per-date row counts
+var oddsBounds = null;     // memoized {first,last} of the loaded rows
 
 // Cleared whenever the loaded rows change, because a late class file can widen
-// the span and always changes the per-date counts the verdict is scaled against.
+// the span the date pickers are seeded and bounds-checked against.
 function invalidateOddsBounds() { oddsBounds = null; }
 
 function upgradeDateBounds() {
   if (oddsBounds) return oddsBounds;
-  var byDate = {}, first = null, last = null;
+  var first = null, last = null;
   UPGRADE_CLASSES.forEach(function(fc){
     (csvUpgradeByClass[fc] || []).forEach(function(r){
       var d = r.departure_date;
       if (!d) return;
-      byDate[d] = (byDate[d] || 0) + 1;
       if (first === null || d < first) first = d;
       if (last  === null || d > last)  last  = d;
     });
   });
-  // The yardstick for "well covered": mean rows/day over the first 30 days of
-  // the export, which is as densely loaded as this data ever gets.
-  var nearRows = 0, nearDays = 0;
-  if (first) {
-    for (var i = 0; i < 30; i++) {
-      var d = shiftISODate(first, i);
-      if (d > last) break;
-      nearRows += byDate[d] || 0;
-      nearDays++;
-    }
-  }
-  oddsBounds = { first:first, last:last, byDate:byDate,
-                 nearDensity: nearDays ? nearRows / nearDays : 0 };
+  oddsBounds = { first:first, last:last };
   return oddsBounds;
 }
 
@@ -3735,18 +3717,6 @@ function oddsStats(origin, dest, start, end, min) {
   return st;
 }
 
-// How much data actually backs this range, scaled against the densest 30 days
-// of the export. This is what separates "no space" from "not loaded yet".
-function oddsCoverage(start, days) {
-  var b = upgradeDateBounds();
-  var rows = 0;
-  for (var i = 0; i < days; i++) rows += b.byDate[shiftISODate(start, i)] || 0;
-  var density = days ? rows / days : 0;
-  var ratio   = b.nearDensity ? density / b.nearDensity : 0;
-  var level   = ratio >= 0.6 ? "good" : ratio >= 0.25 ? "partial" : "sparse";
-  return { rows:rows, density:density, ratio:ratio, level:level };
-}
-
 function runOdds() {
   var a    = ((document.getElementById("oddsFrom")||{}).value||"").trim().toUpperCase();
   var b    = ((document.getElementById("oddsTo")||{}).value||"").trim().toUpperCase();
@@ -3807,7 +3777,6 @@ function renderOdds(a) {
 
   var days     = daysInclusive(a.start, a.end);
   var st       = oddsStats(a.origin, a.dest, a.start, a.end, a.min);
-  var cov      = oddsCoverage(a.start, days);
   var classes  = activeUpgradeClasses();
   var mine     = st.byClass[oddsClass] || { days:{}, flightDays:{} };
   var hitDays  = countKeys(mine.days);
@@ -3844,18 +3813,6 @@ function renderOdds(a) {
         ' flight-days ('+roster.length+' flight'+(roster.length === 1 ? '' : 's')+' × '+days+')</span>'+
     '</div>'+
   '</div>';
-
-  // ── Coverage verdict ───────────────────────────────────────────────────────
-  var covText = {
-    good:    ['var(--green)',   'Well covered',    'This range is densely observed, so a low number here is a real answer.'],
-    partial: ['#b45309',        'Partial coverage','United is still loading these dates — the true rate is likely higher.'],
-    sparse:  ['var(--grey-text)','Sparse',         'Too early for United to have published much. Treat a low number as unknown, not as no.']
-  }[cov.level];
-  var coverage = '<div class="odds-cov" style="border-left:3px solid '+covText[0]+'">'+
-    '<b style="color:'+covText[0]+'">'+covText[1]+'</b> — '+covText[2]+
-    '<br><span style="color:var(--grey-light)">'+Math.round(cov.density).toLocaleString()+
-    ' rows/day across all routes in this range, vs '+Math.round(b.nearDensity).toLocaleString()+
-    '/day at the front of the export.</span></div>';
 
   // ── Never seen ─────────────────────────────────────────────────────────────
   var notes = "";
@@ -3939,7 +3896,7 @@ function renderOdds(a) {
     (missing.length ? ' No export published yet for '+missing.join(", ")+'.' : '')+
   '</div>';
 
-  out.innerHTML = hero + coverage + notes + classCard + dowCard + flightCard + note;
+  out.innerHTML = hero + notes + classCard + dowCard + flightCard + note;
 }
 
 // ── Alliances tab ──

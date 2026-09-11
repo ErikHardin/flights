@@ -167,7 +167,7 @@ rate runs conservative on an irregular roster.
 Both rates are printed with their raw fraction (`2 of 30 days`), because the
 fraction is the part that can be checked.
 
-### Why the range matters, and the coverage line
+### Why the range matters
 
 United loads upgrade space close in, so the export is heavily front-loaded:
 roughly 850 rows/day for the coming month against ~50/day a year out. A rate
@@ -175,22 +175,13 @@ averaged over the whole file therefore mostly measures how far ahead United has
 published, not how good the route is. EWR→LHR PZ reads 4.4% over the full 338
 days and about 7% over any window you would actually book.
 
-So every result carries a coverage verdict, scaled against the mean rows/day of
-the export's first 30 days:
+So keep the range near the dates you would really travel. Widen it to compare
+routes or classes against each other — the front-loading biases every pair the
+same way, so the ranking holds even where the absolute number is pessimistic.
 
-| Ratio | Verdict | Reading |
-|---|---|---|
-| ≥ 60% | Well covered | A low number is a real answer |
-| 25–60% | Partial coverage | Still loading; true rate likely higher |
-| < 25% | Sparse | Treat a low number as unknown, not as no |
-
-This is what separates the two zeroes. EWR→LHR shows no PZ in either of these
-windows, and they mean opposite things:
-
-| Range | Rows/day | Verdict | Means |
-|---|---|---|---|
-| 2026-09-11 → 10-11 | 855 | Well covered | Densely observed, genuinely no PZ |
-| 2027-06-01 → 06-30 | 89 | Sparse | Nothing published yet; no conclusion |
+The same caveat applies to a zero. No PZ over a month of densely loaded dates is
+a real answer; no PZ over a month a year out mostly means United has not
+published anything there yet.
 
 ### Other behaviour worth knowing
 
