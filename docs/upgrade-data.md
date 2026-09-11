@@ -135,3 +135,72 @@ cookie you can paste that fixes an IP-level block.
 
 Session cookies expire whichever route you take, so the secret needs re-pasting
 whenever it lapses.
+
+## The Odds view
+
+The third sub-tab on the UA Upgrades tab answers a different question from the
+other two. Search and Hub Scan ask "where is there space right now". Odds asks
+"how often does this pair show this class at all" — the read you want before
+spending PlusPoints, not after.
+
+Enter two airport codes and the dates you could travel, pick a class, and it
+reports two rates over the same range, plus all four classes side by side, a
+per-flight breakdown and a day-of-week pattern.
+
+### What the percentages mean
+
+**The export records only space that exists.** There is no row for a flight with
+nothing open, so the file carries no zeroes and a rate needs a denominator the
+data doesn't supply. That denominator is **the calendar days in the range you
+enter**, which is why the range is a control rather than a fixed window.
+
+| | Definition |
+|---|---|
+| Day rate | Distinct `departure_date`s on the pair meeting the seat minimum ÷ days in range |
+| Flight rate | Distinct `(date, flight_number)` sightings ÷ (roster × days in range) |
+
+The roster is the distinct flight numbers seen on the pair across any class
+inside the range, and it is not seat-filtered — a flight showing one seat still
+operates. It does count a seasonal flight the same as a daily one, so the flight
+rate runs conservative on an irregular roster.
+
+Both rates are printed with their raw fraction (`2 of 30 days`), because the
+fraction is the part that can be checked.
+
+### Why the range matters, and the coverage line
+
+United loads upgrade space close in, so the export is heavily front-loaded:
+roughly 850 rows/day for the coming month against ~50/day a year out. A rate
+averaged over the whole file therefore mostly measures how far ahead United has
+published, not how good the route is. EWR→LHR PZ reads 4.4% over the full 338
+days and about 7% over any window you would actually book.
+
+So every result carries a coverage verdict, scaled against the mean rows/day of
+the export's first 30 days:
+
+| Ratio | Verdict | Reading |
+|---|---|---|
+| ≥ 60% | Well covered | A low number is a real answer |
+| 25–60% | Partial coverage | Still loading; true rate likely higher |
+| < 25% | Sparse | Treat a low number as unknown, not as no |
+
+This is what separates the two zeroes. EWR→LHR shows no PZ in either of these
+windows, and they mean opposite things:
+
+| Range | Rows/day | Verdict | Means |
+|---|---|---|---|
+| 2026-09-11 → 10-11 | 855 | Well covered | Densely observed, genuinely no PZ |
+| 2027-06-01 → 06-30 | 89 | Sparse | Nothing published yet; no conclusion |
+
+### Other behaviour worth knowing
+
+- A pair that never shows the chosen class reports **Never** rather than 0%, and
+  names what it does show — other classes on the pair, and the reverse direction
+  if that does better, which it often does.
+- An airport absent from the whole export is called out as a likely typo, since
+  the file only covers United's own flights.
+- A range outside the export's dates names the span the file actually holds.
+- Bars in each table are scaled to that table's own maximum, not to 100% — these
+  rates sit in single digits, so a bar drawn against 100% is flat on every row.
+  The percentage beside it carries the absolute.
+- Classes with no published export get a dimmed, inert chip rather than a 0%.
