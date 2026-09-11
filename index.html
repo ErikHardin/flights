@@ -234,6 +234,7 @@
     .odds-table td.k{font-family:'DM Mono',monospace;font-weight:600;color:var(--text);white-space:nowrap;width:1%;padding-right:8px}
     .odds-table td.v{font-family:'DM Mono',monospace;font-weight:700;text-align:right;white-space:nowrap;width:1%;padding-left:8px}
     .odds-table td.n{font-size:11px;color:var(--grey-light);text-align:right;white-space:nowrap;width:1%;padding-left:6px}
+    .odds-tier{font-family:'DM Sans',sans-serif;font-size:10px;font-weight:500;color:var(--grey-light);margin-top:2px}
     .odds-row-on td{background:var(--blue-pale)}
     .odds-row-on td.k,.odds-row-on td.v{color:var(--blue-dark)}
     /* Bar sits behind the cells so a long route list stays scannable without
@@ -470,7 +471,7 @@
     <ul style="font-size:13px;color:var(--grey-text);line-height:1.7;margin-bottom:16px;padding-left:18px;">
       <li><strong>Search</strong> — one route at a time. Search by origin, destination, date range, and aircraft type, with departure and arrival times for each flight.</li>
       <li><strong>Hub Scan</strong> — one destination from every United hub at once. Pick a destination, a date (with an optional &plusmn; day window) and a minimum number of seats, tap the hub chips to narrow the list, then Scan Hubs. Results come back as a table per hub, one column per upgrade class.</li>
-      <li><strong>Odds</strong> &mdash; how often a city pair shows space, rather than whether it does today. Enter two airport codes and the dates you could travel, pick a class, and you get the share of days that class appeared, a per-flight and per-weekday breakdown, and all four classes side by side. The export only records space that exists, so the denominator is the days in your range &mdash; and every result says how well covered that range is, because United loads inventory close in and a 0% a year out means &ldquo;not published yet&rdquo;, not &ldquo;never&rdquo;.</li>
+      <li><strong>Odds</strong> &mdash; how often a city pair shows space, rather than whether it does today. Enter two airport codes and the dates you could travel, pick a class, and you get the share of days that class appeared, a per-flight and per-weekday breakdown, and all four classes side by side. When a pair shows nothing, or a neighbouring airport clearly beats it, a Nearby instead list offers the better options at either end &mdash; same city first, then same time zone, then the wider region. The export only records space that exists, so the denominator is the days in your range &mdash; keep it near the dates you would really travel, because United loads inventory close in and a 0% a year out means &ldquo;not published yet&rdquo;, not &ldquo;never&rdquo;.</li>
     </ul>
     <div style="font-size:13px;font-weight:700;color:var(--blue-dark);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Alliances</div>
     <p style="font-size:13px;color:var(--grey-text);line-height:1.6;margin-bottom:16px;">
@@ -1915,6 +1916,38 @@ function getCountryAirports(countrySet){
   var codes=[];
   countrySet.forEach(function(c){if(COUNTRY_AIRPORTS[c])codes=codes.concat(COUNTRY_AIRPORTS[c])});
   return new Set(codes);
+}
+
+// Airports serving the same city, for "you could fly out of LGA instead".
+// AIRPORT_CITIES is a display string, not a key, so it needs normalizing first:
+// LHR is "London" but LGW is "London Gatwick", and the same split separates
+// CDG/ORY, ICN/GMP, BKK/DMK and IST/SAW. Stripping a trailing qualifier pairs
+// them — but "San Jose CR" (SJO, Costa Rica) would then merge into "San Jose"
+// (SJC, California), which is a different continent, so a two-letter all-caps
+// suffix is read as a country tag and left alone.
+var METRO_GROUP = (function(){
+  var exact = {}, base = {}, out = {};
+  for (var a in AIRPORT_CITIES) (exact[AIRPORT_CITIES[a]] = exact[AIRPORT_CITIES[a]] || []).push(a);
+  for (a in AIRPORT_CITIES) {
+    var city = AIRPORT_CITIES[a], root = city;
+    for (var k in exact) {
+      if (k === city || city.indexOf(k + " ") !== 0) continue;
+      if (/^[A-Z]{2}$/.test(city.slice(k.length + 1))) continue;   // country tag
+      root = k;
+    }
+    (base[root] = base[root] || []).push(a);
+  }
+  for (var r in base) if (base[r].length > 1)
+    base[r].forEach(function(code){ out[code] = base[r]; });
+  return out;
+})();
+
+// The app carries no coordinates, so a timezone stands in for "roughly there":
+// the full zone for a country-sized neighbourhood, the continent prefix for a
+// regional one.
+function airportRegion(code){
+  var tz = AIRPORT_TZ[code];
+  return tz ? tz.split("/")[0] : null;
 }
 
 // ── Upgrade ──
@@ -3544,16 +3577,24 @@ function invalidateOddsBounds() { oddsBounds = null; }
 
 function upgradeDateBounds() {
   if (oddsBounds) return oddsBounds;
-  var first = null, last = null;
+  var first = null, last = null, airports = {}, regionCount = {};
   UPGRADE_CLASSES.forEach(function(fc){
     (csvUpgradeByClass[fc] || []).forEach(function(r){
       var d = r.departure_date;
       if (!d) return;
       if (first === null || d < first) first = d;
       if (last  === null || d > last)  last  = d;
+      airports[(r.origin_airport||"").toUpperCase()] = 1;
+      airports[(r.destination_airport||"").toUpperCase()] = 1;
     });
   });
-  oddsBounds = { first:first, last:last };
+  delete airports[""];
+  // Region sizes decide whether the widest tier is worth offering at all.
+  Object.keys(airports).forEach(function(a){
+    var reg = airportRegion(a);
+    if (reg) regionCount[reg] = (regionCount[reg] || 0) + 1;
+  });
+  oddsBounds = { first:first, last:last, airports:airports, regionCount:regionCount };
   return oddsBounds;
 }
 
@@ -3597,7 +3638,12 @@ function seedOddsDates() {
   var s = document.getElementById("oddsStart"), e = document.getElementById("oddsEnd");
   if (!s || !e || !b.first) return;
   if (!s.value) { var t = todayISO(); s.value = t < b.first ? b.first : t; }
-  if (!e.value) e.value = b.last;
+  // A month out: both pickers open near today rather than nine months apart,
+  // and the first result is still a rate rather than a one-day coin flip.
+  if (!e.value) {
+    var end = shiftISODate(s.value, 30);
+    e.value = end > b.last ? b.last : end;
+  }
   s.min = e.min = b.first;
   s.max = e.max = b.last;
 }
@@ -3669,13 +3715,59 @@ function setOddsClass(fc) {
   if (lastOdds) runOdds();
 }
 
+// Airports worth offering instead of this one, nearest first. Three tiers, all
+// derived from tables the app already carries — there are no coordinates here,
+// so this is "roughly the same place", not a distance.
+//
+// The widest tier is capped: the timezone continents in this data run Europe 26,
+// Asia 16, Pacific 8, Africa 5, Australia 3 — and America 156. Offering anywhere
+// in the Americas as a neighbour is noise, so a bucket that large is skipped and
+// those queries stop at the timezone tier.
+var NEARBY_REGION_MAX = 40;
+
+function nearbyScope(code) {
+  var b = upgradeDateBounds(), out = {}, n = 0;
+  function add(a, tier) {
+    if (a === code || !b.airports[a] || out[a]) return;
+    out[a] = tier; n++;
+  }
+  (METRO_GROUP[code] || []).forEach(function(a){ add(a, "same city"); });
+
+  var tz = AIRPORT_TZ[code];
+  if (tz) Object.keys(b.airports).forEach(function(a){
+    if (AIRPORT_TZ[a] === tz) add(a, "same time zone");
+  });
+
+  var reg = airportRegion(code);
+  if (reg && b.regionCount[reg] <= NEARBY_REGION_MAX)
+    Object.keys(b.airports).forEach(function(a){
+      if (airportRegion(a) === reg) add(a, "in " + reg);
+    });
+
+  out.__count = n;
+  return out;
+}
+
+// How many neighbours an airport has at all — zero means the export carries no
+// timezone for it, so silence is a data gap rather than a dry region.
+function scopeSize(code) { return nearbyScope(code).__count; }
+
+// Nearest tier wins over a better rate: for JFK→ORD, ranking on availability
+// alone puts Atlanta above LGA, and Atlanta is not a New York substitute.
+function nearbyTierRank(tier) {
+  return tier === "same city" ? 0 : tier === "same time zone" ? 1 : 2;
+}
+
 // One pass over every loaded class, collecting everything the panel needs:
 // per-class day and flight-day sets, the pair's flight roster, the chosen
 // class's per-flight and per-weekday buckets, and the reverse direction, so a
 // pair with nothing outbound can still say where the space actually is.
 function oddsStats(origin, dest, start, end, min) {
   var st = { byClass:{}, revByClass:{}, roster:{}, perFlight:{}, perWeekday:[],
-             pairAnyDays:{}, seen:{} };
+             pairAnyDays:{}, seen:{}, alts:{} };
+  // Scoped once, outside the loop, so the row test below is two Set-style
+  // lookups rather than a search.
+  var scopeOrigin = nearbyScope(origin), scopeDest = nearbyScope(dest);
   UPGRADE_CLASSES.forEach(function(fc){
     st.byClass[fc]    = { days:{}, flightDays:{} };
     st.revByClass[fc] = { days:{} };
@@ -3695,6 +3787,21 @@ function oddsStats(origin, dest, start, end, min) {
       if (!date || date < start || date > end) return;
       var fwd = (o === origin && d === dest);
       var rev = (o === dest   && d === origin);
+
+      // Alternatives ride along in the same pass: one end held, the other
+      // swapped for a neighbour, judged on the same class and seat bar as the
+      // headline so the comparison is like for like.
+      if (fc === oddsClass && !fwd && invNum(r.inventory) >= min) {
+        var tier = (o === origin && scopeDest[d])   ? scopeDest[d]
+                 : (d === dest   && scopeOrigin[o]) ? scopeOrigin[o]
+                 : null;
+        if (tier) {
+          var key = o + "|" + d;
+          var alt = st.alts[key] || (st.alts[key] = { o:o, t:d, tier:tier, days:{} });
+          alt.days[date] = 1;
+        }
+      }
+
       if (!fwd && !rev) return;
 
       if (fwd) {
@@ -3792,10 +3899,22 @@ function renderOdds(a) {
   // ── Unknown airport ────────────────────────────────────────────────────────
   var unknown = [a.origin, a.dest].filter(function(c){ return !st.seen[c]; });
   if (unknown.length) {
+    var b2 = upgradeDateBounds();
+    // Some of these are typos, but some are real airports United simply does
+    // not publish upgrade space at — JFK is the obvious one. When the city has
+    // another airport that IS in the export, that is the useful reply.
+    var swaps = unknown.map(function(c){
+      var sib = (METRO_GROUP[c] || []).filter(function(x){ return x !== c && b2.airports[x]; });
+      return sib.length ? c+' → try '+sib.join(' or ') : null;
+    }).filter(Boolean);
     out.innerHTML = '<div class="empty-state"><div class="empty-icon">🔎</div>'+
       unknown.join(" and ")+(unknown.length > 1 ? ' never appear' : ' never appears')+
-      ' anywhere in the upgrade data — check the code'+(unknown.length > 1 ? 's' : '')+'.'+
-      '<div style="font-size:12px;margin-top:8px;">United only publishes upgrade space on its own flights, so a non-UA airport won\'t be here.</div></div>';
+      ' anywhere in the upgrade data.'+
+      '<div style="font-size:12px;margin-top:8px;">'+
+        (swaps.length
+          ? 'United publishes no upgrade space there. Same city, though: '+swaps.join('; ')+'.'
+          : 'United only publishes upgrade space on its own flights, so a non-UA airport won\'t be here — check the code'+(unknown.length > 1 ? 's' : '')+'.')+
+      '</div></div>';
     return;
   }
 
@@ -3829,6 +3948,47 @@ function renderOdds(a) {
         (others.length ? '<br>Other classes on this pair: '+others.join(', ')+'.' : '')+
         (revDays ? '<br>The other direction does better: '+a.dest+'→'+a.origin+' shows '+oddsClass+' on '+revDays+' day'+(revDays === 1 ? '' : 's')+'. Tap the direction toggle to see it.' : '')+
       '</div></div>';
+  }
+
+  // ── Nearby alternatives ────────────────────────────────────────────────────
+  // Shown when this pair has nothing, or when a neighbour clearly beats it —
+  // twice the days and at least five points, so a route that is merely pipped
+  // stays quiet.
+  var altRows = Object.keys(st.alts).map(function(k){
+    var x = st.alts[k];
+    return { o:x.o, t:x.t, tier:x.tier, days:countKeys(x.days) };
+  });
+  var bestAlt = altRows.reduce(function(b, x){ return !b || x.days > b.days ? x : b; }, null);
+  var beaten  = bestAlt && bestAlt.days >= 2 * hitDays &&
+                oddsPct(bestAlt.days, days) - dayPct >= 5;
+  var nearbyCard = "";
+  if (never || beaten) {
+    var better = altRows.filter(function(x){ return x.days > hitDays; })
+      .sort(function(x, y){ return nearbyTierRank(x.tier) - nearbyTierRank(y.tier) || y.days - x.days; })
+      .slice(0, 5);
+    var bestShown = better.reduce(function(b, x){ return !b || x.days > b.days ? x : b; }, null);
+    var bestPct   = bestShown ? oddsPct(bestShown.days, days) : 0;
+    nearbyCard = '<div class="odds-card"><h4>Nearby instead</h4>'+
+      (better.length
+        ? '<table class="odds-table">'+better.map(function(x){
+            var p = oddsPct(x.days, days);
+            return '<tr>'+
+              '<td class="k">'+x.o+' → '+x.t+'<div class="odds-tier">'+x.tier+'</div></td>'+
+              '<td>'+oddsBar(p, bestPct)+'</td>'+
+              '<td class="v" style="color:'+oddsColor(p)+'">'+fmtPct(p)+'</td>'+
+              '<td class="n">'+x.days+'/'+days+'</td>'+
+            '</tr>';
+          }).join("")+'</table>'
+        // No neighbour beating a zero is itself the answer: the whole area is
+        // dry, not just this pair.
+        : '<div style="font-size:12.5px;color:var(--grey-text);line-height:1.6">'+
+            (scopeSize(a.origin) + scopeSize(a.dest)
+              ? 'No airport near '+a.origin+' or '+a.dest+' shows '+oddsClass+
+                ' in this range either — the whole area is dry, not just this route.'
+              : 'No nearby airports to compare: the data carries no timezone for '+
+                (scopeSize(a.origin) ? a.dest : a.origin)+'.')+
+          '</div>')+
+    '</div>';
   }
 
   // ── All four classes ───────────────────────────────────────────────────────
@@ -3895,7 +4055,7 @@ function renderOdds(a) {
     (missing.length ? ' No export published yet for '+missing.join(", ")+'.' : '')+
   '</div>' : '';
 
-  out.innerHTML = hero + notes + classCard + dowCard + flightCard + note;
+  out.innerHTML = hero + notes + nearbyCard + classCard + dowCard + flightCard + note;
 }
 
 // ── Alliances tab ──

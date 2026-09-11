@@ -183,6 +183,41 @@ The same caveat applies to a zero. No PZ over a month of densely loaded dates is
 a real answer; no PZ over a month a year out mostly means United has not
 published anything there yet.
 
+### Nearby alternatives
+
+When the pair shows nothing for the chosen class, or when a neighbouring airport
+beats it by **2x the days and at least 5 percentage points**, a *Nearby instead*
+card lists the better options — swapping either end, so "fly from LGA" and "fly
+to IAH" both appear. Only options that actually beat your pair are listed, five
+at most.
+
+There are no coordinates anywhere in the app, so "nearby" is three tiers built
+from tables that already exist:
+
+| Tier | Source | Example |
+|---|---|---|
+| Same city | `AIRPORT_CITIES`, normalized | EWR -> LGA |
+| Same time zone | `AIRPORT_TZ`, full value | LHR -> EDI, GLA |
+| Same region | `AIRPORT_TZ` continent prefix | LHR -> CDG, AMS, FRA |
+
+Two rules keep it honest:
+
+- **The region tier is skipped when the region holds more than 40 airports.** In
+  the current data that is Europe 26, Asia 16, Pacific 8, Africa 5, Australia 3 —
+  and America **156**. Anywhere-in-the-Americas is not a neighbourhood, so US
+  queries stop at the time zone tier.
+- **Results are ordered by tier first, then by rate.** Ranking on rate alone puts
+  ATL above LGA for a JFK query, and Atlanta is not a New York substitute.
+
+`AIRPORT_TZ` covers 214 of the 296 airports in the export. The other 82 — AUS,
+SAT, SNA, RNO, PVD, MHT, BTV, ELP, KEF, SGN, NAP among them — get no suggestions
+for that end of the route. The two ends are scoped independently, so a search
+*from* AUS still offers alternative destinations.
+
+An airport absent from the export entirely is handled separately: JFK is a real
+airport United publishes no upgrade space at, so it reports that and points at
+EWR and LGA rather than calling it a typo.
+
 ### Other behaviour worth knowing
 
 - A pair that never shows the chosen class reports **Never** rather than 0%, and
@@ -195,3 +230,7 @@ published anything there yet.
   rates sit in single digits, so a bar drawn against 100% is flat on every row.
   The percentage beside it carries the absolute.
 - Classes with no published export get a dimmed, inert chip rather than a 0%.
+- The date range defaults to today through 30 days out, so both pickers open near
+  today and the first result is a real rate rather than a one-day sample.
+- A zero with no better neighbour says so explicitly. That is a finding in itself:
+  it means the whole area is dry, not just your route.
