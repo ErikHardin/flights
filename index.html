@@ -1595,10 +1595,19 @@ function checkUnlocked(){
   // being stored here and never read, so re-resolve from it in the background.
   var pin = sessionStorage.getItem("afss_pin")||"";
   currentUserPin = pin;
-  if (pin && !isAdmin) {
+  if (isAdmin) { hydrateSavedSearches(); renderSavedDrawers(); return; }
+  // The account id was stored alongside the PIN on unlock, so a refresh — or a
+  // refresh with no network — restores the right person's saves immediately.
+  var uid = sessionStorage.getItem("afss_uid")||"";
+  if (uid) { currentUserId = uid; hydrateSavedSearches(); renderSavedDrawers(); }
+  if (pin) {
     fbQuery("approved_users","pin",pin).then(function(users){
-      if (users && users.length) setCurrentUser(users[0]._id);
-    }).catch(function(){ /* offline — the local mirror still serves saves */ });
+      if (!users || !users.length) return;
+      // A different account than the cached id means the cached one is stale;
+      // setCurrentUser resets everything before loading the right list.
+      if (users[0]._id !== currentUserId) { currentUserId = ""; setCurrentUser(users[0]._id); }
+      else loadSavedSearches();
+    }).catch(function(){ /* offline — the local mirror still serves this account */ });
   }
 }
 function pinPress(digit){if(pinEntry.length>=4)return;pinEntry+=digit;updatePinDots(false);if(pinEntry.length===4)verifyPin()}
@@ -1614,6 +1623,8 @@ async function verifyPin(){
       isAdmin=true;
       sessionStorage.setItem("afss_admin","1");
       currentUserPin=pinEntry;
+      currentUserId="";                    // no approved_users record; saves stay local
+      hydrateSavedSearches(); renderSavedDrawers();
       sessionStorage.setItem("afss_unlocked","1");
       sessionStorage.setItem("afss_pin",pinEntry);
       document.getElementById("lockScreen").style.display="none";
@@ -1626,6 +1637,7 @@ async function verifyPin(){
       isAdmin=false;
       sessionStorage.removeItem("afss_admin");
       currentUserPin=pinEntry;
+      currentUserId="";                    // force setCurrentUser to rebuild scope
       // The document id, not the PIN: changing a PIN rewrites this same record,
       // so anything keyed by PIN would orphan itself on the first change.
       setCurrentUser(users[0]._id);
@@ -3599,21 +3611,48 @@ var currentUserId = "";
 var savedLoaded   = false;
 var savedOpen     = {};   // which view's drawer is expanded
 
+// The local mirror is namespaced per account. A single shared key leaks one
+// person's searches to the next person who unlocks on the same device, and then
+// writes them into that second account when they save.
+function savedScope() {
+  if (isAdmin) return "admin";      // the admin passcode has no approved_users record
+  return currentUserId || "";       // "" = nobody resolved yet; show nothing
+}
+function savedKey(scope) { return "afss_searches_" + scope; }
+
+// Purge the pre-namespace key, which may hold another account's searches.
+function purgeLegacySavedSearches() {
+  try { localStorage.removeItem("afss_searches"); } catch(e) {}
+}
+
 function setCurrentUser(id) {
   if (!id || currentUserId === id) return;
   currentUserId = id;
+  try { sessionStorage.setItem("afss_uid", id); } catch(e) {}
   savedLoaded = false;
+  // Never carry the previous account's list across a switch — not in memory,
+  // and not on screen while the network answers.
+  savedSearches = [];
+  savedOpen = {};
+  hydrateSavedSearches();
+  renderSavedDrawers();
   loadSavedSearches();
 }
 
 function cacheSavedSearches() {
-  try { localStorage.setItem("afss_searches", JSON.stringify(savedSearches)); }
+  var scope = savedScope();
+  if (!scope) return;               // no identity, nothing to attribute a save to
+  try { localStorage.setItem(savedKey(scope), JSON.stringify(savedSearches)); }
   catch(e) { /* private mode or quota — the account copy is the durable one */ }
 }
 
 function hydrateSavedSearches() {
+  purgeLegacySavedSearches();
+  savedSearches = [];
+  var scope = savedScope();
+  if (!scope) return;               // showing nothing beats showing someone else's
   try {
-    var saved = JSON.parse(localStorage.getItem("afss_searches")||"[]");
+    var saved = JSON.parse(localStorage.getItem(savedKey(scope))||"[]");
     if (Array.isArray(saved)) savedSearches = saved;
   } catch(e) { /* corrupt storage shouldn't break the tab */ }
 }
@@ -3623,10 +3662,16 @@ function hydrateSavedSearches() {
 // updateMask, and submitChangePin rewrites that document wholesale.
 async function loadSavedSearches() {
   if (savedLoaded || !currentUserId) return;
+  var forUser = currentUserId;
   savedLoaded = true;
   try {
-    var doc = await fbGet("/saved_searches/" + currentUserId);
-    if (!doc || !doc.fields) return;              // nothing saved yet, or rules deny
+    var doc = await fbGet("/saved_searches/" + forUser);
+    // Someone else unlocked while this was in flight — their list is on screen
+    // now, so drop this answer rather than overwriting it.
+    if (currentUserId !== forUser) return;
+    // No document yet, or unreachable: the local mirror is this account's own,
+    // so leaving it is correct.
+    if (!doc || !doc.fields) return;
     var raw = (doc.fields.searches||{}).stringValue || "[]";
     var list = JSON.parse(raw);
     if (!Array.isArray(list)) return;
@@ -3640,6 +3685,7 @@ async function loadSavedSearches() {
 
 // Local first so a save is instant and works offline; the account copy follows.
 function persistSavedSearches() {
+  if (!savedScope()) return;                      // no identity: refuse rather than misattribute
   cacheSavedSearches();
   renderSavedDrawers();
   if (!currentUserId) return;                     // admin passcode has no account record

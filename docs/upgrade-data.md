@@ -263,6 +263,21 @@ other than what it displayed.
 Keyed by your Firestore **document id**, not your PIN: changing a PIN rewrites that
 same record, so a PIN-keyed store would orphan itself on the first change.
 
+**The local mirror is namespaced per account** — `afss_searches_<userDocId>`, or
+`afss_searches_admin` for an admin session. An earlier version used one shared
+`afss_searches` key, which showed one person's searches to the next person who
+unlocked on the same device, and then wrote them into that second account when they
+saved. The shared key is deleted on load, and four rules keep accounts apart:
+
+- switching account clears the in-memory list before anything is painted;
+- with no account resolved, nothing is shown and nothing can be saved;
+- a cloud answer that arrives after a different account has signed in is discarded;
+- an admin session has its own namespace and never writes to the cloud.
+
+If you saved anything while the bug was live, that account's document may contain
+entries belonging to someone else. Delete them with the ✕ in the drawer; the fix
+stops new cross-account writes but cannot know which existing rows were misfiled.
+
 | | |
 |---|---|
 | Cloud | `saved_searches/<userDocId>`, one document per user, the whole list JSON-encoded into a single `searches` field |
